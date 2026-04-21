@@ -1,0 +1,13 @@
+# Ignorer les variables d'environnement
+.env
+
+# Ignorer les modules Node
+node_modules/
+
+# Ignorer la base de données SQLite (pour ne pas envoyer tes tests)
+*.sqlite
+server/database.sqlite
+
+# Ignorer les logs
+npm-debug.log*
+
