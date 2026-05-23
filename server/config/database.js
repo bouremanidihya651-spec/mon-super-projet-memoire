@@ -6,11 +6,15 @@ const sqlite = new Sequelize({
   logging: false
 });
 
-const postgres = new Sequelize('afalou', 'afalou_user', 'afalou123', {
-  host: 'localhost',
-  port: 5432,
+const postgres = new Sequelize(process.env.DATABASE_URL, {
   dialect: 'postgres',
-  logging: false
+  logging: false,
+  dialectOptions: {
+    ssl: {
+      require: true,
+      rejectUnauthorized: false
+    }
+  }
 });
 
 module.exports = { sqlite, postgres };
