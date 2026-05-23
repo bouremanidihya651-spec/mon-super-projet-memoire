@@ -1,0 +1,26 @@
+@import "tailwindcss";
+
+@theme {
+  --color-dark-bg: #0f1412;
+  --color-dark-surface: #1a2320;
+  --color-dark-surface-2: #242d2a;
+  --color-dark-border: #2d3a36;
+  --color-dark-text: #e8ece9;
+  --color-dark-text-muted: #9db8aa;
+  --color-surface: #b5e4ca;
+}
+
+/* Configuration du mode sombre par classe pour Tailwind v4 */
+@variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  html {
+    @apply transition-colors duration-200;
+  }
+  
+  html.dark {
+    color-scheme: dark;
+    background-color: #0f1412;
+    color: #e8ece9;
+  }
+}
