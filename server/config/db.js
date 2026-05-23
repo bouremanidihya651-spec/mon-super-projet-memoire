@@ -1,18 +1,14 @@
-// config/db.js
 const { Sequelize } = require('sequelize');
 
-// Ancienne connexion SQLite (commentée)
-// const sequelize = new Sequelize({
-//   dialect: 'sqlite',
-//   storage: './database.sqlite'
-// });
-
-// Nouvelle connexion PostgreSQL
-const sequelize = new Sequelize('afalou', 'afalou_user', 'afalou123', {
-  host: 'localhost',
-  port: 5432,
+const sequelize = new Sequelize(process.env.DATABASE_URL, {
   dialect: 'postgres',
-  logging: false
+  logging: false,
+  dialectOptions: {
+    ssl: {
+      require: true,
+      rejectUnauthorized: false
+    }
+  }
 });
 
 module.exports = sequelize;
