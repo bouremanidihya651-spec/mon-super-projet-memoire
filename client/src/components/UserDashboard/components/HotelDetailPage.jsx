@@ -80,7 +80,7 @@ const HotelDetailPage = ({ hotel, onBack, openAuthModal }) => {
     const token = localStorage.getItem('token');
     try {
       if (isFavorite) {
-        const res = await fetch('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/favorites', { headers: { Authorization: `Bearer ${token}` } });
+        const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/favorites`, { headers: { Authorization: `Bearer ${token}` } });
         const data = await res.json();
         const favorite = data.favorites?.find(f => f.targetId === hotel.id && f.targetType === 'hotel');
         if (favorite) {
@@ -88,7 +88,7 @@ const HotelDetailPage = ({ hotel, onBack, openAuthModal }) => {
         }
         setIsFavorite(false);
       } else {
-        await fetch('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/favorites', {
+        await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/favorites`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({ targetType: 'hotel', targetId: hotel.id }),
@@ -105,7 +105,7 @@ const HotelDetailPage = ({ hotel, onBack, openAuthModal }) => {
     try {
       const token = localStorage.getItem('token');
       if (!token) { openAuthModal('login'); return; }
-      const res = await fetch('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/reviews', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/reviews`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ rating, comment, targetType: 'hotel', targetId: hotel.id }),
@@ -119,10 +119,8 @@ const HotelDetailPage = ({ hotel, onBack, openAuthModal }) => {
     ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
     : hotel.rating || '0';
 
-  // ── Amenities : uniquement depuis la BDD, aucun fallback fictif ──
   const amenitiesList = hotel.amenities || [];
 
-  // ─── Theme tokens ───────────────────────────────────────────────
   const t = {
     bg:            isDark ? '#0d1411' : '#f5f2ed',
     card:          isDark ? '#141c18' : '#ffffff',
@@ -169,7 +167,6 @@ const HotelDetailPage = ({ hotel, onBack, openAuthModal }) => {
       transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
       style={{ minHeight: '100vh', background: t.bg, fontFamily: "'DM Sans', sans-serif" }}
     >
-      {/* ── Back Button ── */}
       <div style={{ maxWidth: 1100, margin: '0 auto', padding: '28px 28px 0' }}>
         <button
           onClick={onBack}
@@ -188,14 +185,12 @@ const HotelDetailPage = ({ hotel, onBack, openAuthModal }) => {
         </button>
       </div>
 
-      {/* ── Hero ── */}
       <div style={{ maxWidth: 1100, margin: '20px auto 0', padding: isMobile ? '0 16px' : '0 28px' }}>
         <div style={{
           position: 'relative',
           height: isMobile ? 320 : 480,
           borderRadius: isMobile ? 16 : 24,
           overflow: 'hidden',
-          // Empêche le flou lié au sous-pixel rendering
           transform: 'translateZ(0)',
           backfaceVisibility: 'hidden',
         }}>
@@ -204,25 +199,16 @@ const HotelDetailPage = ({ hotel, onBack, openAuthModal }) => {
             alt={hotel.name}
             loading="eager"
             style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-              objectPosition: 'center center',
-              display: 'block',
-              // Netteté maximale, évite le flou de redimensionnement
-              imageRendering: 'auto',
-              // Fixe le rendu GPU pour éviter le flou sur certains navigateurs
-              transform: 'scale(1)',
-              willChange: 'transform',
+              width: '100%', height: '100%', objectFit: 'cover',
+              objectPosition: 'center center', display: 'block',
+              imageRendering: 'auto', transform: 'scale(1)', willChange: 'transform',
             }}
           />
-          {/* Gradient overlay */}
           <div style={{
             position: 'absolute', inset: 0,
             background: 'linear-gradient(to top, rgba(8,18,12,0.92) 0%, rgba(8,18,12,0.4) 50%, rgba(8,18,12,0.05) 100%)',
           }} />
 
-          {/* Stars badge */}
           {hotel.stars && (
             <div style={{
               position: 'absolute', top: isMobile ? 16 : 24, left: isMobile ? 16 : 24,
@@ -239,7 +225,6 @@ const HotelDetailPage = ({ hotel, onBack, openAuthModal }) => {
             </div>
           )}
 
-          {/* Favorite button */}
           <button
             onClick={toggleFavorite}
             style={{
@@ -255,7 +240,6 @@ const HotelDetailPage = ({ hotel, onBack, openAuthModal }) => {
             <Heart size={isMobile ? 16 : 18} style={{ color: '#fff', fill: isFavorite ? '#fff' : 'none' }} />
           </button>
 
-          {/* Hotel name & location */}
           <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: isMobile ? '20px 24px' : '32px 36px' }}>
             <h1 style={{
               fontFamily: "'Playfair Display', Georgia, serif",
@@ -274,7 +258,6 @@ const HotelDetailPage = ({ hotel, onBack, openAuthModal }) => {
         </div>
       </div>
 
-      {/* ── Stats Bar ── */}
       <div style={{ maxWidth: 1100, margin: '0 auto', padding: isMobile ? '0 16px' : '0 28px' }}>
         <div style={{
           marginTop: isMobile ? 12 : 16,
@@ -319,7 +302,6 @@ const HotelDetailPage = ({ hotel, onBack, openAuthModal }) => {
         </div>
       </div>
 
-      {/* ── Main Grid ── */}
       <div style={{
         maxWidth: 1100,
         margin: isMobile ? '24px auto 60px' : '32px auto 60px',
@@ -328,11 +310,8 @@ const HotelDetailPage = ({ hotel, onBack, openAuthModal }) => {
         gridTemplateColumns: isMobile ? '1fr' : '1fr 320px',
         gap: 24,
       }}>
-
-        {/* ── Left Column ── */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24, order: isMobile ? 2 : 1 }}>
 
-          {/* Description */}
           {hotel.description && (
             <div style={{ background: t.card, border: `1px solid ${t.cardBorder}`, borderRadius: 20, padding: isMobile ? '24px 24px' : '32px 36px' }}>
               <div style={sectionLabel}>
@@ -345,7 +324,6 @@ const HotelDetailPage = ({ hotel, onBack, openAuthModal }) => {
             </div>
           )}
 
-          {/* Amenities — affiché seulement si la BDD en fournit */}
           {amenitiesList.length > 0 && (
             <div style={{ background: t.card, border: `1px solid ${t.cardBorder}`, borderRadius: 20, padding: isMobile ? '24px 24px' : '32px 36px' }}>
               <div style={sectionLabel}>
@@ -374,14 +352,12 @@ const HotelDetailPage = ({ hotel, onBack, openAuthModal }) => {
             </div>
           )}
 
-          {/* Reviews */}
           <div style={{ background: t.card, border: `1px solid ${t.cardBorder}`, borderRadius: 20, padding: isMobile ? '24px 24px' : '32px 36px' }}>
             <div style={sectionLabel}>
               <span>Avis clients</span>
               <span style={sectionLine} />
             </div>
 
-            {/* Rating summary */}
             <div style={{
               display: 'flex', alignItems: 'center', gap: 20,
               background: t.surface, border: `1px solid ${t.surfaceBorder}`,
@@ -406,7 +382,6 @@ const HotelDetailPage = ({ hotel, onBack, openAuthModal }) => {
               </div>
             </div>
 
-            {/* Action buttons */}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 20 }}>
               {!reviews.some(r => r.userId === user?.id) ? (
                 <button
@@ -428,12 +403,9 @@ const HotelDetailPage = ({ hotel, onBack, openAuthModal }) => {
                 <div style={{
                   display: 'flex', alignItems: 'center', gap: 8,
                   padding: '10px 20px', borderRadius: 10,
-                  background: t.accentLight,
-                  border: `1px solid ${t.accentBorder}`,
-                  color: t.accent,
-                  fontSize: 12, fontWeight: 600, letterSpacing: '0.08em',
-                  textTransform: 'uppercase',
-                  fontFamily: "'DM Sans', sans-serif",
+                  background: t.accentLight, border: `1px solid ${t.accentBorder}`,
+                  color: t.accent, fontSize: 12, fontWeight: 600, letterSpacing: '0.08em',
+                  textTransform: 'uppercase', fontFamily: "'DM Sans', sans-serif",
                 }}>
                   <Star size={12} fill={t.accent} /> Avis déjà publié
                 </div>
@@ -457,7 +429,6 @@ const HotelDetailPage = ({ hotel, onBack, openAuthModal }) => {
               )}
             </div>
 
-            {/* Review form */}
             <div style={{
               overflow: 'hidden', transition: 'all 0.35s ease',
               maxHeight: showForm ? 500 : 0, opacity: showForm ? 1 : 0,
@@ -522,7 +493,6 @@ const HotelDetailPage = ({ hotel, onBack, openAuthModal }) => {
               </form>
             </div>
 
-            {/* Reviews list */}
             {reviews.length > 0 && (
               <div style={{
                 overflow: 'hidden', transition: 'all 0.35s ease',
@@ -587,14 +557,12 @@ const HotelDetailPage = ({ hotel, onBack, openAuthModal }) => {
           </div>
         </div>
 
-        {/* ── Right Column — Booking Widget ── */}
         <div style={{ order: isMobile ? 1 : 2 }}>
           <div style={{
             position: isMobile ? 'relative' : 'sticky', top: 24,
             background: t.card, border: `1px solid ${t.cardBorder}`,
             borderRadius: 20, overflow: 'hidden',
           }}>
-            {/* Price header */}
             <div style={{
               background: isDark ? '#101a15' : '#1a3328',
               padding: isMobile ? '20px' : '28px 28px 24px',
@@ -613,7 +581,6 @@ const HotelDetailPage = ({ hotel, onBack, openAuthModal }) => {
             </div>
 
             <div style={{ padding: isMobile ? '20px' : '24px 24px 28px' }}>
-              {/* Rating pill */}
               <div style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                 background: t.accentLight, border: `1px solid ${t.accentBorder}`,
@@ -624,7 +591,6 @@ const HotelDetailPage = ({ hotel, onBack, openAuthModal }) => {
                 <span style={{ fontSize: 11, color: t.textFaint }}>· {reviews.length} avis</span>
               </div>
 
-              {/* Réserver button */}
               <button
                 onClick={() => setShowReservationModal(true)}
                 style={{
@@ -641,7 +607,6 @@ const HotelDetailPage = ({ hotel, onBack, openAuthModal }) => {
                 <Building size={15} /> Réserver maintenant
               </button>
 
-              {/* Favoris button */}
               <button
                 onClick={toggleFavorite}
                 style={{
@@ -659,17 +624,13 @@ const HotelDetailPage = ({ hotel, onBack, openAuthModal }) => {
                 {isFavorite ? 'Favori' : 'Favoris'}
               </button>
 
-              {/* Contact — uniquement si présent dans la BDD */}
               {(hotel.phone || hotel.email) && (
                 <>
                   <div style={{ height: 1, background: t.divider, marginBottom: 20 }} />
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                     {hotel.phone && (
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <div style={{
-                          width: 32, height: 32, borderRadius: 8,
-                          background: t.accentLight, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        }}>
+                        <div style={{ width: 32, height: 32, borderRadius: 8, background: t.accentLight, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           <Phone size={13} style={{ color: t.accent }} />
                         </div>
                         <span style={{ fontSize: 12, color: t.textMuted, fontWeight: 300 }}>{hotel.phone}</span>
@@ -677,10 +638,7 @@ const HotelDetailPage = ({ hotel, onBack, openAuthModal }) => {
                     )}
                     {hotel.email && (
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <div style={{
-                          width: 32, height: 32, borderRadius: 8,
-                          background: t.accentLight, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        }}>
+                        <div style={{ width: 32, height: 32, borderRadius: 8, background: t.accentLight, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           <Mail size={13} style={{ color: t.accent }} />
                         </div>
                         <span style={{ fontSize: 12, color: t.textMuted, fontWeight: 300, overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -714,4 +672,3 @@ const HotelDetailPage = ({ hotel, onBack, openAuthModal }) => {
 };
 
 export default HotelDetailPage;
-
