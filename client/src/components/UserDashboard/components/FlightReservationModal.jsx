@@ -117,7 +117,7 @@ const FlightReservationModal = ({ isOpen, onClose, transport, user }) => {
       };
 
       // Save invoice to database
-      const response = await axios.post('http://localhost:3000/api/reservations/create-invoice', invoiceData, {
+      const response = await axios.post('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/reservations/create-invoice', invoiceData, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -135,7 +135,7 @@ const FlightReservationModal = ({ isOpen, onClose, transport, user }) => {
     try {
       const token = localStorage.getItem('token');
       
-      const response = await axios.post('http://localhost:3000/api/payment/create-chargily-checkout', {
+      const response = await axios.post('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/payment/create-chargily-checkout', {
         amount: totalPrice,
         currency: 'dzd',
         reservationId: reservation.id,
@@ -164,7 +164,7 @@ const FlightReservationModal = ({ isOpen, onClose, transport, user }) => {
     try {
       const token = localStorage.getItem('token');
 
-      const response = await axios.post('http://localhost:3000/api/payment/create-stripe-checkout', {
+      const response = await axios.post('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/payment/create-stripe-checkout', {
         amount: totalPrice,
         currency: 'dzd',
         reservationId: reservation.id
@@ -193,7 +193,7 @@ const FlightReservationModal = ({ isOpen, onClose, transport, user }) => {
       const token = localStorage.getItem('token');
       
       // Create reservation
-      const reservationResponse = await axios.post('http://localhost:3000/api/reservations', {
+      const reservationResponse = await axios.post('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/reservations', {
         transport_id: transport.id,
         trip_type: tripType,
         departure_date: departureDate,
@@ -850,3 +850,5 @@ const FlightReservationModal = ({ isOpen, onClose, transport, user }) => {
 };
 
 export default FlightReservationModal;
+
+

@@ -21,7 +21,7 @@ const InvoiceModal = ({ isOpen, reservationId, onClose }) => {
       const token = localStorage.getItem('token');
       console.log('Fetching invoice for reservation:', reservationId);
       
-      const response = await axios.get(`http://localhost:3000/api/payment/invoice-by-reservation/${reservationId}`, {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/payment/invoice-by-reservation/${reservationId}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
@@ -297,3 +297,5 @@ const InvoiceModal = ({ isOpen, reservationId, onClose }) => {
 };
 
 export default InvoiceModal;
+
+

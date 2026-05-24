@@ -51,7 +51,7 @@ const HotelDetailPage = ({ hotel, onBack, openAuthModal }) => {
   const fetchReviews = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`http://localhost:3000/api/reviews/hotel/${hotel.id}`);
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/reviews/hotel/${hotel.id}`);
       const data = await res.json();
       setReviews(data.reviews || []);
     } catch (error) {
@@ -65,7 +65,7 @@ const HotelDetailPage = ({ hotel, onBack, openAuthModal }) => {
     const token = localStorage.getItem('token');
     if (!token) return;
     try {
-      const res = await fetch(`http://localhost:3000/api/favorites/check/hotel/${hotel.id}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/favorites/check/hotel/${hotel.id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -80,15 +80,15 @@ const HotelDetailPage = ({ hotel, onBack, openAuthModal }) => {
     const token = localStorage.getItem('token');
     try {
       if (isFavorite) {
-        const res = await fetch('http://localhost:3000/api/favorites', { headers: { Authorization: `Bearer ${token}` } });
+        const res = await fetch('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/favorites', { headers: { Authorization: `Bearer ${token}` } });
         const data = await res.json();
         const favorite = data.favorites?.find(f => f.targetId === hotel.id && f.targetType === 'hotel');
         if (favorite) {
-          await fetch(`http://localhost:3000/api/favorites/${favorite.id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+          await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/favorites/${favorite.id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
         }
         setIsFavorite(false);
       } else {
-        await fetch('http://localhost:3000/api/favorites', {
+        await fetch('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/favorites', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({ targetType: 'hotel', targetId: hotel.id }),
@@ -105,7 +105,7 @@ const HotelDetailPage = ({ hotel, onBack, openAuthModal }) => {
     try {
       const token = localStorage.getItem('token');
       if (!token) { openAuthModal('login'); return; }
-      const res = await fetch('http://localhost:3000/api/reviews', {
+      const res = await fetch('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/reviews', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ rating, comment, targetType: 'hotel', targetId: hotel.id }),
@@ -714,3 +714,4 @@ const HotelDetailPage = ({ hotel, onBack, openAuthModal }) => {
 };
 
 export default HotelDetailPage;
+

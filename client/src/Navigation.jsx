@@ -107,3 +107,4 @@ const Navigation = ({ openAuthModal, toggleChatbot }) => {
 };
 
 export default Navigation;
+

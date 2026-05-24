@@ -220,3 +220,4 @@ const About = ({ openAuthModal, isChatbotOpen, toggleChatbot }) => {
 };
 
 export default About;
+

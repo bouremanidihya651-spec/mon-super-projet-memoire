@@ -41,23 +41,23 @@ const DestinationDetail = ({ openAuthModal }) => {
   const fetchDestinationData = async () => {
     try {
       setLoading(true);
-      const destRes = await fetch(`http://localhost:3000/api/destinations/${id}`);
+      const destRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/destinations/${id}`);
       const destData = await destRes.json();
       setDestination(destData);
 
-      const hotelsRes = await fetch(`http://localhost:3000/api/hotels/destination/${id}`);
+      const hotelsRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/hotels/destination/${id}`);
       const hotelsData = await hotelsRes.json();
       setHotels(hotelsData.hotels || []);
 
-      const activitiesRes = await fetch(`http://localhost:3000/api/activities/destination/${id}`);
+      const activitiesRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/activities/destination/${id}`);
       const activitiesData = await activitiesRes.json();
       setActivities(activitiesData.activities || []);
 
-      const transportsRes = await fetch(`http://localhost:3000/api/transports/destination/${id}`);
+      const transportsRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/transports/destination/${id}`);
       const transportsData = await transportsRes.json();
       setTransports(transportsData.transports || []);
 
-      const reviewsRes = await fetch(`http://localhost:3000/api/reviews/destination/${id}`);
+      const reviewsRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/reviews/destination/${id}`);
       const reviewsData = await reviewsRes.json();
       const reviewsList = reviewsData.reviews || reviewsData.data || [];
       setReviews(Array.isArray(reviewsList) ? reviewsList : []);
@@ -598,3 +598,5 @@ const DestinationDetail = ({ openAuthModal }) => {
 };
 
 export default DestinationDetail;
+
+

@@ -56,7 +56,7 @@ const TransportManagement = () => {
   const fetchTransports = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:3000/api/transports');
+      const response = await fetch('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/transports');
       const data = await response.json();
       setTransports(data.transports || []);
     } catch (err) {
@@ -68,7 +68,7 @@ const TransportManagement = () => {
 
   const fetchDestinations = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/destinations');
+      const response = await fetch('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/destinations');
       const data = await response.json();
       setDestinations(data.destinations || data.rows || []);
     } catch (err) {
@@ -80,7 +80,7 @@ const TransportManagement = () => {
     if (window.confirm('Supprimer ce transport ?')) {
       try {
         const token = localStorage.getItem('token');
-        await fetch(`http://localhost:3000/api/transports/${id}`, {
+        await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/transports/${id}`, {
           method: 'DELETE',
           headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -186,8 +186,8 @@ const TransportManagement = () => {
     if (selectedFile) data.append('image', selectedFile);
 
     const endpoint = editingId
-      ? `http://localhost:3000/api/transports/${editingId}`
-      : 'http://localhost:3000/api/transports';
+      ? `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/transports/${editingId}`
+      : '${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/transports';
     const method = editingId ? 'PUT' : 'POST';
 
     try {
@@ -680,3 +680,5 @@ const TransportManagement = () => {
 };
 
 export default TransportManagement;
+
+

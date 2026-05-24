@@ -13,7 +13,7 @@ const ActivityDetail = ({ openAuthModal, isChatbotOpen, toggleChatbot }) => {
   useEffect(() => {
     const fetchActivity = async () => {
       try {
-        const res = await fetch(`http://localhost:3000/api/activities/${id}`);
+        const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/activities/${id}`);
         const data = await res.json();
         setActivity(data);
       } catch (error) {
@@ -273,3 +273,5 @@ const ActivityDetail = ({ openAuthModal, isChatbotOpen, toggleChatbot }) => {
 };
 
 export default ActivityDetail;
+
+

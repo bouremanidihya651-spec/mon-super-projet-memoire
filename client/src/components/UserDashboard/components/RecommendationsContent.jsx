@@ -240,7 +240,7 @@ const RecommendationCard = ({ destination, index, onViewDetails, openAuthModal, 
   useEffect(() => {
     const fetchAvgRating = async () => {
       try {
-        const res = await fetch(`http://localhost:3000/api/reviews/destination/${destination.id}`);
+        const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/reviews/destination/${destination.id}`);
         const data = await res.json();
         const reviews = data.reviews || [];
         if (reviews.length > 0) {
@@ -257,7 +257,7 @@ const RecommendationCard = ({ destination, index, onViewDetails, openAuthModal, 
     if (!token) return;
     try {
       const res = await fetch(
-        `http://localhost:3000/api/favorites/check/destination/${destination.id}`,
+        `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/favorites/check/destination/${destination.id}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       const data = await res.json();
@@ -273,7 +273,7 @@ const RecommendationCard = ({ destination, index, onViewDetails, openAuthModal, 
     const token = localStorage.getItem('token');
     try {
       if (isFavorite) {
-        const res = await fetch('http://localhost:3000/api/favorites', {
+        const res = await fetch('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/favorites', {
           headers: { Authorization: `Bearer ${token}` }
         });
         const data = await res.json();
@@ -281,14 +281,14 @@ const RecommendationCard = ({ destination, index, onViewDetails, openAuthModal, 
           f => f.targetId === destination.id && f.targetType === 'destination'
         );
         if (fav) {
-          await fetch(`http://localhost:3000/api/favorites/${fav.id}`, {
+          await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/favorites/${fav.id}`, {
             method: 'DELETE',
             headers: { Authorization: `Bearer ${token}` }
           });
         }
         setIsFavorite(false);
       } else {
-        await fetch('http://localhost:3000/api/favorites', {
+        await fetch('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/favorites', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({ targetType: 'destination', targetId: destination.id })
@@ -490,7 +490,7 @@ const RecommendationsContent = ({ openAuthModal, t }) => {
     }
 
     try {
-      const res = await fetch('http://localhost:3000/api/recommendations/hybrid?limit=10', {
+      const res = await fetch('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/recommendations/hybrid?limit=10', {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -519,7 +519,7 @@ const RecommendationsContent = ({ openAuthModal, t }) => {
   const fetchAllDestinations = async () => {
     setLoadingAll(true);
     try {
-      const res = await fetch('http://localhost:3000/api/recommendations/all-destinations');
+      const res = await fetch('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/recommendations/all-destinations');
       if (res.ok) {
         const data = await res.json();
         setAllDestinations(data.destinations || []);
@@ -533,7 +533,7 @@ const RecommendationsContent = ({ openAuthModal, t }) => {
 
   const fetchPopular = async () => {
     try {
-      const res = await fetch('http://localhost:3000/api/recommendations/popular?limit=10');
+      const res = await fetch('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/recommendations/popular?limit=10');
       if (res.ok) {
         const data = await res.json();
         const recs = data.recommendations || [];
@@ -705,3 +705,4 @@ const RecommendationsContent = ({ openAuthModal, t }) => {
 };
 
 export default RecommendationsContent;
+

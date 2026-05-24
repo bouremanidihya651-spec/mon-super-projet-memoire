@@ -13,7 +13,7 @@ const HotelDetail = ({ openAuthModal, isChatbotOpen, toggleChatbot }) => {
   useEffect(() => {
     const fetchHotel = async () => {
       try {
-        const res = await fetch(`http://localhost:3000/api/hotels/${id}`);
+        const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/hotels/${id}`);
         const data = await res.json();
         setHotel(data);
       } catch (error) {
@@ -297,3 +297,5 @@ const HotelDetail = ({ openAuthModal, isChatbotOpen, toggleChatbot }) => {
 };
 
 export default HotelDetail;
+
+

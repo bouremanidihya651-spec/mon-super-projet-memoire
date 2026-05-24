@@ -49,7 +49,7 @@ const fetchScoresFromGemini = async (destinationName) => {
 {"name":"nom officiel","city":"ville principale","region":"wilaya","country":"Algerie","description":"description touristique 2 phrases en francais","luxury":7,"nature":8,"adventure":7,"culture":8,"beach":3,"food":7}
 Regles : scores entre 0 et 10, estime selon la region meme si pas sur, commence par { et termine par }.`;
 
-  const response = await fetch("http://localhost:3000/api/chat", {
+  const response = await fetch("${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ messages: [{ role: "user", content: prompt }] })
@@ -153,7 +153,7 @@ const AdminDashboard = () => {
   const fetchAdminStats = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:3000/api/reservations/stats", { headers: { "Authorization": `Bearer ${token}` } });
+      const response = await fetch("${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/reservations/stats", { headers: { "Authorization": `Bearer ${token}` } });
       if (!response.ok) throw new Error();
       const data = await response.json();
       if (data.success) {
@@ -223,17 +223,17 @@ const AdminDashboard = () => {
     }, 800);
   };
 
-  const fetchDestinations = async () => { try { setLoading(true); const r = await fetch("http://localhost:3000/api/destinations"); const d = await r.json(); setDestinations(d.destinations || d.rows || []); } catch (e) { console.error(e); } finally { setLoading(false); } };
-  const fetchHotels = async () => { try { setLoading(true); const r = await fetch("http://localhost:3000/api/hotels"); const d = await r.json(); setHotels(Array.isArray(d.hotels) ? d.hotels : (Array.isArray(d) ? d : [])); } catch (e) { console.error(e); } finally { setLoading(false); } };
-  const fetchActivities = async () => { try { setLoading(true); const r = await fetch("http://localhost:3000/api/activities"); const d = await r.json(); setActivities(Array.isArray(d.activities) ? d.activities : (Array.isArray(d) ? d : [])); } catch (e) { console.error(e); } finally { setLoading(false); } };
-  const fetchUsers = async () => { try { setLoading(true); const token = localStorage.getItem("token"); const r = await fetch("http://localhost:3000/api/users", { headers: { "Authorization": `Bearer ${token}` } }); const d = await r.json(); setUsers(Array.isArray(d) ? d : (Array.isArray(d.users) ? d.users : [])); } catch (e) { console.error(e); } finally { setLoading(false); } };
+  const fetchDestinations = async () => { try { setLoading(true); const r = await fetch("${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/destinations"); const d = await r.json(); setDestinations(d.destinations || d.rows || []); } catch (e) { console.error(e); } finally { setLoading(false); } };
+  const fetchHotels = async () => { try { setLoading(true); const r = await fetch("${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/hotels"); const d = await r.json(); setHotels(Array.isArray(d.hotels) ? d.hotels : (Array.isArray(d) ? d : [])); } catch (e) { console.error(e); } finally { setLoading(false); } };
+  const fetchActivities = async () => { try { setLoading(true); const r = await fetch("${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/activities"); const d = await r.json(); setActivities(Array.isArray(d.activities) ? d.activities : (Array.isArray(d) ? d : [])); } catch (e) { console.error(e); } finally { setLoading(false); } };
+  const fetchUsers = async () => { try { setLoading(true); const token = localStorage.getItem("token"); const r = await fetch("${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/users", { headers: { "Authorization": `Bearer ${token}` } }); const d = await r.json(); setUsers(Array.isArray(d) ? d : (Array.isArray(d.users) ? d.users : [])); } catch (e) { console.error(e); } finally { setLoading(false); } };
 
-  const handleDelete = async (id) => { if (window.confirm("Supprimer cette destination ?")) { try { const t = localStorage.getItem("token"); await fetch(`http://localhost:3000/api/destinations/${id}`, { method: "DELETE", headers: { "Authorization": `Bearer ${t}` } }); fetchDestinations(); } catch { alert("Erreur suppression"); } } };
-  const handleDeleteHotel = async (id) => { if (window.confirm("Supprimer cet hôtel ?")) { try { const t = localStorage.getItem("token"); await fetch(`http://localhost:3000/api/hotels/${id}`, { method: "DELETE", headers: { "Authorization": `Bearer ${t}` } }); fetchHotels(); } catch { alert("Erreur suppression"); } } };
-  const handleDeleteActivity = async (id) => { if (window.confirm("Supprimer cette activité ?")) { try { const t = localStorage.getItem("token"); await fetch(`http://localhost:3000/api/activities/${id}`, { method: "DELETE", headers: { "Authorization": `Bearer ${t}` } }); fetchActivities(); } catch { alert("Erreur suppression"); } } };
-  const handleDeleteUser = async (id) => { if (window.confirm("Supprimer cet utilisateur ?")) { try { const t = localStorage.getItem("token"); await fetch(`http://localhost:3000/api/users/${id}`, { method: "DELETE", headers: { "Authorization": `Bearer ${t}` } }); fetchUsers(); } catch { alert("Erreur suppression"); } } };
-  const handleBlockUser = async (id) => { try { const t = localStorage.getItem("token"); await fetch(`http://localhost:3000/api/users/${id}/block`, { method: "PUT", headers: { "Authorization": `Bearer ${t}` } }); fetchUsers(); } catch { alert("Erreur blocage"); } };
-  const handleUnblockUser = async (id) => { try { const t = localStorage.getItem("token"); await fetch(`http://localhost:3000/api/users/${id}/unblock`, { method: "PUT", headers: { "Authorization": `Bearer ${t}` } }); fetchUsers(); } catch { alert("Erreur déblocage"); } };
+  const handleDelete = async (id) => { if (window.confirm("Supprimer cette destination ?")) { try { const t = localStorage.getItem("token"); await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/destinations/${id}`, { method: "DELETE", headers: { "Authorization": `Bearer ${t}` } }); fetchDestinations(); } catch { alert("Erreur suppression"); } } };
+  const handleDeleteHotel = async (id) => { if (window.confirm("Supprimer cet hôtel ?")) { try { const t = localStorage.getItem("token"); await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/hotels/${id}`, { method: "DELETE", headers: { "Authorization": `Bearer ${t}` } }); fetchHotels(); } catch { alert("Erreur suppression"); } } };
+  const handleDeleteActivity = async (id) => { if (window.confirm("Supprimer cette activité ?")) { try { const t = localStorage.getItem("token"); await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/activities/${id}`, { method: "DELETE", headers: { "Authorization": `Bearer ${t}` } }); fetchActivities(); } catch { alert("Erreur suppression"); } } };
+  const handleDeleteUser = async (id) => { if (window.confirm("Supprimer cet utilisateur ?")) { try { const t = localStorage.getItem("token"); await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/users/${id}`, { method: "DELETE", headers: { "Authorization": `Bearer ${t}` } }); fetchUsers(); } catch { alert("Erreur suppression"); } } };
+  const handleBlockUser = async (id) => { try { const t = localStorage.getItem("token"); await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/users/${id}/block`, { method: "PUT", headers: { "Authorization": `Bearer ${t}` } }); fetchUsers(); } catch { alert("Erreur blocage"); } };
+  const handleUnblockUser = async (id) => { try { const t = localStorage.getItem("token"); await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/users/${id}/unblock`, { method: "PUT", headers: { "Authorization": `Bearer ${t}` } }); fetchUsers(); } catch { alert("Erreur déblocage"); } };
 
   const resetModal = () => {
     setIsModalOpen(false); setSelectedFile(null); setSearchQuery(""); setAiError(""); setAiSuccess(false);
@@ -257,9 +257,9 @@ const AdminDashboard = () => {
       data.append("food_score",      (parseFloat(formData.food_score)      / 10).toString());
     }
     if (selectedFile) data.append("image", selectedFile);
-    let endpoint = "http://localhost:3000/api/destinations"; let fetchFunction = fetchDestinations; let successMsg = "Destination publiée avec succès !";
-    if (activeTab === "hotels") { endpoint = "http://localhost:3000/api/hotels"; fetchFunction = fetchHotels; data.append("stars", formData.stars); successMsg = "Hôtel publié avec succès !"; }
-    else if (activeTab === "activities") { endpoint = "http://localhost:3000/api/activities"; fetchFunction = fetchActivities; successMsg = "Activité publiée avec succès !"; }
+    let endpoint = "${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/destinations"; let fetchFunction = fetchDestinations; let successMsg = "Destination publiée avec succès !";
+    if (activeTab === "hotels") { endpoint = "${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/hotels"; fetchFunction = fetchHotels; data.append("stars", formData.stars); successMsg = "Hôtel publié avec succès !"; }
+    else if (activeTab === "activities") { endpoint = "${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/activities"; fetchFunction = fetchActivities; successMsg = "Activité publiée avec succès !"; }
     try {
       const response = await fetch(endpoint, { method: "POST", headers: { "Authorization": `Bearer ${token}` }, body: data });
       const result = await response.json();
@@ -673,3 +673,4 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
+

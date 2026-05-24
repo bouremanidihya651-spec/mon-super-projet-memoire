@@ -7,7 +7,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../contexts/ThemeContext';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+const API_URL = import.meta.env.VITE_API_URL || '${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api';
 
 const ReservationsManagement = () => {
   const navigate = useNavigate();
@@ -416,3 +416,5 @@ const ReservationsManagement = () => {
 };
 
 export default ReservationsManagement;
+
+

@@ -41,3 +41,5 @@ const HomeRedirect = ({ openAuthModal, isChatbotOpen, toggleChatbot }) => {
 };
 
 export default HomeRedirect;
+
+

@@ -22,7 +22,7 @@ const BrowseDestinations = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`http://localhost:3000/api/${activeTab}`);
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/${activeTab}`);
       const data = await res.json();
       setItems(data[activeTab] || data || []);
     } catch (err) {
@@ -181,3 +181,4 @@ const ItemModal = ({ item, onClose, navigate }) => {
 };
 
 export default BrowseDestinations;
+

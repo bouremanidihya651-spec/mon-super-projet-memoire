@@ -340,3 +340,4 @@ const LuxuryAuthModal = ({ isOpen, onClose, initialView = 'login' }) => {
 };
 
 export default LuxuryAuthModal;
+

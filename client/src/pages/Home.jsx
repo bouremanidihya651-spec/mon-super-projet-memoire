@@ -366,7 +366,7 @@ const Home = ({ openAuthModal }) => {
     setErrorMessage('');
 
     try {
-      const response = await fetch('http://localhost:3000/api/contact', {
+      const response = await fetch('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
@@ -404,7 +404,7 @@ const Home = ({ openAuthModal }) => {
   useEffect(() => {
     (async () => {
       try {
-        const r = await fetch('http://localhost:3000/api/destinations?limit=100');
+        const r = await fetch('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/destinations?limit=100');
         const d = await r.json();
         setDestinations((d.destinations||d||[]).slice(0, 3));
       } catch(e){ console.error(e); }
@@ -557,3 +557,4 @@ const Home = ({ openAuthModal }) => {
 };
 
 export default Home;
+

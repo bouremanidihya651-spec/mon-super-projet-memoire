@@ -42,3 +42,5 @@ document.documentElement.dir = currentLang === 'ar' ? 'rtl' : 'ltr';
 document.documentElement.lang = currentLang;
 
 export default i18n;
+
+

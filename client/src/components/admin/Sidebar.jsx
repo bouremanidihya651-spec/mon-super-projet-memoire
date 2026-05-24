@@ -80,3 +80,4 @@ const Sidebar = ({ isOpen, toggleSidebar, activeSection, setActiveSection }) => 
 };
 
 export default Sidebar;
+

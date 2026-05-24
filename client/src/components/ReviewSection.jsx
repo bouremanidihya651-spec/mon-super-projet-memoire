@@ -23,7 +23,7 @@ const ReviewSection = ({ targetType, targetId, openAuthModal }) => {
 
   const fetchReviews = async () => {
     try {
-      const res = await fetch(`http://localhost:3000/api/reviews/${targetType}/${targetId}`);
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/reviews/${targetType}/${targetId}`);
       const data = await res.json();
       setReviews(data.reviews || []);
       setAverageRating(parseFloat(data.averageRating) || 0);
@@ -55,7 +55,7 @@ const ReviewSection = ({ targetType, targetId, openAuthModal }) => {
 
     setSubmitting(true);
     try {
-      const res = await fetch('http://localhost:3000/api/reviews', {
+      const res = await fetch('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/reviews', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -89,7 +89,7 @@ const ReviewSection = ({ targetType, targetId, openAuthModal }) => {
   const handleUpdateReview = async (reviewId) => {
     setSubmitting(true);
     try {
-      const res = await fetch(`http://localhost:3000/api/reviews/${reviewId}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/reviews/${reviewId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -121,7 +121,7 @@ const ReviewSection = ({ targetType, targetId, openAuthModal }) => {
     if (!confirm('Êtes-vous sûr de vouloir supprimer ce commentaire ?')) return;
 
     try {
-      const res = await fetch(`http://localhost:3000/api/reviews/${reviewId}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/reviews/${reviewId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -382,3 +382,5 @@ const ReviewSection = ({ targetType, targetId, openAuthModal }) => {
 };
 
 export default ReviewSection;
+
+

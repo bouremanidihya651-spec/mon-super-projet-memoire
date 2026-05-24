@@ -273,3 +273,4 @@ const NotificationItem = ({ title, description, enabled, name, onChange }) => (
 );
 
 export default Settings;
+

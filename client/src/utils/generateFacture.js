@@ -259,3 +259,4 @@ export const generateAndDownloadInvoice = (reservation, invoice) => {
 };
 
 export default { generateInvoicePDF, downloadInvoicePDF, generateAndDownloadInvoice };
+

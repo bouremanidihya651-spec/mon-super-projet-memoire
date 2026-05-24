@@ -595,3 +595,4 @@ const AuthModal = ({ isOpen, onClose, initialView = 'login' }) => {
 };
 
 export default AuthModal;
+

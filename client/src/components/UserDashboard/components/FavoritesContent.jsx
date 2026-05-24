@@ -182,7 +182,7 @@ const FavoritesContent = ({ openAuthModal }) => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const res  = await fetch('http://localhost:3000/api/favorites', { headers: { 'Authorization': `Bearer ${token}` } });
+      const res  = await fetch('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/favorites', { headers: { 'Authorization': `Bearer ${token}` } });
       const data = await res.json();
       if (data.success) {
         setFavorites(data.favorites.map(fav => ({
@@ -200,7 +200,7 @@ const FavoritesContent = ({ openAuthModal }) => {
   const removeFavorite = async (fav) => {
     try {
       const token = localStorage.getItem('token');
-      await fetch(`http://localhost:3000/api/favorites/${fav.favoriteId}`, {
+      await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/favorites/${fav.favoriteId}`, {
         method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` },
       });
       loadFavorites();
@@ -343,3 +343,4 @@ const FavoritesContent = ({ openAuthModal }) => {
 };
 
 export default FavoritesContent;
+

@@ -3,7 +3,7 @@ import { Calendar, Clock, MapPin, User, CreditCard, CheckCircle, XCircle, AlertC
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+const API_URL = import.meta.env.VITE_API_URL || '${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api';
 
 /**
  * Badge de statut
@@ -716,7 +716,7 @@ const ReservationDetailsModal = ({ reservation, onClose }) => {
           {reservation.payment_status === 'paid' && (
             <button
               onClick={() => {
-                window.open(`http://localhost:3000/api/invoices/${reservation.id}/download`, '_blank');
+                window.open(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/invoices/${reservation.id}/download`, '_blank');
               }}
               className="flex-1 px-6 py-3 bg-[#2d7a5a] hover:bg-[#1a4a36] text-black rounded-full font-semibold transition-all flex items-center justify-center gap-2"
             >
@@ -776,7 +776,7 @@ const ReservationsContent = ({ openAuthModal, t }) => {
   };
 
   const handleDownloadInvoice = (reservation) => {
-    window.open(`http://localhost:3000/api/invoices/${reservation.id}/download`, '_blank');
+    window.open(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/invoices/${reservation.id}/download`, '_blank');
   };
 
   // Filtrer par statut ET par catégorie
@@ -984,3 +984,5 @@ const ReservationsContent = ({ openAuthModal, t }) => {
 };
 
 export default ReservationsContent;
+
+

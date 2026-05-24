@@ -351,3 +351,4 @@ const Home = ({ openAuthModal, isChatbotOpen, toggleChatbot }) => {
 };
 
 export default Home;
+

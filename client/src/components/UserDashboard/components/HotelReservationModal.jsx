@@ -100,7 +100,7 @@ const HotelReservationModal = ({ isOpen, onClose, hotel, user }) => {
         }
       };
 
-      const response = await axios.post('http://localhost:3000/api/reservations/create-invoice', invoiceData, {
+      const response = await axios.post('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/reservations/create-invoice', invoiceData, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -118,7 +118,7 @@ const HotelReservationModal = ({ isOpen, onClose, hotel, user }) => {
     try {
       const token = localStorage.getItem('token');
 
-      const response = await axios.post('http://localhost:3000/api/payment/create-chargily-checkout', {
+      const response = await axios.post('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/payment/create-chargily-checkout', {
         amount: totalPrice,
         currency: 'dzd',
         reservationId: reservation.id,
@@ -146,7 +146,7 @@ const HotelReservationModal = ({ isOpen, onClose, hotel, user }) => {
     try {
       const token = localStorage.getItem('token');
 
-      const response = await axios.post('http://localhost:3000/api/payment/create-stripe-checkout', {
+      const response = await axios.post('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/payment/create-stripe-checkout', {
         amount: totalPrice,
         currency: 'dzd',
         reservationId: reservation.id
@@ -173,7 +173,7 @@ const HotelReservationModal = ({ isOpen, onClose, hotel, user }) => {
     try {
       const token = localStorage.getItem('token');
 
-      const reservationResponse = await axios.post('http://localhost:3000/api/reservations/hotel', {
+      const reservationResponse = await axios.post('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/reservations/hotel', {
         hotel_id: hotel.id,
         check_in_date: checkInDate,
         check_out_date: checkOutDate,
@@ -694,3 +694,5 @@ const HotelReservationModal = ({ isOpen, onClose, hotel, user }) => {
 };
 
 export default HotelReservationModal;
+
+

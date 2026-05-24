@@ -43,3 +43,5 @@ export const getTagType = (tag) => {
   if (['luxe', 'premium', 'exclusive', 'haut de gamme'].some(t => tagLower.includes(t))) return 'le luxe';
   return 'ce style';
 };
+
+

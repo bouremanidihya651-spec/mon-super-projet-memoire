@@ -215,7 +215,7 @@ const DestinationDetailPage = ({ item, onBack, openAuthModal }) => {
   const fetchReviews = async () => {
     try {
       setLoadingReviews(true);
-      const res  = await fetch(`http://localhost:3000/api/reviews/destination/${item.id}`);
+      const res  = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/reviews/destination/${item.id}`);
       const data = await res.json();
       setReviews(data.reviews || []);
     } catch (e) { console.error(e); }
@@ -224,7 +224,7 @@ const DestinationDetailPage = ({ item, onBack, openAuthModal }) => {
 
   const fetchHotels = async () => {
     try {
-      const res  = await fetch(`http://localhost:3000/api/hotels/destination/${item.id}`);
+      const res  = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/hotels/destination/${item.id}`);
       const data = await res.json();
       setHotels(Array.isArray(data.hotels) ? data.hotels : Array.isArray(data) ? data : []);
     } catch (e) { console.error(e); }
@@ -232,7 +232,7 @@ const DestinationDetailPage = ({ item, onBack, openAuthModal }) => {
 
   const fetchActivities = async () => {
     try {
-      const res  = await fetch(`http://localhost:3000/api/activities/destination/${item.id}`);
+      const res  = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/activities/destination/${item.id}`);
       const data = await res.json();
       setActivities(Array.isArray(data.activities) ? data.activities : Array.isArray(data) ? data : []);
     } catch (e) { console.error(e); }
@@ -240,7 +240,7 @@ const DestinationDetailPage = ({ item, onBack, openAuthModal }) => {
 
   const fetchTransports = async () => {
     try {
-      const res  = await fetch(`http://localhost:3000/api/transports/destination/${item.id}`);
+      const res  = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/transports/destination/${item.id}`);
       const data = await res.json();
       setTransports(Array.isArray(data.transports) ? data.transports : Array.isArray(data) ? data : []);
     } catch (e) { console.error(e); }
@@ -250,7 +250,7 @@ const DestinationDetailPage = ({ item, onBack, openAuthModal }) => {
     const token = localStorage.getItem('token');
     if (!token) return;
     try {
-      const res  = await fetch(`http://localhost:3000/api/favorites/check/destination/${item.id}`, { headers: { Authorization: `Bearer ${token}` } });
+      const res  = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/favorites/check/destination/${item.id}`, { headers: { Authorization: `Bearer ${token}` } });
       const data = await res.json();
       setIsFavorite(data.isFavorite);
     } catch (e) { console.error(e); }
@@ -261,13 +261,13 @@ const DestinationDetailPage = ({ item, onBack, openAuthModal }) => {
     const token = localStorage.getItem('token');
     try {
       if (isFavorite) {
-        const res  = await fetch('http://localhost:3000/api/favorites', { headers: { Authorization: `Bearer ${token}` } });
+        const res  = await fetch('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/favorites', { headers: { Authorization: `Bearer ${token}` } });
         const data = await res.json();
         const fav  = data.favorites?.find(f => f.targetId === item.id && f.targetType === 'destination');
-        if (fav) await fetch(`http://localhost:3000/api/favorites/${fav.id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+        if (fav) await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/favorites/${fav.id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
         setIsFavorite(false);
       } else {
-        await fetch('http://localhost:3000/api/favorites', {
+        await fetch('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/favorites', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({ targetType: 'destination', targetId: item.id }),
@@ -284,7 +284,7 @@ const DestinationDetailPage = ({ item, onBack, openAuthModal }) => {
     try {
       const token = localStorage.getItem('token');
       if (!token) { openAuthModal('login'); return; }
-      const res = await fetch('http://localhost:3000/api/reviews', {
+      const res = await fetch('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/reviews', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ rating, comment, targetType: 'destination', targetId: item.id }),
@@ -915,3 +915,4 @@ const DestinationDetailPage = ({ item, onBack, openAuthModal }) => {
 };
 
 export default DestinationDetailPage;
+

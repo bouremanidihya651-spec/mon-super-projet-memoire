@@ -35,7 +35,7 @@ const ActivityDetailPage = ({ activity, onBack, openAuthModal }) => {
   const fetchReviews = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`http://localhost:3000/api/reviews/activity/${activity.id}`);
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/reviews/activity/${activity.id}`);
       const data = await res.json();
       setReviews(data.reviews || []);
     } catch (error) {
@@ -51,7 +51,7 @@ const ActivityDetailPage = ({ activity, onBack, openAuthModal }) => {
 
     try {
       const res = await fetch(
-        `http://localhost:3000/api/favorites/check/activity/${activity.id}`,
+        `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/favorites/check/activity/${activity.id}`,
         { headers: { 'Authorization': `Bearer ${token}` } }
       );
       const data = await res.json();
@@ -67,20 +67,20 @@ const ActivityDetailPage = ({ activity, onBack, openAuthModal }) => {
     const token = localStorage.getItem('token');
     try {
       if (isFavorite) {
-        const res = await fetch('http://localhost:3000/api/favorites', {
+        const res = await fetch('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/favorites', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await res.json();
         const favorite = data.favorites?.find(f => f.targetId === activity.id && f.targetType === 'activity');
         if (favorite) {
-          await fetch(`http://localhost:3000/api/favorites/${favorite.id}`, {
+          await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/favorites/${favorite.id}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }
           });
         }
         setIsFavorite(false);
       } else {
-        await fetch('http://localhost:3000/api/favorites', {
+        await fetch('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/favorites', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify({ targetType: 'activity', targetId: activity.id })
@@ -101,7 +101,7 @@ const ActivityDetailPage = ({ activity, onBack, openAuthModal }) => {
       const token = localStorage.getItem('token');
       if (!token) { openAuthModal('login'); return; }
 
-      const res = await fetch('http://localhost:3000/api/reviews', {
+      const res = await fetch('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/reviews', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ rating, comment, targetType: 'activity', targetId: activity.id })
@@ -428,3 +428,4 @@ const ActivityDetailPage = ({ activity, onBack, openAuthModal }) => {
 };
 
 export default ActivityDetailPage;
+

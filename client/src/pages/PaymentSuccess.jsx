@@ -27,7 +27,7 @@ const PaymentSuccess = () => {
             if (providerToUse === 'chargily') {
               // Try Chargily first
               await axios.post(
-                'http://localhost:3000/api/payment/verify-chargily-payment',
+                '${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/payment/verify-chargily-payment',
                 {
                   checkout_id: checkoutId,
                   reservation_id: reservationId
@@ -40,7 +40,7 @@ const PaymentSuccess = () => {
             } else {
               // Try Stripe
               await axios.post(
-                'http://localhost:3000/api/payment/verify-payment',
+                '${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/payment/verify-payment',
                 {
                   checkoutId,
                   provider: 'stripe',
@@ -59,7 +59,7 @@ const PaymentSuccess = () => {
               if (providerToUse === 'chargily') {
                 // Try Stripe as fallback
                 await axios.post(
-                  'http://localhost:3000/api/payment/verify-payment',
+                  '${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/payment/verify-payment',
                   {
                     checkoutId,
                     provider: 'stripe',
@@ -73,7 +73,7 @@ const PaymentSuccess = () => {
               } else {
                 // Try Chargily as fallback
                 await axios.post(
-                  'http://localhost:3000/api/payment/verify-chargily-payment',
+                  '${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/payment/verify-chargily-payment',
                   {
                     checkout_id: checkoutId,
                     reservation_id: reservationId
@@ -113,3 +113,5 @@ const PaymentSuccess = () => {
 };
 
 export default PaymentSuccess;
+
+

@@ -109,7 +109,7 @@ const CarRentalReservationModal = ({ isOpen, onClose, transport, user }) => {
       };
 
       // Save invoice to database
-      const response = await axios.post('http://localhost:3000/api/reservations/create-invoice', invoiceData, {
+      const response = await axios.post('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/reservations/create-invoice', invoiceData, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -131,7 +131,7 @@ const CarRentalReservationModal = ({ isOpen, onClose, transport, user }) => {
       console.log('Amount:', totalPrice);
       console.log('Reservation ID:', reservation.id);
 
-      const response = await axios.post('http://localhost:3000/api/payment/create-chargily-checkout', {
+      const response = await axios.post('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/payment/create-chargily-checkout', {
         amount: totalPrice,
         currency: 'dzd',
         reservationId: reservation.id,
@@ -180,7 +180,7 @@ const CarRentalReservationModal = ({ isOpen, onClose, transport, user }) => {
     try {
       const token = localStorage.getItem('token');
 
-      const response = await axios.post('http://localhost:3000/api/payment/create-stripe-checkout', {
+      const response = await axios.post('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/payment/create-stripe-checkout', {
         amount: totalPrice,
         currency: 'dzd',
         reservationId: reservation.id
@@ -209,7 +209,7 @@ const CarRentalReservationModal = ({ isOpen, onClose, transport, user }) => {
       const token = localStorage.getItem('token');
 
       // Create reservation
-      const reservationResponse = await axios.post('http://localhost:3000/api/reservations/car-rental', {
+      const reservationResponse = await axios.post('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/reservations/car-rental', {
         transport_id: transport.id,
         pickup_date: pickupDate,
         return_date: returnDate,
@@ -771,3 +771,5 @@ const CarRentalReservationModal = ({ isOpen, onClose, transport, user }) => {
 };
 
 export default CarRentalReservationModal;
+
+
