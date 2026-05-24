@@ -34,7 +34,7 @@ const About = ({ openAuthModal, isChatbotOpen, toggleChatbot }) => {
             <div className="w-16 h-16 mx-auto mb-4 bg-[#f7f5f0] dark:bg-dark-bg rounded-full flex items-center justify-center">
               <MapPin className="w-8 h-8 text-[#2d7a5a] dark:text-surface" />
             </div>
-            <h3 className="text-4xl font-serif font-bold mb-1 text-[#1a4a36] dark:text-dark-text">48</h3>
+            <h3 className="text-4xl font-serif font-bold mb-1 text-[#1a4a36] dark:text-dark-text">69</h3>
             <p className="text-[#6b8f7b] dark:text-dark-text-muted text-xs uppercase font-bold tracking-widest">
               {t('aboutPage.wilayasCovered', 'Wilayas couvertes')}
             </p>
