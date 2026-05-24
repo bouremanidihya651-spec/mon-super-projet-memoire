@@ -119,6 +119,8 @@ const startServer = async () => {
     console.log('Connexion DB etablie.');
 
     await sequelize.sync();
+    const count = await Destination.count();
+    if(count===0){try{await require("./seed.js");console.log("Seed ok");}catch(e){console.log("Seed ignore:",e.message);}}
     console.log('Modeles synchronises.');
 
     // Seed automatique si DB vide
