@@ -12,9 +12,8 @@ import {
 import { useAuth } from '../../../contexts/AuthContext';
 import ActivityReservationModal from './ActivityReservationModal';
 
-/**
- * Activity Detail Page component
- */
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
 const ActivityDetailPage = ({ activity, onBack, openAuthModal }) => {
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
@@ -26,9 +25,6 @@ const ActivityDetailPage = ({ activity, onBack, openAuthModal }) => {
   const [showForm, setShowForm] = useState(false);
   const [showReservationModal, setShowReservationModal] = useState(false);
   const { user, isAuthenticated } = useAuth();
-
-  // 🔧 URL de l'API extraite en constante pour éviter la répétition et les erreurs de parsing
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
   useEffect(() => {
     fetchReviews();
@@ -135,7 +131,6 @@ const ActivityDetailPage = ({ activity, onBack, openAuthModal }) => {
       transition={{ duration: 0.3 }}
       className="max-w-5xl mx-auto"
     >
-      {/* ── Back Button ── */}
       <button
         onClick={onBack}
         className="flex items-center gap-2 text-[#2d7a5a] hover:text-yellow-400 transition-colors mb-6 group"
@@ -144,13 +139,9 @@ const ActivityDetailPage = ({ activity, onBack, openAuthModal }) => {
         <span className="font-medium">Retour</span>
       </button>
 
-      {/* ── Hero Image ── */}
       <div
         className="relative h-[320px] overflow-hidden rounded-[20px] mb-6"
-        style={{
-          transform: 'translateZ(0)',
-          backfaceVisibility: 'hidden',
-        }}
+        style={{ transform: 'translateZ(0)', backfaceVisibility: 'hidden' }}
       >
         <img
           src={activity.image_url || 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=1400&q=80'}
@@ -169,7 +160,6 @@ const ActivityDetailPage = ({ activity, onBack, openAuthModal }) => {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
 
-        {/* Favorite button */}
         <button
           onClick={toggleFavorite}
           className="absolute top-4 right-4 w-10 h-10 rounded-full bg-black/50 backdrop-blur-md border border-[#e0dcd4] flex items-center justify-center hover:bg-[#2d7a5a] hover:border-[#2d7a5a] transition-all group"
@@ -177,14 +167,12 @@ const ActivityDetailPage = ({ activity, onBack, openAuthModal }) => {
           <Heart className={`w-5 h-5 ${isFavorite ? 'fill-[#2d7a5a] text-[#2d7a5a]' : 'text-white group-hover:text-black'} transition-colors`} />
         </button>
 
-        {/* Activity name */}
         <div className="absolute bottom-4 left-4 right-20">
           <h1 className="text-[36px] md:text-4xl font-serif font-bold text-white drop-shadow-lg">
             {activity.name}
           </h1>
         </div>
 
-        {/* Price badge — uniquement si présent en BDD */}
         {activity.price && (
           <div className="absolute bottom-4 right-4 px-4 py-2 bg-[#2d7a5a] rounded-full border border-[#e0dcd4] shadow-lg">
             <span className="text-white font-bold text-lg">{activity.price} DA</span>
@@ -192,7 +180,6 @@ const ActivityDetailPage = ({ activity, onBack, openAuthModal }) => {
         )}
       </div>
 
-      {/* ── Stats Bar ── */}
       <div className="flex items-center gap-5 flex-wrap py-5 border-t border-b border-[#e0dcd4] mb-7">
         <div className="flex items-center gap-2">
           <Star className="w-5 h-5 text-[#2d7a5a] fill-current" />
@@ -200,7 +187,6 @@ const ActivityDetailPage = ({ activity, onBack, openAuthModal }) => {
           <span className="text-[#6b8f7b] text-sm">({reviews.length} avis)</span>
         </div>
 
-        {/* Durée — uniquement si présente en BDD */}
         {activity.duration && (
           <div className="flex items-center gap-2 text-[#6b8f7b]">
             <Calendar className="w-5 h-5 text-[#2d7a5a]" />
@@ -223,7 +209,6 @@ const ActivityDetailPage = ({ activity, onBack, openAuthModal }) => {
         </button>
       </div>
 
-      {/* ── Reservation Button ── */}
       <div className="mb-7">
         <button
           onClick={() => setShowReservationModal(true)}
@@ -234,7 +219,6 @@ const ActivityDetailPage = ({ activity, onBack, openAuthModal }) => {
         </button>
       </div>
 
-      {/* ── Description — uniquement si présente en BDD ── */}
       {activity.description && (
         <div className="mb-7">
           <h3 className="text-lg font-bold mb-3 flex items-center gap-2 text-[#1a4a36]">
@@ -247,14 +231,12 @@ const ActivityDetailPage = ({ activity, onBack, openAuthModal }) => {
 
       <div className="h-px bg-[#e0dcd4] my-7" />
 
-      {/* ── Reviews ── */}
       <div className="mb-7">
         <h3 className="text-lg font-bold mb-6 flex items-center gap-2 text-[#1a4a36]">
           <span className="text-[#2d7a5a]">💬</span>
           Avis & Commentaires
         </h3>
 
-        {/* Rating summary */}
         <div className="bg-[#f7f5f0] p-6 rounded-3xl border border-[#e0dcd4] mb-6">
           <div className="flex items-center gap-4">
             <div className="text-[52px] font-serif font-bold text-[#2d7a5a]">{averageRating}</div>
@@ -276,7 +258,6 @@ const ActivityDetailPage = ({ activity, onBack, openAuthModal }) => {
           </div>
         </div>
 
-        {/* Action buttons */}
         <div className="flex flex-wrap gap-3 mb-6">
           {!reviews.some(r => r.userId === user?.id) ? (
             <button
@@ -305,7 +286,6 @@ const ActivityDetailPage = ({ activity, onBack, openAuthModal }) => {
           )}
         </div>
 
-        {/* Review form */}
         <div
           className={`overflow-hidden transition-all duration-300 ease-in-out ${
             showForm ? 'max-h-[600px] opacity-100 mb-6' : 'max-h-0 opacity-0 mb-0'
@@ -349,7 +329,6 @@ const ActivityDetailPage = ({ activity, onBack, openAuthModal }) => {
           </form>
         </div>
 
-        {/* Reviews list */}
         {reviews.length > 0 && (
           <div
             className={`overflow-hidden transition-all duration-300 ease-in-out ${
@@ -410,7 +389,6 @@ const ActivityDetailPage = ({ activity, onBack, openAuthModal }) => {
         )}
       </div>
 
-      {/* ── Back Button (bottom) ── */}
       <button
         onClick={onBack}
         className="mt-6 flex items-center gap-2 text-[#2d7a5a] hover:text-yellow-400 transition-colors group"
@@ -419,7 +397,6 @@ const ActivityDetailPage = ({ activity, onBack, openAuthModal }) => {
         <span className="font-medium">Retour aux recommandations</span>
       </button>
 
-      {/* ── Reservation Modal ── */}
       <ActivityReservationModal
         isOpen={showReservationModal}
         onClose={() => setShowReservationModal(false)}
