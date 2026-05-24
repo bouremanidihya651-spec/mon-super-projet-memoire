@@ -1,6 +1,6 @@
 // apiService.js - Centralized API service for all backend communications
 
-const API_BASE_URL = 'http://localhost:3000/api';
+const API_BASE_URL = '${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api';
 
 // Generic request function with error handling
 const request = async (endpoint, options = {}) => {
