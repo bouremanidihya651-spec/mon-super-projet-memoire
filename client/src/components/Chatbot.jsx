@@ -92,7 +92,7 @@ const Chatbot = ({ isOpen, onClose }) => {
       console.error('Chat Error:', error);
       const errorResponse = {
         id: Date.now() + 1,
-        text: "Oups ! Je n'arrive pas à contacter mon cerveau de voyage. Vérifiez que votre serveur est lancé sur le port 3000.",
+        text: "Oups ! Je n'arrive pas à contacter mon cerveau de voyage. Une erreur de connexion s'est produite. Veuillez réessayer.",
         sender: 'bot',
         timestamp: new Date()
       };
