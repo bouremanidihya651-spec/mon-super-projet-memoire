@@ -10,6 +10,8 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '../contexts/ThemeContext';
 import Footer from '../components/Footer';
 
+const API = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
 /* ── Google Fonts ── */
 if (!document.getElementById('afalou-fonts')) {
   const link = document.createElement('link');
@@ -366,7 +368,7 @@ const Home = ({ openAuthModal }) => {
     setErrorMessage('');
 
     try {
-      const response = await fetch('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/contact', {
+      const response = await fetch(`${API}/api/contact`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
@@ -404,7 +406,7 @@ const Home = ({ openAuthModal }) => {
   useEffect(() => {
     (async () => {
       try {
-        const r = await fetch('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/destinations?limit=100');
+        const r = await fetch(`${API}/api/destinations?limit=100`);
         const d = await r.json();
         setDestinations((d.destinations||d||[]).slice(0, 3));
       } catch(e){ console.error(e); }
@@ -557,4 +559,3 @@ const Home = ({ openAuthModal }) => {
 };
 
 export default Home;
-

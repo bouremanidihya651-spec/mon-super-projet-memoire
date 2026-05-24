@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
+const API = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
 const AuthContext = createContext();
 
 export const useAuth = () => {
@@ -29,7 +31,7 @@ export const AuthProvider = ({ children }) => {
   // --- GOOGLE AUTH (Login or Register) ---
   const googleAuth = async (userData) => {
     try {
-      const response = await fetch('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/auth/google', {
+      const response = await fetch(`${API}/api/auth/google`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(userData),
@@ -56,7 +58,7 @@ export const AuthProvider = ({ children }) => {
   // --- LOGIN ---
   const login = async (email, password) => {
     try {
-      const response = await fetch('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/auth/login', {
+      const response = await fetch(`${API}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -83,7 +85,7 @@ export const AuthProvider = ({ children }) => {
   // --- SIGNUP (AVEC PRÉFÉRENCES) ---
   const signup = async (email, password, additionalData = {}) => {
     try {
-      const response = await fetch('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/auth/register', {
+      const response = await fetch(`${API}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -159,4 +161,3 @@ export const AuthProvider = ({ children }) => {
     </AuthContext.Provider>
   );
 };
-

@@ -24,7 +24,8 @@ const Contact = () => {
     setErrorMessage('');
 
     try {
-      const response = await fetch('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/contact', {
+      // ✅ CORRECTION LIGNE 27 : backticks au lieu de guillemets simples
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/contact`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
@@ -202,4 +203,3 @@ const Contact = () => {
 };
 
 export default Contact;
-

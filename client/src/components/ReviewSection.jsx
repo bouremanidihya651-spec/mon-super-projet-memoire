@@ -55,7 +55,8 @@ const ReviewSection = ({ targetType, targetId, openAuthModal }) => {
 
     setSubmitting(true);
     try {
-      const res = await fetch('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/reviews', {
+      // ✅ CORRECTION LIGNE 58 : backticks au lieu de guillemets simples
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/reviews`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -382,5 +383,3 @@ const ReviewSection = ({ targetType, targetId, openAuthModal }) => {
 };
 
 export default ReviewSection;
-
-

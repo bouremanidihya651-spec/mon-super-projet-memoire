@@ -3,7 +3,8 @@ import { Calendar, Clock, MapPin, User, CreditCard, CheckCircle, XCircle, AlertC
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 
-const API_URL = import.meta.env.VITE_API_URL || '${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api';
+// ✅ CORRECTION LIGNE 6 : backticks au lieu de guillemets simples
+const API_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api`;
 
 /**
  * Badge de statut
@@ -984,5 +985,3 @@ const ReservationsContent = ({ openAuthModal, t }) => {
 };
 
 export default ReservationsContent;
-
-

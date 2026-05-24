@@ -181,20 +181,42 @@ const FavoritesContent = ({ openAuthModal }) => {
   const loadFavorites = async () => {
     try {
       setLoading(true);
+  
       const token = localStorage.getItem('token');
-      const res  = await fetch('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/favorites', { headers: { 'Authorization': `Bearer ${token}` } });
+  
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/favorites`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+  
       const data = await res.json();
+  
       if (data.success) {
-        setFavorites(data.favorites.map(fav => ({
-          id: fav.item?.id, type: fav.targetType,
-          name: fav.item?.name, description: fav.item?.description,
-          image_url: fav.item?.image_url, country: fav.item?.country,
-          location: fav.item?.location, price: fav.item?.price,
-          rating: fav.item?.rating, favoriteId: fav.id,
-        })));
+        setFavorites(
+          data.favorites.map((fav) => ({
+            id: fav.item?.id,
+            type: fav.targetType,
+            name: fav.item?.name,
+            description: fav.item?.description,
+            image_url: fav.item?.image_url,
+            country: fav.item?.country,
+            location: fav.item?.location,
+            price: fav.item?.price,
+            rating: fav.item?.rating,
+            favoriteId: fav.id,
+          }))
+        );
       }
-    } catch (e) { console.error(e); }
-    finally { setLoading(false); }
+  
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const removeFavorite = async (fav) => {

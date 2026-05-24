@@ -273,7 +273,8 @@ const RecommendationCard = ({ destination, index, onViewDetails, openAuthModal, 
     const token = localStorage.getItem('token');
     try {
       if (isFavorite) {
-        const res = await fetch('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/favorites', {
+        // ✅ CORRECTION : backticks au lieu de guillemets simples
+        const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/favorites`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const data = await res.json();
@@ -288,7 +289,8 @@ const RecommendationCard = ({ destination, index, onViewDetails, openAuthModal, 
         }
         setIsFavorite(false);
       } else {
-        await fetch('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/favorites', {
+        // ✅ CORRECTION : backticks au lieu de guillemets simples
+        await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/favorites`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({ targetType: 'destination', targetId: destination.id })
@@ -490,7 +492,8 @@ const RecommendationsContent = ({ openAuthModal, t }) => {
     }
 
     try {
-      const res = await fetch('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/recommendations/hybrid?limit=10', {
+      // ✅ CORRECTION : backticks au lieu de guillemets simples
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/recommendations/hybrid?limit=10`, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -519,7 +522,8 @@ const RecommendationsContent = ({ openAuthModal, t }) => {
   const fetchAllDestinations = async () => {
     setLoadingAll(true);
     try {
-      const res = await fetch('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/recommendations/all-destinations');
+      // ✅ CORRECTION : backticks au lieu de guillemets simples
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/recommendations/all-destinations`);
       if (res.ok) {
         const data = await res.json();
         setAllDestinations(data.destinations || []);
@@ -533,7 +537,8 @@ const RecommendationsContent = ({ openAuthModal, t }) => {
 
   const fetchPopular = async () => {
     try {
-      const res = await fetch('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/recommendations/popular?limit=10');
+      // ✅ CORRECTION : backticks au lieu de guillemets simples
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/recommendations/popular?limit=10`);
       if (res.ok) {
         const data = await res.json();
         const recs = data.recommendations || [];
@@ -705,4 +710,3 @@ const RecommendationsContent = ({ openAuthModal, t }) => {
 };
 
 export default RecommendationsContent;
-

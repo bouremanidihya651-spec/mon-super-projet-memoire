@@ -186,8 +186,16 @@ const SettingsContent = () => {
     fd.append('avatar', file);
     setPhotoLoading(true);
     try {
-      const res  = await fetch('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/users/upload-avatar', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd });
-      const data = await res.json();
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/users/upload-avatar`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: fd,
+        }
+      );      const data = await res.json();
       if (res.ok) {
         setMessage({ type: 'success', text: 'Photo mise à jour' });
         localStorage.setItem('userData', JSON.stringify({ ...user, profilePhoto: data.user?.profilePhoto || data.profilePhoto }));
@@ -206,8 +214,21 @@ const SettingsContent = () => {
     const token = localStorage.getItem('token');
     if (!token) { setMessage({ type: 'error', text: 'Non connecté' }); setIsSaving(false); return; }
     try {
-      const res  = await fetch('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/users/profile', { method: 'PUT', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ firstName: formData.firstName.trim(), lastName: formData.lastName.trim(), email: formData.email.trim() }) });
-      const data = await res.json();
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/users/profile`,
+        {
+          method: 'PUT',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            firstName: formData.firstName.trim(),
+            lastName: formData.lastName.trim(),
+            email: formData.email.trim(),
+          }),
+        }
+      );      const data = await res.json();
       if (res.ok) { setMessage({ type: 'success', text: 'Profil enregistré' }); localStorage.setItem('userData', JSON.stringify(data.user)); window.dispatchEvent(new Event('storage')); }
       else setMessage({ type: 'error', text: data.message || 'Erreur' });
     } catch { setMessage({ type: 'error', text: 'Erreur serveur' }); }
@@ -221,8 +242,20 @@ const SettingsContent = () => {
     if (pwData.newPassword !== pwData.confirmPassword) { setPwMessage({ type: 'error', text: 'Mots de passe différents' }); setIsPwSaving(false); return; }
     const token = localStorage.getItem('token');
     try {
-      const res  = await fetch('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/users/change-password', { method: 'PUT', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ currentPassword: pwData.currentPassword, newPassword: pwData.newPassword }) });
-      const data = await res.json();
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/users/change-password`,
+        {
+          method: 'PUT',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            currentPassword: pwData.currentPassword,
+            newPassword: pwData.newPassword,
+          }),
+        }
+      );      const data = await res.json();
       if (res.ok) { setPwMessage({ type: 'success', text: 'Mot de passe modifié' }); setPwData({ currentPassword: '', newPassword: '', confirmPassword: '' }); }
       else setPwMessage({ type: 'error', text: data.message || 'Mot de passe actuel incorrect' });
     } catch { setPwMessage({ type: 'error', text: 'Erreur serveur' }); }

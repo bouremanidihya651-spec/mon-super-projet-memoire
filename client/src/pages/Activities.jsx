@@ -4,6 +4,8 @@ import { Clock, MapPin, Star, Filter } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import Footer from '../components/Footer';
 
+const API = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
 const Activities = ({ openAuthModal, isChatbotOpen, toggleChatbot }) => {
   const { t } = useTranslation();
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -18,14 +20,14 @@ const Activities = ({ openAuthModal, isChatbotOpen, toggleChatbot }) => {
   useEffect(() => {
     const fetchActivities = async () => {
       try {
-        const res = await fetch('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/activities?limit=100');
+        const res = await fetch(`${API}/api/activities?limit=100`);
         const data = await res.json();
         const activitiesArray = data.activities || data || [];
         setActivities(activitiesArray);
 
         const reviewsPromises = activitiesArray.map(async (a) => {
           try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/reviews/activity/${a.id}`);
+            const res = await fetch(`${API}/api/reviews/activity/${a.id}`);
             const data = await res.json();
             return { id: a.id, averageRating: data.averageRating, totalReviews: data.totalReviews };
           } catch {
@@ -37,7 +39,7 @@ const Activities = ({ openAuthModal, isChatbotOpen, toggleChatbot }) => {
 
         const allReviewsPromises = activitiesArray.map(async (a) => {
           try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/reviews/activity/${a.id}`);
+            const res = await fetch(`${API}/api/reviews/activity/${a.id}`);
             const data = await res.json();
             return (data.reviews || []).map(r => ({ ...r, activityName: a.name }));
           } catch {
@@ -299,5 +301,3 @@ const Activities = ({ openAuthModal, isChatbotOpen, toggleChatbot }) => {
 };
 
 export default Activities;
-
-

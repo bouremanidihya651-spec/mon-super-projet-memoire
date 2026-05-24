@@ -254,7 +254,8 @@ const MesFactures = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const res   = await axios.get('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/invoices', { headers: { Authorization: `Bearer ${token}` } });
+      // ✅ CORRECTION LIGNE 257 : backticks au lieu de guillemets simples
+      const res   = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/invoices`, { headers: { Authorization: `Bearer ${token}` } });
       setInvoices(res.data.invoices || []);
     } catch { setError('Erreur lors du chargement des factures'); }
     finally { setLoading(false); }
@@ -393,4 +394,3 @@ const MesFactures = () => {
 };
 
 export default MesFactures;
-

@@ -56,7 +56,8 @@ const TransportManagement = () => {
   const fetchTransports = async () => {
     try {
       setLoading(true);
-      const response = await fetch('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/transports');
+      // ✅ CORRECTION LIGNE 59 : backticks au lieu de guillemets simples
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/transports`);
       const data = await response.json();
       setTransports(data.transports || []);
     } catch (err) {
@@ -68,7 +69,8 @@ const TransportManagement = () => {
 
   const fetchDestinations = async () => {
     try {
-      const response = await fetch('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/destinations');
+      // ✅ CORRECTION LIGNE 70 : backticks au lieu de guillemets simples
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/destinations`);
       const data = await response.json();
       setDestinations(data.destinations || data.rows || []);
     } catch (err) {
@@ -187,7 +189,8 @@ const TransportManagement = () => {
 
     const endpoint = editingId
       ? `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/transports/${editingId}`
-      : '${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/transports';
+      // ✅ CORRECTION LIGNE 168 : backticks au lieu de guillemets simples
+      : `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/transports`;
     const method = editingId ? 'PUT' : 'POST';
 
     try {
@@ -680,5 +683,3 @@ const TransportManagement = () => {
 };
 
 export default TransportManagement;
-
-

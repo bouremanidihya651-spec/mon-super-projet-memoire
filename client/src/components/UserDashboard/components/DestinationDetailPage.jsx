@@ -257,41 +257,125 @@ const DestinationDetailPage = ({ item, onBack, openAuthModal }) => {
   };
 
   const toggleFavorite = async () => {
-    if (!isAuthenticated) { openAuthModal('login'); return; }
+    if (!isAuthenticated) {
+      openAuthModal('login');
+      return;
+    }
+  
     const token = localStorage.getItem('token');
+  
     try {
       if (isFavorite) {
-        const res  = await fetch('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/favorites', { headers: { Authorization: `Bearer ${token}` } });
+  
+        // ✅ GET FAVORITES
+        const res = await fetch(
+          `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/favorites`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+  
         const data = await res.json();
-        const fav  = data.favorites?.find(f => f.targetId === item.id && f.targetType === 'destination');
-        if (fav) await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/favorites/${fav.id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+  
+        const fav = data.favorites?.find(
+          (f) =>
+            f.targetId === item.id &&
+            f.targetType === 'destination'
+        );
+  
+        // ✅ DELETE FAVORITE
+        if (fav) {
+          await fetch(
+            `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/favorites/${fav.id}`,
+            {
+              method: 'DELETE',
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+        }
+  
         setIsFavorite(false);
+  
       } else {
-        await fetch('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/favorites', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ targetType: 'destination', targetId: item.id }),
-        });
+  
+        // ✅ ADD FAVORITE
+        await fetch(
+          `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/favorites`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              targetType: 'destination',
+              targetId: item.id,
+            }),
+          }
+        );
+  
         setIsFavorite(true);
       }
-    } catch (e) { console.error(e); }
+  
+    } catch (e) {
+      console.error(e);
+    }
   };
-
   const handleSubmitReview = async (e) => {
     e.preventDefault();
-    if (rating === 0)       { alert('Veuillez sélectionner une note'); return; }
-    if (!comment.trim())    { alert('Veuillez entrer un commentaire'); return; }
+  
+    if (rating === 0) {
+      alert('Veuillez sélectionner une note');
+      return;
+    }
+  
+    if (!comment.trim()) {
+      alert('Veuillez entrer un commentaire');
+      return;
+    }
+  
     try {
       const token = localStorage.getItem('token');
-      if (!token) { openAuthModal('login'); return; }
-      const res = await fetch('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/reviews', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ rating, comment, targetType: 'destination', targetId: item.id }),
-      });
-      if (res.ok) { setComment(''); setRating(0); fetchReviews(); setShowForm(false); }
-      else { const d = await res.json(); alert(d.error || 'Erreur'); }
-    } catch (e) { console.error(e); }
+  
+      if (!token) {
+        openAuthModal('login');
+        return;
+      }
+  
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/reviews`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            rating,
+            comment,
+            targetType: 'destination',
+            targetId: item.id,
+          }),
+        }
+      );
+  
+      if (res.ok) {
+        setComment('');
+        setRating(0);
+        fetchReviews();
+        setShowForm(false);
+      } else {
+        const d = await res.json();
+        alert(d.error || 'Erreur');
+      }
+  
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   /* Sub-pages */

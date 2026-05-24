@@ -26,8 +26,9 @@ const PaymentSuccess = () => {
           try {
             if (providerToUse === 'chargily') {
               // Try Chargily first
+              // ✅ CORRECTION LIGNE 30 : backticks au lieu de guillemets simples
               await axios.post(
-                '${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/payment/verify-chargily-payment',
+                `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/payment/verify-chargily-payment`,
                 {
                   checkout_id: checkoutId,
                   reservation_id: reservationId
@@ -39,8 +40,9 @@ const PaymentSuccess = () => {
               console.log('✅ Chargily payment verified successfully');
             } else {
               // Try Stripe
+              // ✅ CORRECTION LIGNE 44 : backticks au lieu de guillemets simples
               await axios.post(
-                '${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/payment/verify-payment',
+                `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/payment/verify-payment`,
                 {
                   checkoutId,
                   provider: 'stripe',
@@ -58,8 +60,9 @@ const PaymentSuccess = () => {
             try {
               if (providerToUse === 'chargily') {
                 // Try Stripe as fallback
+                // ✅ CORRECTION LIGNE 59 : backticks au lieu de guillemets simples
                 await axios.post(
-                  '${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/payment/verify-payment',
+                  `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/payment/verify-payment`,
                   {
                     checkoutId,
                     provider: 'stripe',
@@ -72,8 +75,9 @@ const PaymentSuccess = () => {
                 console.log('✅ Stripe payment verified successfully (fallback)');
               } else {
                 // Try Chargily as fallback
+                // ✅ CORRECTION LIGNE 68 : backticks au lieu de guillemets simples
                 await axios.post(
-                  '${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/payment/verify-chargily-payment',
+                  `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/payment/verify-chargily-payment`,
                   {
                     checkout_id: checkoutId,
                     reservation_id: reservationId
@@ -113,5 +117,3 @@ const PaymentSuccess = () => {
 };
 
 export default PaymentSuccess;
-
-

@@ -39,7 +39,7 @@ const Destinations = ({ openAuthModal, isChatbotOpen, toggleChatbot }) => {
     setLoading(true);
     setFetchError(false);
     try {
-      const res = await fetch(`${API}/api/destinations?limit=1000`);
+      const res = await fetch(`${API}/api/destinations?limit=15`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       console.log('API Response:', data);

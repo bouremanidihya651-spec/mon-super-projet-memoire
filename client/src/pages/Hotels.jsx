@@ -4,6 +4,8 @@ import { Star, MapPin, Filter } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import Footer from '../components/Footer';
 
+const API = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
 const Hotels = ({ openAuthModal, isChatbotOpen, toggleChatbot }) => {
   const { t } = useTranslation();
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -16,14 +18,14 @@ const Hotels = ({ openAuthModal, isChatbotOpen, toggleChatbot }) => {
   useEffect(() => {
     const fetchHotels = async () => {
       try {
-        const res = await fetch('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/hotels?limit=100');
+        const res = await fetch(`${API}/api/hotels?limit=100`);
         const data = await res.json();
         const hotelsArray = data.hotels || data || [];
         setHotels(hotelsArray);
 
         const reviewsPromises = hotelsArray.map(async (h) => {
           try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/reviews/hotel/${h.id}`);
+            const res = await fetch(`${API}/api/reviews/hotel/${h.id}`);
             const data = await res.json();
             return { id: h.id, averageRating: data.averageRating, totalReviews: data.totalReviews };
           } catch {
@@ -220,5 +222,3 @@ const Hotels = ({ openAuthModal, isChatbotOpen, toggleChatbot }) => {
 };
 
 export default Hotels;
-
-
