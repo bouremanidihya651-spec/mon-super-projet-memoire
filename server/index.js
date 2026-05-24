@@ -10,10 +10,8 @@ const path = require('path');
 const { authenticateToken, authorizeAdmin } = require('./middleware/auth');
 const app = express();
 
-// ✅ AJOUT : require de la route contact
 const contactRoutes = require('./routes/contact');
 
-// Configuration du stockage
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, 'uploads/');
@@ -24,19 +22,11 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({ storage: storage });
-
-// Rendre le dossier uploads accessible via URL (chemin absolu)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// --- Middlewares ---
 app.use(cors());
 app.use(express.json());
 
-// --- Routes ---
-
-/**
- * Route Chat avec Gemini (Optimisée)
- */
 app.post('/api/chat', async (req, res) => {
   try {
     const { messages } = req.body;
@@ -51,29 +41,24 @@ app.post('/api/chat', async (req, res) => {
       return res.status(500).json({ error: "Clé API manquante dans le fichier .env" });
     }
 
-    // 1. Détection automatique du modèle (Flash en priorité)
     const listUrl = `https://generativelanguage.googleapis.com/v1/models?key=${apiKey}`;
     const listResponse = await fetch(listUrl);
     const listData = await listResponse.json();
 
     if (!listData.models) {
-      console.error("❌ Erreur API Google:", listData);
       return res.status(403).json({ error: "Impossible d'accéder aux modèles Gemini." });
     }
 
-    let bestModel = listData.models.find(m => 
+    let bestModel = listData.models.find(m =>
       m.name.includes('flash') && m.supportedGenerationMethods.includes('generateContent')
     );
-    
+
     if (!bestModel) {
       bestModel = listData.models.find(m => m.supportedGenerationMethods.includes('generateContent'));
     }
 
-    console.log(`🤖 Modèle auto-détecté : ${bestModel.name}`);
-
-    // 2. Appel à l'IA
     const generateUrl = `https://generativelanguage.googleapis.com/v1/${bestModel.name}:generateContent?key=${apiKey}`;
-    
+
     const response = await fetch(generateUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -84,16 +69,14 @@ app.post('/api/chat', async (req, res) => {
 
     const data = await response.json();
     const botText = data.candidates?.[0]?.content?.parts?.[0]?.text || "Désolé, je ne peux pas répondre pour le moment.";
-
     res.json({ choices: [{ message: { content: botText } }] });
 
   } catch (error) {
-    console.error("🔥 Erreur Chat:", error.message);
+    console.error("Erreur Chat:", error.message);
     res.status(500).json({ error: "Erreur serveur lors de la discussion." });
   }
 });
 
-// Modifier une destination existante
 app.put('/api/destinations/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -114,9 +97,6 @@ app.delete('/api/destinations/:id', async (req, res) => {
   }
 });
 
-/**
- * Importation des routes
- */
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/destinations', require('./routes/destinations'));
 app.use('/api/hotels', require('./routes/hotels'));
@@ -129,30 +109,34 @@ app.use('/api/transports', require('./routes/transport'));
 app.use('/api/reservations', require('./routes/reservations'));
 app.use('/api/payment', require('./routes/payment'));
 app.use('/api/invoices', require('./routes/invoices'));
-
-// ✅ AJOUT : Route contact
 app.use('/api/contact', contactRoutes);
-
-// --- Démarrage du Serveur et Synchro DB ---
 
 const PORT = process.env.PORT || 3000;
 
 const startServer = async () => {
   try {
-    // 1. Vérifier la connexion à la DB
     await sequelize.authenticate();
-    console.log('✅ Connexion SQLite établie avec succès.');
+    console.log('Connexion DB etablie.');
 
-    // 2. Synchroniser les modèles
     await sequelize.sync();
-    console.log('📂 Modèles synchronisés.');
+    console.log('Modeles synchronises.');
 
-    // 3. Lancer l'écoute
+    // Seed automatique si DB vide
+    const count = await Destination.count();
+    if (count === 0) {
+      try {
+        await require('./seed.js');
+        console.log('Seed execute avec succes.');
+      } catch (e) {
+        console.log('Seed ignore:', e.message);
+      }
+    }
+
     app.listen(PORT, () => {
-      console.log(`🚀 Voyageo en ligne sur : http://localhost:${PORT}`);
+      console.log(`Serveur en ligne sur le port ${PORT}`);
     });
   } catch (error) {
-    console.error('❌ Erreur critique lors du démarrage:', error);
+    console.error('Erreur critique:', error);
     process.exit(1);
   }
 };
