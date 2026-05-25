@@ -34,7 +34,6 @@ const GlobalStyles = () => (
     }
     
     .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
-    .touch-pan-y { touch-action: pan-y; }
     .no-select { -webkit-user-select: none; user-select: none; }
     .scroll-smooth { scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
     
@@ -60,6 +59,15 @@ const GlobalStyles = () => (
       box-shadow: 0 12px 24px rgba(0,0,0,0.15);
     }
     
+    /* Classes utilitaires responsive sans JS */
+    .hidden-mobile { display: none; }
+    .hidden-desktop { display: block; }
+    
+    @media (min-width: 640px) {
+      .hidden-mobile { display: block; }
+      .hidden-desktop { display: none; }
+    }
+    
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {
         animation-duration: 0.01ms !important;
@@ -69,50 +77,6 @@ const GlobalStyles = () => (
     }
   `}</style>
 );
-
-/* ============================================
-   HOOK useMediaQuery CORRIGÉ
-   ============================================ */
-const useMediaQuery = (query) => {
-  const [matches, setMatches] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-    
-    if (typeof window === 'undefined' || !window.matchMedia) {
-      return;
-    }
-    
-    const media = window.matchMedia(query);
-    setMatches(media.matches);
-    
-    const listener = (event) => {
-      setMatches(event.matches);
-    };
-    
-    // Support moderne + ancien
-    try {
-      media.addEventListener('change', listener);
-    } catch (e) {
-      // Fallback pour très vieux navigateurs
-      media.addListener(listener);
-    }
-    
-    return () => {
-      try {
-        media.removeEventListener('change', listener);
-      } catch (e) {
-        media.removeListener(listener);
-      }
-    };
-  }, [query]); // ← Dépendance fixe, pas de boucle !
-
-  // Ne pas rendre avant le montage pour éviter les erreurs SSR
-  if (!mounted) return false;
-  
-  return matches;
-};
 
 // ============================================================================
 // MAPPING TECHNIQUE
@@ -127,7 +91,7 @@ const TECHNIQUE_DISPLAY = {
 };
 
 // ============================================================================
-// BADGE DE TECHNIQUE
+// BADGE DE TECHNIQUE - SANS useMediaQuery
 // ============================================================================
 
 const TechniqueBadge = ({ algorithmUsed, displayCause }) => {
@@ -138,20 +102,28 @@ const TechniqueBadge = ({ algorithmUsed, displayCause }) => {
   const [showTooltip, setShowTooltip] = useState(false);
   const badgeRef = useRef(null);
   const [tooltipPos, setTooltipPos] = useState({ top: 0, left: 0 });
-  const isMobile = useMediaQuery('(max-width: 640px)');
+  const [isMobile, setIsMobile] = useState(false);
   const [portalReady, setPortalReady] = useState(false);
 
+  // Détection mobile avec resize listener
   useEffect(() => {
     setPortalReady(true);
+    
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
   const handleMouseEnter = useCallback(() => {
     if (isMobile || !badgeRef.current) return;
     const rect = badgeRef.current.getBoundingClientRect();
-    const tooltipWidth = 320;
     setTooltipPos({
       top: rect.bottom + window.scrollY + 8,
-      left: Math.min(rect.left + window.scrollX, window.innerWidth - tooltipWidth - 16)
+      left: Math.min(rect.left + window.scrollX, window.innerWidth - 320 - 16)
     });
     setShowTooltip(true);
   }, [isMobile]);
@@ -160,7 +132,7 @@ const TechniqueBadge = ({ algorithmUsed, displayCause }) => {
     <>
       <div 
         ref={badgeRef}
-        className="inline-flex items-center gap-1 px-2 py-1 sm:px-3 sm:py-1.5 rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-wider backdrop-blur-md border border-white/20 cursor-help no-select touch-pan-y"
+        className="inline-flex items-center gap-1 px-2 py-1 sm:px-3 sm:py-1.5 rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-wider backdrop-blur-md border border-white/20 cursor-help no-select"
         style={{ 
           backgroundColor: `${tech.color}40`,
           color: '#ffffff',
@@ -171,11 +143,11 @@ const TechniqueBadge = ({ algorithmUsed, displayCause }) => {
         onClick={(e) => isMobile && e.stopPropagation()}
       >
         <Icon className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-        <span className="hidden sm:inline">{tech.shortLabel}</span>
-        <span className="sm:hidden">{tech.shortLabel.slice(0, 8)}</span>
+        <span className="hidden-mobile">{tech.shortLabel}</span>
+        <span className="hidden-desktop">{tech.shortLabel.slice(0, 8)}</span>
       </div>
 
-      {portalReady && showTooltip && !isMobile && typeof document !== 'undefined' && createPortal(
+      {portalReady && showTooltip && !isMobile && typeof document !== 'undefined' && document.body && createPortal(
         <div 
           className="fixed w-[320px] p-4 rounded-xl bg-black/95 backdrop-blur-xl border border-white/10 shadow-2xl z-[9999] animate-fade-in"
           style={{ 
@@ -231,7 +203,6 @@ const TechniqueBadge = ({ algorithmUsed, displayCause }) => {
 
 const DebugPanel = ({ destination, onClose }) => {
   if (!destination) return null;
-  const isMobile = useMediaQuery('(max-width: 640px)');
 
   const tech = TECHNIQUE_DISPLAY[destination.algorithmUsed] || TECHNIQUE_DISPLAY['popular'];
   const TechIcon = tech.icon;
@@ -241,7 +212,7 @@ const DebugPanel = ({ destination, onClose }) => {
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
-      className={`absolute inset-2 sm:inset-3 rounded-2xl bg-black/95 backdrop-blur-xl border border-[#2d7a5a]/30 p-3 sm:p-4 overflow-y-auto z-50 scroll-smooth ${isMobile ? 'text-xs' : ''}`}
+      className="absolute inset-2 sm:inset-3 rounded-2xl bg-black/95 backdrop-blur-xl border border-[#2d7a5a]/30 p-3 sm:p-4 overflow-y-auto z-50 scroll-smooth"
       onClick={(e) => e.stopPropagation()}
     >
       <div className="flex justify-between items-center mb-3">
@@ -315,7 +286,6 @@ const RecommendationCard = ({ destination, index, onViewDetails, openAuthModal, 
   const [avgRating, setAvgRating] = useState(null);
   const [showDebug, setShowDebug] = useState(false);
   const { isAuthenticated } = useAuth();
-  const isMobile = useMediaQuery('(max-width: 640px)');
 
   useEffect(() => { checkFavoriteStatus(); }, [destination.id]);
 
@@ -393,7 +363,7 @@ const RecommendationCard = ({ destination, index, onViewDetails, openAuthModal, 
       className="w-full h-full"
     >
       <div
-        className="relative w-full rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer border border-stone-200/50 dark:border-dark-border/50 hover:border-[#2d7a5a]/50 transition-all duration-500 group card-hover-lift bg-white dark:bg-dark-surface touch-pan-y"
+        className="relative w-full rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer border border-stone-200/50 dark:border-dark-border/50 hover:border-[#2d7a5a]/50 transition-all duration-500 group card-hover-lift bg-white dark:bg-dark-surface"
         onClick={onViewDetails}
       >
         {/* Image container */}
@@ -432,7 +402,7 @@ const RecommendationCard = ({ destination, index, onViewDetails, openAuthModal, 
           <button
             onClick={toggleFavorite}
             disabled={favoriteLoading}
-            className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 w-8 h-8 sm:w-9 sm:h-9 min-w-[32px] min-h-[32px] rounded-full bg-black/40 backdrop-blur-md border border-white/20 flex items-center justify-center hover:bg-[#2d7a5a] hover:border-[#2d7a5a] transition-all group/btn active:scale-95 focus-ring no-select opacity-0 group-hover:opacity-100"
+            className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-black/40 backdrop-blur-md border border-white/20 flex items-center justify-center hover:bg-[#2d7a5a] hover:border-[#2d7a5a] transition-all group/btn active:scale-95 focus-ring no-select opacity-0 group-hover:opacity-100"
             aria-label={isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}
           >
             <Heart className={`w-4 h-4 transition-colors ${isFavorite ? 'fill-[#2d7a5a] text-[#2d7a5a]' : 'text-white group-hover/btn:text-white'}`} />
@@ -473,7 +443,7 @@ const RecommendationCard = ({ destination, index, onViewDetails, openAuthModal, 
         <div className="absolute top-1/2 right-3 sm:right-4 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
           <button
             onClick={(e) => { e.stopPropagation(); setShowDebug(!showDebug); }}
-            className="w-7 h-7 sm:w-8 sm:h-8 min-w-[28px] min-h-[28px] rounded-full bg-black/50 backdrop-blur-md border border-white/20 flex items-center justify-center hover:bg-[#2d7a5a] transition-colors focus-ring"
+            className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-black/50 backdrop-blur-md border border-white/20 flex items-center justify-center hover:bg-[#2d7a5a] transition-colors focus-ring"
             aria-label="Détails recommandation"
           >
             <Info className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
@@ -495,7 +465,6 @@ const RecommendationCard = ({ destination, index, onViewDetails, openAuthModal, 
 const RecommendationsContent = ({ openAuthModal, t }) => {
   const { user } = useAuth();
   const { isDark } = useTheme();
-  const isMobile = useMediaQuery('(max-width: 640px)');
 
   const [recommendations, setRecommendations] = useState([]);
   const [allDestinations, setAllDestinations] = useState([]);
@@ -605,14 +574,14 @@ const RecommendationsContent = ({ openAuthModal, t }) => {
         <div className="flex gap-2 sm:gap-3 mb-6 sm:mb-8 overflow-x-auto pb-1 -mx-3 px-3 sm:mx-0 sm:px-0 scrollbar-hide scroll-smooth">
           <button onClick={() => handleTabChange('all')}
             className={`px-4 py-2 sm:px-5 sm:py-2.5 rounded-full font-bold text-[10px] sm:text-[11px] uppercase tracking-widest transition-all whitespace-nowrap min-h-[40px] focus-ring no-select active:scale-95 ${activeTab === 'all' ? 'bg-[#2d7a5a] text-white border border-[#2d7a5a]' : 'bg-transparent border border-stone-200 dark:border-dark-border text-stone-500 hover:border-[#2d7a5a] hover:text-[#2d7a5a]'}`}>
-            <span className="hidden sm:inline">Toutes les destinations</span>
-            <span className="sm:hidden">Toutes</span>
+            <span className="hidden-mobile">Toutes les destinations</span>
+            <span className="hidden-desktop">Toutes</span>
             {allDestinations.length > 0 && <span className="ml-1.5 sm:ml-2 text-[9px] opacity-70">({allDestinations.length})</span>}
           </button>
           <button onClick={() => handleTabChange('recommendations')}
             className={`px-4 py-2 sm:px-5 sm:py-2.5 rounded-full font-bold text-[10px] sm:text-[11px] uppercase tracking-widest transition-all whitespace-nowrap min-h-[40px] focus-ring no-select active:scale-95 ${activeTab === 'recommendations' ? 'bg-[#2d7a5a] text-white border border-[#2d7a5a]' : 'bg-transparent border border-stone-200 dark:border-dark-border text-stone-500 hover:border-[#2d7a5a] hover:text-[#2d7a5a]'}`}>
-            <span className="hidden sm:inline">Recommandations</span>
-            <span className="sm:hidden">Recommandé</span>
+            <span className="hidden-mobile">Recommandations</span>
+            <span className="hidden-desktop">Recommandé</span>
             {recommendations.length > 0 && <span className="ml-1.5 sm:ml-2 text-[9px] opacity-70">({recommendations.length})</span>}
           </button>
         </div>
@@ -623,7 +592,7 @@ const RecommendationsContent = ({ openAuthModal, t }) => {
               <Search className="w-4 h-4 sm:w-5 sm:h-5 text-stone-400" />
             </div>
             <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={isMobile ? 'Rechercher...' : (t('dashboard.searchDestinations') || 'Rechercher une destination...')}
+              placeholder="Rechercher une destination..."
               className="w-full pl-9 sm:pl-12 pr-10 py-2.5 sm:py-3 bg-white dark:bg-dark-surface border border-stone-200 dark:border-dark-border rounded-2xl sm:rounded-3xl text-sm sm:text-base text-[#1a4a36] dark:text-dark-text placeholder-stone-400 focus:outline-none focus:border-[#2d7a5a] focus:ring-2 focus:ring-[#2d7a5a]/20 transition-all shadow-sm min-h-[44px]" />
             {searchQuery && (
               <button onClick={() => setSearchQuery('')}
@@ -646,12 +615,12 @@ const RecommendationsContent = ({ openAuthModal, t }) => {
             <div className="w-16 h-16 sm:w-20 sm:h-20 bg-stone-100 dark:bg-dark-surface rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
               {searchQuery ? <Search size={28} className="text-[#2d7a5a] sm:size-8" /> : <Star size={28} className="text-[#2d7a5a] sm:size-8" />}
             </div>
-            <h3 className="text-lg sm:text-xl font-bold mb-2 dark:text-dark-text">{searchQuery ? t('dashboard.noResultsFound') : t('dashboard.noRecommendationsAvailable')}</h3>
-            <p className="text-stone-500 max-w-md mx-auto mb-4 sm:mb-6 text-sm sm:text-base">{searchQuery ? `Aucune destination ne correspond à "${searchQuery}"` : t('dashboard.noRecommendationsDescription')}</p>
+            <h3 className="text-lg sm:text-xl font-bold mb-2 dark:text-dark-text">{searchQuery ? 'Aucun résultat' : 'Aucune recommandation'}</h3>
+            <p className="text-stone-500 max-w-md mx-auto mb-4 sm:mb-6 text-sm sm:text-base">{searchQuery ? `Aucune destination ne correspond à "${searchQuery}"` : 'Aucune recommandation disponible pour le moment'}</p>
             {searchQuery ? (
-              <button onClick={() => setSearchQuery('')} className="bg-[#2d7a5a] text-white px-5 py-2.5 sm:px-6 sm:py-3 rounded-full font-bold hover:bg-[#1a4a36] transition text-sm sm:text-base min-h-[44px] focus-ring no-select active:scale-95">{t('dashboard.clearSearch')}</button>
+              <button onClick={() => setSearchQuery('')} className="bg-[#2d7a5a] text-white px-5 py-2.5 sm:px-6 sm:py-3 rounded-full font-bold hover:bg-[#1a4a36] transition text-sm sm:text-base min-h-[44px] focus-ring no-select active:scale-95">Effacer la recherche</button>
             ) : (
-              <button onClick={() => window.dispatchEvent(new CustomEvent('nav-explorer'))} className="bg-[#2d7a5a] text-white px-5 py-2.5 sm:px-6 sm:py-3 rounded-full font-bold hover:bg-[#1a4a36] transition text-sm sm:text-base min-h-[44px] focus-ring no-select active:scale-95">{t('dashboard.exploreDestinations')}</button>
+              <button onClick={() => window.dispatchEvent(new CustomEvent('nav-explorer'))} className="bg-[#2d7a5a] text-white px-5 py-2.5 sm:px-6 sm:py-3 rounded-full font-bold hover:bg-[#1a4a36] transition text-sm sm:text-base min-h-[44px] focus-ring no-select active:scale-95">Explorer les destinations</button>
             )}
           </div>
         ) : (
