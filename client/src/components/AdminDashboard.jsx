@@ -11,7 +11,6 @@ import TransportManagement from "./admin/TransportManagement";
 import ReservationsManagement from "./admin/ReservationsManagement";
 import usePreventNavigation from "../hooks/usePreventNavigation";
 
-// ─── COMPOSANTS EXTERNES ───
 const SearchBar = ({ value, onChange, placeholder }) => (
   <div className="relative mb-4">
     <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6b8f7b]" />
@@ -23,10 +22,7 @@ const SearchBar = ({ value, onChange, placeholder }) => (
       className="w-full bg-white dark:bg-dark-surface border border-[#e0dcd4] dark:border-dark-border rounded-full pl-10 pr-4 py-2.5 text-sm text-[#1a4a36] dark:text-dark-text placeholder-[#6b8f7b] focus:border-[#2d7a5a] outline-none transition shadow-sm"
     />
     {value && (
-      <button
-        onClick={() => onChange("")}
-        className="absolute right-4 top-1/2 -translate-y-1/2 text-[#6b8f7b] hover:text-[#1a4a36] dark:hover:text-dark-text transition"
-      >
+      <button onClick={() => onChange("")} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#6b8f7b] hover:text-[#1a4a36] dark:hover:text-dark-text transition">
         <X className="w-3.5 h-3.5" />
       </button>
     )}
@@ -44,12 +40,14 @@ const ResultsBadge = ({ filtered, total, label }) => (
   </div>
 );
 
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
 const fetchScoresFromGemini = async (destinationName) => {
   const prompt = `Tu es un expert en tourisme algerien. Pour la destination "${destinationName}" en Algerie, reponds UNIQUEMENT avec un objet JSON valide, sans texte avant, sans texte apres, sans backticks. Format exact :
 {"name":"nom officiel","city":"ville principale","region":"wilaya","country":"Algerie","description":"description touristique 2 phrases en francais","luxury":7,"nature":8,"adventure":7,"culture":8,"beach":3,"food":7}
 Regles : scores entre 0 et 10, estime selon la region meme si pas sur, commence par { et termine par }.`;
 
-  const response = await fetch("${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/chat", {
+  const response = await fetch(`${API_BASE}/api/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ messages: [{ role: "user", content: prompt }] })
@@ -66,7 +64,6 @@ Regles : scores entre 0 et 10, estime selon la region meme si pas sur, commence 
   }
 };
 
-// Classes réutilisables dark-aware
 const inputClass = "w-full bg-white dark:bg-dark-surface-2 border border-[#e0dcd4] dark:border-dark-border rounded-full px-4 py-2.5 focus:border-[#2d7a5a] outline-none transition text-[#1a4a36] dark:text-dark-text placeholder-[#6b8f7b] dark:placeholder-[#4a7060] shadow-sm";
 const textareaClass = "w-full bg-white dark:bg-dark-surface-2 border border-[#e0dcd4] dark:border-dark-border rounded-xl px-4 py-2.5 focus:border-[#2d7a5a] outline-none transition min-h-[100px] text-[#1a4a36] dark:text-dark-text placeholder-[#6b8f7b] dark:placeholder-[#4a7060] shadow-sm";
 const selectClass = "w-full bg-white dark:bg-dark-surface-2 border border-[#e0dcd4] dark:border-dark-border rounded-full px-4 py-2.5 focus:border-[#2d7a5a] outline-none transition text-[#1a4a36] dark:text-dark-text shadow-sm";
@@ -74,8 +71,6 @@ const selectClass = "w-full bg-white dark:bg-dark-surface-2 border border-[#e0dc
 const AdminDashboard = () => {
   const { logout } = useAuth();
   const { isDark, toggleTheme } = useTheme();
-
-  // Prevent navigation and logout if back button is pressed
   usePreventNavigation(logout);
 
   const [activeTab, setActiveTab] = useState("overview");
@@ -153,7 +148,7 @@ const AdminDashboard = () => {
   const fetchAdminStats = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/reservations/stats", { headers: { "Authorization": `Bearer ${token}` } });
+      const response = await fetch(`${API_BASE}/api/reservations/stats`, { headers: { "Authorization": `Bearer ${token}` } });
       if (!response.ok) throw new Error();
       const data = await response.json();
       if (data.success) {
@@ -203,7 +198,6 @@ const AdminDashboard = () => {
     };
   }, [activeTab, visitsData, visitsLabels, popularDestinations, isDark]);
 
-  // IA uniquement pour destinations
   const handleSearchInput = (e) => {
     const value = e.target.value;
     setSearchQuery(value);
@@ -223,17 +217,17 @@ const AdminDashboard = () => {
     }, 800);
   };
 
-  const fetchDestinations = async () => { try { setLoading(true); const r = await fetch("${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/destinations"); const d = await r.json(); setDestinations(d.destinations || d.rows || []); } catch (e) { console.error(e); } finally { setLoading(false); } };
-  const fetchHotels = async () => { try { setLoading(true); const r = await fetch("${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/hotels"); const d = await r.json(); setHotels(Array.isArray(d.hotels) ? d.hotels : (Array.isArray(d) ? d : [])); } catch (e) { console.error(e); } finally { setLoading(false); } };
-  const fetchActivities = async () => { try { setLoading(true); const r = await fetch("${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/activities"); const d = await r.json(); setActivities(Array.isArray(d.activities) ? d.activities : (Array.isArray(d) ? d : [])); } catch (e) { console.error(e); } finally { setLoading(false); } };
-  const fetchUsers = async () => { try { setLoading(true); const token = localStorage.getItem("token"); const r = await fetch("${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/users", { headers: { "Authorization": `Bearer ${token}` } }); const d = await r.json(); setUsers(Array.isArray(d) ? d : (Array.isArray(d.users) ? d.users : [])); } catch (e) { console.error(e); } finally { setLoading(false); } };
+  const fetchDestinations = async () => { try { setLoading(true); const r = await fetch(`${API_BASE}/api/destinations`); const d = await r.json(); setDestinations(d.destinations || d.rows || []); } catch (e) { console.error(e); } finally { setLoading(false); } };
+  const fetchHotels = async () => { try { setLoading(true); const r = await fetch(`${API_BASE}/api/hotels`); const d = await r.json(); setHotels(Array.isArray(d.hotels) ? d.hotels : (Array.isArray(d) ? d : [])); } catch (e) { console.error(e); } finally { setLoading(false); } };
+  const fetchActivities = async () => { try { setLoading(true); const r = await fetch(`${API_BASE}/api/activities`); const d = await r.json(); setActivities(Array.isArray(d.activities) ? d.activities : (Array.isArray(d) ? d : [])); } catch (e) { console.error(e); } finally { setLoading(false); } };
+  const fetchUsers = async () => { try { setLoading(true); const token = localStorage.getItem("token"); const r = await fetch(`${API_BASE}/api/users`, { headers: { "Authorization": `Bearer ${token}` } }); const d = await r.json(); setUsers(Array.isArray(d) ? d : (Array.isArray(d.users) ? d.users : [])); } catch (e) { console.error(e); } finally { setLoading(false); } };
 
-  const handleDelete = async (id) => { if (window.confirm("Supprimer cette destination ?")) { try { const t = localStorage.getItem("token"); await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/destinations/${id}`, { method: "DELETE", headers: { "Authorization": `Bearer ${t}` } }); fetchDestinations(); } catch { alert("Erreur suppression"); } } };
-  const handleDeleteHotel = async (id) => { if (window.confirm("Supprimer cet hôtel ?")) { try { const t = localStorage.getItem("token"); await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/hotels/${id}`, { method: "DELETE", headers: { "Authorization": `Bearer ${t}` } }); fetchHotels(); } catch { alert("Erreur suppression"); } } };
-  const handleDeleteActivity = async (id) => { if (window.confirm("Supprimer cette activité ?")) { try { const t = localStorage.getItem("token"); await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/activities/${id}`, { method: "DELETE", headers: { "Authorization": `Bearer ${t}` } }); fetchActivities(); } catch { alert("Erreur suppression"); } } };
-  const handleDeleteUser = async (id) => { if (window.confirm("Supprimer cet utilisateur ?")) { try { const t = localStorage.getItem("token"); await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/users/${id}`, { method: "DELETE", headers: { "Authorization": `Bearer ${t}` } }); fetchUsers(); } catch { alert("Erreur suppression"); } } };
-  const handleBlockUser = async (id) => { try { const t = localStorage.getItem("token"); await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/users/${id}/block`, { method: "PUT", headers: { "Authorization": `Bearer ${t}` } }); fetchUsers(); } catch { alert("Erreur blocage"); } };
-  const handleUnblockUser = async (id) => { try { const t = localStorage.getItem("token"); await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/users/${id}/unblock`, { method: "PUT", headers: { "Authorization": `Bearer ${t}` } }); fetchUsers(); } catch { alert("Erreur déblocage"); } };
+  const handleDelete = async (id) => { if (window.confirm("Supprimer cette destination ?")) { try { const t = localStorage.getItem("token"); await fetch(`${API_BASE}/api/destinations/${id}`, { method: "DELETE", headers: { "Authorization": `Bearer ${t}` } }); fetchDestinations(); } catch { alert("Erreur suppression"); } } };
+  const handleDeleteHotel = async (id) => { if (window.confirm("Supprimer cet hôtel ?")) { try { const t = localStorage.getItem("token"); await fetch(`${API_BASE}/api/hotels/${id}`, { method: "DELETE", headers: { "Authorization": `Bearer ${t}` } }); fetchHotels(); } catch { alert("Erreur suppression"); } } };
+  const handleDeleteActivity = async (id) => { if (window.confirm("Supprimer cette activité ?")) { try { const t = localStorage.getItem("token"); await fetch(`${API_BASE}/api/activities/${id}`, { method: "DELETE", headers: { "Authorization": `Bearer ${t}` } }); fetchActivities(); } catch { alert("Erreur suppression"); } } };
+  const handleDeleteUser = async (id) => { if (window.confirm("Supprimer cet utilisateur ?")) { try { const t = localStorage.getItem("token"); await fetch(`${API_BASE}/api/users/${id}`, { method: "DELETE", headers: { "Authorization": `Bearer ${t}` } }); fetchUsers(); } catch { alert("Erreur suppression"); } } };
+  const handleBlockUser = async (id) => { try { const t = localStorage.getItem("token"); await fetch(`${API_BASE}/api/users/${id}/block`, { method: "PUT", headers: { "Authorization": `Bearer ${t}` } }); fetchUsers(); } catch { alert("Erreur blocage"); } };
+  const handleUnblockUser = async (id) => { try { const t = localStorage.getItem("token"); await fetch(`${API_BASE}/api/users/${id}/unblock`, { method: "PUT", headers: { "Authorization": `Bearer ${t}` } }); fetchUsers(); } catch { alert("Erreur déblocage"); } };
 
   const resetModal = () => {
     setIsModalOpen(false); setSelectedFile(null); setSearchQuery(""); setAiError(""); setAiSuccess(false);
@@ -257,9 +251,9 @@ const AdminDashboard = () => {
       data.append("food_score",      (parseFloat(formData.food_score)      / 10).toString());
     }
     if (selectedFile) data.append("image", selectedFile);
-    let endpoint = "${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/destinations"; let fetchFunction = fetchDestinations; let successMsg = "Destination publiée avec succès !";
-    if (activeTab === "hotels") { endpoint = "${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/hotels"; fetchFunction = fetchHotels; data.append("stars", formData.stars); successMsg = "Hôtel publié avec succès !"; }
-    else if (activeTab === "activities") { endpoint = "${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/activities"; fetchFunction = fetchActivities; successMsg = "Activité publiée avec succès !"; }
+    let endpoint = `${API_BASE}/api/destinations`; let fetchFunction = fetchDestinations; let successMsg = "Destination publiée avec succès !";
+    if (activeTab === "hotels") { endpoint = `${API_BASE}/api/hotels`; fetchFunction = fetchHotels; data.append("stars", formData.stars); successMsg = "Hôtel publié avec succès !"; }
+    else if (activeTab === "activities") { endpoint = `${API_BASE}/api/activities`; fetchFunction = fetchActivities; successMsg = "Activité publiée avec succès !"; }
     try {
       const response = await fetch(endpoint, { method: "POST", headers: { "Authorization": `Bearer ${token}` }, body: data });
       const result = await response.json();
@@ -280,18 +274,14 @@ const AdminDashboard = () => {
 
   return (
     <div className="min-h-screen bg-[#f7f5f0] dark:bg-dark-bg text-[#1a4a36] dark:text-dark-text flex relative">
-
-      {/* TOAST */}
       {showSuccess && (
         <div className="fixed top-5 right-5 z-[9999] flex items-center gap-3 bg-[#2d7a5a] text-white px-6 py-4 rounded-2xl shadow-lg">
           <CheckCircle2 className="w-6 h-6" /><span className="font-bold">{successMessage}</span>
         </div>
       )}
 
-      {/* OVERLAY MOBILE */}
       {sidebarOpen && <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setSidebarOpen(false)} />}
 
-      {/* SIDEBAR */}
       <aside className={`w-64 bg-white dark:bg-dark-surface border-r border-[#e0dcd4] dark:border-dark-border flex flex-col fixed inset-y-0 left-0 z-50 transition-transform duration-300 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0`}>
         <div className="p-5 flex items-center justify-between lg:block">
           <span className="font-bold text-[#1a4a36] dark:text-dark-text">AFALOU Tours Admin</span>
@@ -325,9 +315,7 @@ const AdminDashboard = () => {
         </div>
       </aside>
 
-      {/* MAIN */}
       <main className="flex-1 lg:ml-64 min-w-0">
-        {/* TOPBAR MOBILE */}
         <div className="lg:hidden sticky top-0 z-30 bg-white dark:bg-dark-surface border-b border-[#e0dcd4] dark:border-dark-border px-4 py-3 flex items-center justify-between">
           <button onClick={() => setSidebarOpen(true)} className="text-[#6b8f7b] hover:text-[#1a4a36] dark:hover:text-dark-text"><Menu className="w-6 h-6" /></button>
           <span className="font-bold text-sm text-[#1a4a36] dark:text-dark-text">TravelLux Admin</span>
@@ -335,7 +323,6 @@ const AdminDashboard = () => {
         </div>
 
         <div className="p-4 sm:p-6 lg:p-10">
-          {/* HEADER DESKTOP */}
           <header className="hidden lg:flex justify-between items-center mb-10">
             <div>
               <h2 className="text-3xl font-bold text-[#1a4a36] dark:text-dark-text">Tableau de Bord</h2>
@@ -348,7 +335,6 @@ const AdminDashboard = () => {
             <p className="text-sm text-[#6b8f7b] dark:text-dark-text-muted">Espace d'administration TravelLux.</p>
           </div>
 
-          {/* OVERVIEW */}
           {activeTab === "overview" && (
             <div>
               <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 mb-6">
@@ -403,7 +389,6 @@ const AdminDashboard = () => {
             </div>
           )}
 
-          {/* DESTINATIONS */}
           {activeTab === "destinations" && (
             <div>
               <SearchBar value={searchDestinations} onChange={setSearchDestinations} placeholder="Rechercher une destination par nom, ville, région…" />
@@ -428,7 +413,6 @@ const AdminDashboard = () => {
             </div>
           )}
 
-          {/* HOTELS */}
           {activeTab === "hotels" && (
             <div>
               <SearchBar value={searchHotels} onChange={setSearchHotels} placeholder="Rechercher un hôtel par nom, ville, localisation…" />
@@ -454,7 +438,6 @@ const AdminDashboard = () => {
             </div>
           )}
 
-          {/* ACTIVITIES */}
           {activeTab === "activities" && (
             <div>
               <SearchBar value={searchActivities} onChange={setSearchActivities} placeholder="Rechercher une activité par nom, ville, localisation…" />
@@ -480,7 +463,6 @@ const AdminDashboard = () => {
             </div>
           )}
 
-          {/* USERS */}
           {activeTab === "users" && (
             <div>
               <SearchBar value={searchUsers} onChange={setSearchUsers} placeholder="Rechercher un utilisateur par nom, prénom, email…" />
@@ -496,7 +478,8 @@ const AdminDashboard = () => {
                         <td className="p-4 sm:p-6">
                           <div className="flex items-center gap-3">
                             <div className="w-9 h-9 rounded-full bg-[#f7f5f0] dark:bg-dark-surface-2 border border-[#e0dcd4] dark:border-dark-border flex-shrink-0 flex items-center justify-center overflow-hidden">
-                              {u.profilePhoto ? <img src={u.profilePhoto.startsWith('http') ? u.profilePhoto : `http://localhost:3000${u.profilePhoto}`} alt={u.username} className="w-full h-full object-cover" /> : <svg className="w-5 h-5 text-[#6b8f7b]" fill="currentColor" viewBox="0 0 24 24"><path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" /></svg>}                            </div>
+                              {u.profilePhoto ? <img src={u.profilePhoto.startsWith('http') ? u.profilePhoto : `${API_BASE}${u.profilePhoto}`} alt={u.username} className="w-full h-full object-cover" /> : <svg className="w-5 h-5 text-[#6b8f7b]" fill="currentColor" viewBox="0 0 24 24"><path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" /></svg>}
+                            </div>
                             <div><p className="font-bold text-[#1a4a36] dark:text-dark-text text-sm">{u.username}</p><p className="text-xs text-[#6b8f7b] dark:text-dark-text-muted">{u.firstName} {u.lastName}</p></div>
                           </div>
                         </td>
@@ -522,13 +505,9 @@ const AdminDashboard = () => {
         </div>
       </main>
 
-      {/* ═══════════════════════════════════════════════════════
-          MODAL — Dark mode complet + IA uniquement destinations
-      ═══════════════════════════════════════════════════════ */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4">
           <div className="bg-white dark:bg-dark-surface border border-[#e0dcd4] dark:border-dark-border w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl p-6 sm:p-8 shadow-2xl max-h-[92vh] overflow-y-auto">
-
             <div className="flex justify-between items-center mb-6">
               <div>
                 <h3 className="text-xl font-bold text-[#1a4a36] dark:text-dark-text">
@@ -544,14 +523,12 @@ const AdminDashboard = () => {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Upload */}
               <label className="flex flex-col items-center justify-center w-full h-28 sm:h-32 border-2 border-dashed border-[#e0dcd4] dark:border-dark-border rounded-xl cursor-pointer hover:border-[#c9a844] dark:hover:border-[#c9a844] bg-[#f7f5f0] dark:bg-dark-surface-2 transition">
                 <Upload className="w-7 h-7 text-[#6b8f7b] dark:text-dark-text-muted mb-1" />
                 <p className="text-xs text-[#6b8f7b] dark:text-dark-text-muted px-4 text-center truncate w-full">{selectedFile ? selectedFile.name : "Uploader une photo"}</p>
                 <input type="file" className="hidden" accept="image/*" onChange={(e) => setSelectedFile(e.target.files[0])} />
               </label>
 
-              {/* NOM : avec IA pour destinations, sans IA pour hôtels/activités */}
               {activeTab === "destinations" ? (
                 <div ref={autocompleteRef}>
                   <div className="relative">
@@ -586,7 +563,6 @@ const AdminDashboard = () => {
                   )}
                 </div>
               ) : (
-                /* Hôtel ou Activité : champ simple SANS IA */
                 <input
                   placeholder={activeTab === "hotels" ? "Nom de l'hôtel *" : "Nom de l'activité *"}
                   required
@@ -596,14 +572,7 @@ const AdminDashboard = () => {
                 />
               )}
 
-              {/* Description */}
-              <textarea
-                placeholder="Description *"
-                required
-                className={textareaClass}
-                value={formData.description}
-                onChange={e => setFormData({ ...formData, description: e.target.value })}
-              />
+              <textarea placeholder="Description *" required className={textareaClass} value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} />
 
               <div className="grid grid-cols-2 gap-3 sm:gap-4">
                 <input placeholder="Pays *" required className={inputClass} value={formData.country} onChange={e => setFormData({ ...formData, country: e.target.value })} />
@@ -619,7 +588,6 @@ const AdminDashboard = () => {
                 </select>
               )}
 
-              {/* SCORES — destinations uniquement, avec dark mode */}
               {activeTab === "destinations" && (
                 <div className="mt-4">
                   <div className="flex items-center justify-between mb-3">
@@ -645,7 +613,6 @@ const AdminDashboard = () => {
                 </div>
               )}
 
-              {/* Prix / Note / Étoiles */}
               <div className={`grid ${activeTab === "hotels" ? "grid-cols-2" : "grid-cols-1"} gap-3 sm:gap-4`}>
                 {activeTab !== "destinations" && (
                   <input placeholder="Prix DA *" type="number" required className={inputClass} value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} />
@@ -660,8 +627,7 @@ const AdminDashboard = () => {
                 )}
               </div>
 
-              <button type="submit" disabled={aiLoading}
-                className="w-full bg-[#c9a844] text-white font-bold py-3 rounded-full hover:bg-[#b08a30] transition shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
+              <button type="submit" disabled={aiLoading} className="w-full bg-[#c9a844] text-white font-bold py-3 rounded-full hover:bg-[#b08a30] transition shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
                 {aiLoading ? "Gemini génère les scores…" : "Publier"}
               </button>
             </form>
@@ -673,4 +639,3 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
-
