@@ -267,7 +267,7 @@ const AboutSection = ({ colors, isDark, t, isMobile }) => {
 
             <div style={{ display:'flex', gap: isMobile ? 24 : 36, marginBottom:32, flexWrap:'wrap' }}>
               {[
-                { n:'48',   l:t('aboutSection.stats.wilayas') },
+                { n:'68',   l:t('aboutSection.stats.wilayas') },
                 { n:'15k+', l:t('aboutSection.stats.clients')  },
                 { n:'98%',  l:t('aboutSection.stats.satisfaction') },
               ].map((s,i) => (

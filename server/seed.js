@@ -1,353 +1,227 @@
-const { User, Destination, UserPreference, Review, Transport } = require('./models');
-const { hashPassword } = require('./utils/passwordUtils');
-const sequelize = require('./config/db');
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { ChevronRight, Star, MapPin, RefreshCw } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
+import Footer from '../components/Footer';
 
-async function seedDatabase() {
-  try {
-    await sequelize.sync();
-    console.log('Database synced successfully');
+const FALLBACK_IMAGE = `data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjYwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iODAwIiBoZWlnaHQ9IjYwMCIgZmlsbD0iI0U4RjVFQyIvPgogIDx0ZXh0IHg9IjQwMCIgeT0iMzAwIiBmb250LWZhbWlseT0ic2VyaWYiIGZvbnQtc2l6ZT0iMjQiIGZpbGw9IiMyRDZBNEYiIHRleHQtYW5jaG9yPSJtaWRkbGUiPkltYWdlIG5vbiBkaXNwb25pYmxlPC90ZXh0Pgo8L3N2Zz4=`;
 
-    // ========== UTILISATEURS ==========
-    
-    const adminEmail = 'admin@example.com';
-    let adminUser = await User.findOne({ where: { email: adminEmail } });
+const API = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
-    if (!adminUser) {
-      
-      const hashedPassword = await hashPassword('admin123');
-      
-      await User.create({
-        username: 'admin',
-        email: adminEmail,
-        password: hashedPassword,
-        role: 'admin',
-        firstName: 'Admin',
-        lastName: 'User',
-        isBlocked: false
-      });
-      console.log('✅ Admin user created');
-    } else {
-      console.log('ℹ️  Admin user already exists');
-    }
+const Destinations = ({ openAuthModal, isChatbotOpen, toggleChatbot }) => {
+  const { t } = useTranslation();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [destinations, setDestinations] = useState([]);
+  const [reviewsData, setReviewsData] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [recentReviews, setRecentReviews] = useState([]);
+  const [fetchError, setFetchError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const MAX_RETRIES = 3;
+  const RETRY_DELAY = 500;
 
-    // User 1: Solo adventurer
-    const user1 = await User.findOne({ where: { email: 'solo.adventurer@example.com' } });
-    if (!user1) {
-      const hashedPassword = await hashPassword('user123');
-      const newUser = await User.create({
-        username: 'solo_adventurer',
-        email: 'solo.adventurer@example.com',
-        password: hashedPassword,
-        role: 'user',
-        firstName: 'Alex',
-        
-        lastName: 'Martin',
-        age: 28,
-        gender: 'male',
-        travelerType: 'solo',
-        budget: 3000,
-        isBlocked: false
-      });
-      await UserPreference.create({
-        userId: newUser.id,
-        travelerType: 'solo',
-        luxury_score: 0.3,
-        nature_score: 0.9,
-        adventure_score: 0.95,
-        culture_score: 0.6,
-        beach_score: 0.4,
-        food_score: 0.5,
-        minBudget: 500,
-        maxBudget: 3000,
-        preferredTags: JSON.stringify(['aventure', 'randonnée', 'nature', 'solo'])
-      });
-      console.log('✅ Solo adventurer user created');
-    }
-
-    // User 2: Luxury couple
-    const user2 = await User.findOne({ where: { email: 'luxury.couple@example.com' } });
-    if (!user2) {
-      const hashedPassword = await hashPassword('user123');
-      const newUser = await User.create({
-        username: 'luxury_couple',
-        email: 'luxury.couple@example.com',
-        password: hashedPassword,
-        role: 'user',
-        firstName: 'Sophie',
-        lastName: 'Dubois',
-        age: 35,
-        gender: 'female',
-        travelerType: 'couple',
-        budget: 8000,
-        isBlocked: false
-      });
-      await UserPreference.create({
-        userId: newUser.id,
-        travelerType: 'couple',
-        luxury_score: 0.95,
-        nature_score: 0.5,
-        adventure_score: 0.2,
-        culture_score: 0.7,
-        beach_score: 0.9,
-        food_score: 0.85,
-        minBudget: 2000,
-        maxBudget: 8000,
-        preferredTags: JSON.stringify(['luxe', 'plage', 'gastronomie', 'détente'])
-      });
-      console.log('✅ Luxury couple user created');
-    }
-
-    // User 3: Family
-    const user3 = await User.findOne({ where: { email: 'family@example.com' } });
-    if (!user3) {
-      const hashedPassword = await hashPassword('user123');
-      const newUser = await User.create({
-        username: 'family_traveler',
-        email: 'family@example.com',
-        password: hashedPassword,
-        role: 'user',
-        firstName: 'Pierre',
-        lastName: 'Bernard',
-        age: 42,
-        gender: 'male',
-        travelerType: 'family',
-        budget: 5000,
-        isBlocked: false
-      });
-      await UserPreference.create({
-        userId: newUser.id,
-        travelerType: 'family',
-        luxury_score: 0.5,
-        nature_score: 0.8,
-        adventure_score: 0.4,
-        culture_score: 0.85,
-        beach_score: 0.6,
-        food_score: 0.7,
-        minBudget: 1000,
-        maxBudget: 5000,
-        preferredTags: JSON.stringify(['famille', 'culture', 'nature', 'éducation'])
-      });
-      console.log('✅ Family traveler user created');
-    }
-
-    // User 4: Business
-    const user4 = await User.findOne({ where: { email: 'business@example.com' } });
-    if (!user4) {
-      const hashedPassword = await hashPassword('user123');
-      const newUser = await User.create({
-        username: 'business_traveler',
-        email: 'business@example.com',
-        password: hashedPassword,
-        role: 'user',
-        firstName: 'Marie',
-        lastName: 'Leroy',
-        age: 38,
-        gender: 'female',
-        travelerType: 'business',
-        budget: 10000,
-        isBlocked: false
-      });
-      await UserPreference.create({
-        userId: newUser.id,
-        travelerType: 'business',
-        luxury_score: 0.9,
-        nature_score: 0.2,
-        adventure_score: 0.1,
-        culture_score: 0.6,
-        beach_score: 0.1,
-        food_score: 0.9,
-        minBudget: 3000,
-        maxBudget: 10000,
-        preferredTags: JSON.stringify(['business', 'luxe', 'gastronomie', 'ville'])
-      });
-      console.log('✅ Business traveler user created');
-    }
-
-    // ========== DESTINATIONS ==========
-    
-    await Review.destroy({ where: {} });
-    await Destination.destroy({ where: {} });
-    
-    const destinations = await Destination.bulkCreate([
-      {
-        name: 'Chamonix Mont-Blanc',
-        description: 'Station de ski prestigieuse au pied du Mont-Blanc',
-        location: 'Haute-Savoie',
-        country: 'France',
-        city: 'Chamonix',
-        price: 350.00,
-        rating: 4.7,
-        luxury_score: 0.7,
-        nature_score: 0.95,
-        adventure_score: 0.9,
-        culture_score: 0.4,
-        beach_score: 0.1,
-        food_score: 0.7,
-        tags: JSON.stringify(['montagne', 'ski', 'randonnée', 'aventure', 'nature'])
-      },
-      {
-        name: 'Maldives - Resort Privé',
-        description: 'Bungalows sur pilotis dans un lagon cristallin',
-        location: 'Océan Indien',
-        country: 'Maldives',
-        city: 'Malé',
-        price: 1200.00,
-        rating: 4.9,
-        luxury_score: 0.98,
-        nature_score: 0.8,
-        adventure_score: 0.3,
-        culture_score: 0.4,
-        beach_score: 0.98,
-        food_score: 0.85,
-        tags: JSON.stringify(['plage', 'luxe', 'tropical', 'détente', 'couple'])
-      },
-      {
-        name: 'Rome Historique',
-        description: 'Découverte du patrimoine historique de la Ville Éternelle',
-        location: 'Latium',
-        country: 'Italie',
-        city: 'Rome',
-        price: 250.00,
-        rating: 4.6,
-        luxury_score: 0.6,
-        nature_score: 0.3,
-        adventure_score: 0.2,
-        culture_score: 0.98,
-        beach_score: 0.1,
-        food_score: 0.9,
-        tags: JSON.stringify(['histoire', 'culture', 'gastronomie', 'ville', 'patrimoine'])
-      },
-      {
-        name: 'Costa Rica - Aventure',
-        description: 'Expérience d\'écotourisme au cœur de la jungle',
-        location: 'Province de Guanacaste',
-        country: 'Costa Rica',
-        city: 'Liberia',
-        price: 400.00,
-        rating: 4.8,
-        luxury_score: 0.4,
-        nature_score: 0.98,
-        adventure_score: 0.95,
-        culture_score: 0.5,
-        beach_score: 0.7,
-        food_score: 0.6,
-        tags: JSON.stringify(['aventure', 'nature', 'écotourisme', 'jungle', 'plage'])
-      },
-      {
-        name: 'Paris - Séjour Gastronomique',
-        description: 'Découverte culinaire dans la capitale française',
-        location: 'Île-de-France',
-        country: 'France',
-        city: 'Paris',
-        price: 450.00,
-        rating: 4.5,
-        luxury_score: 0.85,
-        nature_score: 0.3,
-        adventure_score: 0.2,
-        culture_score: 0.9,
-        beach_score: 0.0,
-        food_score: 0.95,
-        tags: JSON.stringify(['gastronomie', 'culture', 'luxe', 'ville', 'romantique'])
-      },
-      {
-        name: 'Bali - Resort Familial',
-        description: 'Vacances en famille dans un resort tout compris',
-        location: 'Bali',
-        country: 'Indonésie',
-        city: 'Nusa Dua',
-        price: 300.00,
-        rating: 4.4,
-        luxury_score: 0.6,
-        nature_score: 0.7,
-        adventure_score: 0.5,
-        culture_score: 0.75,
-        beach_score: 0.8,
-        food_score: 0.7,
-        tags: JSON.stringify(['famille', 'plage', 'culture', 'tropical', 'détente'])
-      },
-      {
-        name: 'New York - City Break',
-        description: 'Séjour urbain dans la ville qui ne dort jamais',
-        location: 'New York',
-        country: 'USA',
-        city: 'Manhattan',
-        price: 500.00,
-        rating: 4.6,
-        luxury_score: 0.8,
-        nature_score: 0.2,
-        adventure_score: 0.4,
-        culture_score: 0.85,
-        beach_score: 0.3,
-        food_score: 0.85,
-        tags: JSON.stringify(['ville', 'culture', 'shopping', 'gastronomie', 'business'])
-      },
-      {
-        name: 'Safari Tanzanie',
-        description: 'Safari de 7 jours dans les parcs nationaux',
-        location: 'Serengeti',
-        country: 'Tanzanie',
-        city: 'Arusha',
-        price: 2500.00,
-        rating: 4.9,
-        luxury_score: 0.7,
-        nature_score: 0.98,
-        adventure_score: 0.9,
-        culture_score: 0.6,
-        beach_score: 0.0,
-        food_score: 0.5,
-        tags: JSON.stringify(['safari', 'nature', 'aventure', 'animaux', 'photographie'])
+  const fetchWithRetry = async (url, retries = MAX_RETRIES) => {
+    for (let i = 0; i < retries; i++) {
+      try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return await res.json();
+      } catch (err) {
+        console.warn(`Fetch attempt ${i + 1} failed:`, err.message);
+        if (i === retries - 1) throw err;
+        await new Promise(r => setTimeout(r, RETRY_DELAY));
       }
-    ]);
-    console.log('✅ Sample destinations added');
-
-    // ========== REVIEWS ==========
-    
-    // Récupérer les vrais IDs des utilisateurs
-    const u1 = await User.findOne({ where: { email: 'solo.adventurer@example.com' } });
-    const u2 = await User.findOne({ where: { email: 'luxury.couple@example.com' } });
-    const u3 = await User.findOne({ where: { email: 'family@example.com' } });
-    const u4 = await User.findOne({ where: { email: 'business@example.com' } });
-    
-    if (u1 && u2 && u3 && u4) {
-      await Review.bulkCreate([
-        // User 2 (solo adventurer)
-        { userId: u1.id, targetType: 'destination', targetId: 1, rating: 5, comment: 'Incroyable pour la randonnée!' },
-        { userId: u1.id, targetType: 'destination', targetId: 4, rating: 5, comment: 'Meilleure expérience de ma vie' },
-        { userId: u1.id, targetType: 'destination', targetId: 8, rating: 4, comment: 'Super mais très cher' },
-        { userId: u1.id, targetType: 'destination', targetId: 6, rating: 3, comment: 'Bien pour la famille mais pas mon style' },
-        // User 3 (luxury couple)
-        { userId: u2.id, targetType: 'destination', targetId: 2, rating: 5, comment: 'Paradis sur terre!' },
-        { userId: u2.id, targetType: 'destination', targetId: 5, rating: 5, comment: 'Gastronomie exceptionnelle' },
-        { userId: u2.id, targetType: 'destination', targetId: 6, rating: 4, comment: 'Très beau resort' },
-        // User 4 (family)
-        { userId: u3.id, targetType: 'destination', targetId: 3, rating: 5, comment: 'Éducatif pour les enfants' },
-        { userId: u3.id, targetType: 'destination', targetId: 6, rating: 5, comment: 'Parfait pour les familles' },
-        { userId: u3.id, targetType: 'destination', targetId: 7, rating: 4, comment: 'Les enfants ont adoré' },
-        // User 5 (business)
-        { userId: u4.id, targetType: 'destination', targetId: 5, rating: 5, comment: 'Parfait pour un séjour business' },
-        { userId: u4.id, targetType: 'destination', targetId: 7, rating: 5, comment: 'Excellent pour les voyages d\'affaires' },
-        { userId: u4.id, targetType: 'destination', targetId: 2, rating: 4, comment: 'Luxe incroyable' }
-      ]);
-      console.log('✅ Sample reviews added');
     }
+  };
 
-    console.log('\n🎉 Database seeding completed successfully!');
-    console.log('\n📊 Résumé des données:');
-    console.log('   - 4 utilisateurs avec profils différents');
-    console.log('   - 8 destinations variées');
-    console.log('   - 14 reviews pour le collaborative filtering');
-    console.log('\n🧪 Pour tester le système:');
-    console.log('   1. Connectez-vous avec un utilisateur (ex: solo.adventurer@example.com / user123)');
-    console.log('   2. Appelez GET /api/recommendations/hybrid');
-    console.log('   3. Testez les différents algorithmes:');
-    console.log('      - GET /api/recommendations/content-based');
-    console.log('      - GET /api/recommendations/collaborative');
-    console.log('      - GET /api/recommendations/cold-start');
-    
-  } catch (error) {
-    console.error('❌ Error during database seeding:', error);
-    process.exit(1);
-  }
-}
+  const loadData = async () => {
+    setLoading(true);
+    setFetchError(false);
+    try {
+      const res = await fetch(`${API}/api/destinations?limit=15`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      console.log('API Response:', data);
 
-module.exports = seedDatabase;
+      const destArray = Array.isArray(data.destinations)
+        ? data.destinations
+        : Array.isArray(data.rows)
+          ? data.rows
+          : Array.isArray(data)
+            ? data
+            : [];
+
+      console.log('Destinations array:', destArray);
+      setDestinations(destArray);
+      setLoading(false);
+
+      if (destArray.length > 0) {
+        const reviewsPromises = destArray.map(async (d) => {
+          try {
+            const res = await fetch(`${API}/api/reviews/destination/${d.id}`);
+            if (!res.ok) throw new Error();
+            const data = await res.json();
+            return {
+              id: d.id,
+              averageRating: data.averageRating,
+              totalReviews: data.totalReviews,
+              reviews: (data.reviews || []).map(r => ({ ...r, destinationName: d.name }))
+            };
+          } catch {
+            return { id: d.id, averageRating: 0, totalReviews: 0, reviews: [] };
+          }
+        });
+        const reviewsResults = await Promise.all(reviewsPromises);
+        setReviewsData(Object.fromEntries(reviewsResults.map(r => [r.id, r])));
+        const flatReviews = reviewsResults
+          .flatMap(r => r.reviews)
+          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+          .slice(0, 6);
+        setRecentReviews(flatReviews);
+      }
+    } catch (error) {
+      console.error('Error fetching destinations:', error);
+      setFetchError(true);
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    setRetryCount(0);
+    loadData();
+  }, []);
+
+  const handleRetry = () => {
+    if (retryCount < MAX_RETRIES) {
+      setRetryCount(prev => prev + 1);
+      loadData();
+    }
+  };
+
+  const fadeInUp = {
+    initial: { opacity: 0, y: 60 },
+    animate: { opacity: 1, y: 0, transition: { duration: 0.6 } }
+  };
+
+  const filteredDestinations = destinations.filter(destination => {
+    const matchesSearch = destination.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          destination.description.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesSearch;
+  });
+
+  return (
+    <div className="min-h-screen bg-[#f7f5f0] dark:bg-[#1a2320] text-[#1a4a36] dark:text-[#e8ece9]">
+      <section className="relative h-25 flex flex-col items-center justify-center text-center overflow-hidden"></section>
+
+      <motion.section
+        className="py-12 px-6 bg-white/60 dark:bg-[#242d2a]/60"
+        initial="hidden"
+        whileInView="animate"
+        viewport={{ once: true, amount: 0.3 }}
+        variants={fadeInUp}
+      >
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+            <div className="relative w-full md:w-1/3">
+              <input
+                type="text"
+                placeholder={t('destinationsPage.searchPlaceholder')}
+                className="w-full bg-white dark:bg-[#0f1412] border border-[#e0dcd4] dark:border-[#2d3a36] rounded-full py-3 px-4 pl-12 text-[#1a4a36] dark:text-[#e8ece9] placeholder-[#6b8f7b] dark:placeholder-[#9db8aa] focus:outline-none focus:ring-2 focus:ring-[#2d7a5a] shadow-sm"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              <svg className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[#6b8f7b] dark:text-[#9db8aa]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </motion.section>
+
+      <section className="py-16 px-6">
+        <div className="max-w-7xl mx-auto">
+          <motion.div className="mb-12 text-center" initial="hidden" whileInView="animate" viewport={{ once: true, amount: 0.3 }} variants={fadeInUp}>
+            <h2 className="text-3xl font-serif italic mb-4 text-[#1a4a36] dark:text-[#e8ece9]">{t('destinationsPage.allContinents')}</h2>
+            <p className="text-[#2d7a5a] dark:text-[#9db8aa] max-w-2xl mx-auto">{t('destinationsPage.notFoundDescription')}</p>
+          </motion.div>
+
+          {fetchError && (
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center py-12 mb-8">
+              <div className="bg-white dark:bg-[#242d2a] border border-[#e0dcd4] dark:border-[#2d3a36] rounded-2xl p-6 inline-block shadow-sm">
+                <p className="text-[#b08a30] text-lg mb-4">
+                  {retryCount >= MAX_RETRIES ? "Échec de chargement des destinations après plusieurs tentatives." : "Une erreur est survenue lors du chargement."}
+                </p>
+                <button
+                  onClick={handleRetry}
+                  disabled={retryCount >= MAX_RETRIES}
+                  className={`flex items-center gap-2 mx-auto px-6 py-3 rounded-full font-bold text-sm uppercase tracking-widest transition ${retryCount >= MAX_RETRIES ? 'bg-[#e0dcd4] dark:bg-[#2d3a36] text-[#6b8f7b] dark:text-[#9db8aa] cursor-not-allowed' : 'bg-[#c9a844] text-white hover:bg-[#b08a30]'}`}
+                >
+                  <RefreshCw className={`w-4 h-4 ${retryCount < MAX_RETRIES ? 'animate-spin' : ''}`} />
+                  {retryCount >= MAX_RETRIES ? 'Échec des tentatives' : `Réessayer (${retryCount + 1}/${MAX_RETRIES})`}
+                </button>
+              </div>
+            </motion.div>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {loading ? (
+              <p className="text-[#6b8f7b] dark:text-[#9db8aa] col-span-3 text-center">{t('featured.loading')}</p>
+            ) : fetchError ? (
+              <p className="text-[#b08a30] col-span-3 text-center">Erreur de chargement</p>
+            ) : filteredDestinations.length === 0 ? (
+              <div className="text-center py-20 col-span-3">
+                <h3 className="text-2xl font-serif italic mb-4 text-[#1a4a36] dark:text-[#e8ece9]">{t('destinationsPage.notFound')}</h3>
+                <p className="text-[#2d7a5a] dark:text-[#9db8aa]">{t('destinationsPage.notFoundDescription')}</p>
+              </div>
+            ) : (
+              filteredDestinations.map((destination) => (
+                <Link 
+                  key={destination.id} 
+                  to="/register" 
+                  className="group block no-underline"
+                >
+                  {/* Card Style - Image pleine largeur, pas de bordure visible */}
+                  <div className="relative overflow-hidden rounded-sm">
+                    {/* Image pleine largeur sans padding ni bordure */}
+                    <img 
+                      src={destination.image_url || FALLBACK_IMAGE} 
+                      alt={destination.name} 
+                      className="w-full h-72 object-cover group-hover:scale-105 transition-transform duration-700 ease-out" 
+                      onError={(e) => { e.target.onerror = null; e.target.src = FALLBACK_IMAGE; }} 
+                    />
+
+                    {/* Badge pays en haut à gauche */}
+                    <div className="absolute top-4 left-4 flex items-center gap-1.5 bg-black/40 backdrop-blur-sm px-3 py-1 rounded-sm">
+                      <MapPin className="w-3 h-3 text-white/90" />
+                      <span className="text-xs font-medium text-white/90 uppercase tracking-wider">
+                        {destination.country || destination.location || 'Algérie'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Info sous l'image - style minimal */}
+                  <div className="pt-5 pb-2">
+                    {/* Nom en italique serif */}
+                    <h3 className="text-2xl font-serif italic text-[#1a4a36] dark:text-[#e8ece9] mb-3 group-hover:text-[#2d7a5a] dark:group-hover:text-[#3db383] transition-colors duration-300">
+                      {destination.name}
+                    </h3>
+
+                    {/* Bouton DÉCOUVRIR discret */}
+                    <div className="flex items-center gap-1 text-xs font-medium uppercase tracking-[0.15em] text-[#6b8f7b] dark:text-[#9db8aa] group-hover:text-[#2d7a5a] dark:group-hover:text-[#3db383] transition-colors duration-300">
+                      <span>DÉCOUVRIR</span>
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </div>
+                  </div>
+                </Link>
+              ))
+            )}
+          </div>
+        </div>
+      </section>
+      <Footer />
+    </div>
+  );
+};
+
+export default Destinations;
