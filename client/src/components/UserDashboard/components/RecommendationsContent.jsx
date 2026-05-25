@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
 import { 
   Star, MapPin, ChevronRight, Heart, Search, 
   Sparkles, Users, TrendingUp, UserCheck, Info, X,
@@ -12,44 +11,19 @@ import DestinationDetailPage from './DestinationDetailPage';
 import { useTheme } from '../../../contexts/ThemeContext';
 
 // ============================================================================
-// MAPPING TECHNIQUE → LABEL AFFICHÉ SUR LA CARTE
+// MAPPING TECHNIQUE
 // ============================================================================
 
 const TECHNIQUE_DISPLAY = {
-  'cold-start': {
-    shortLabel: 'Vos préférences',
-    fullLabel: 'Basé sur vos préférences d\'inscription',
-    color: '#3b82f6',
-    icon: UserCheck
-  },
-  'content': {
-    shortLabel: 'Vos goûts analysés',
-    fullLabel: 'Correspond à vos goûts analysés',
-    color: '#10b981',
-    icon: Brain
-  },
-  'collaborative': {
-    shortLabel: 'Voyageurs similaires',
-    fullLabel: 'Apprécié par voyageurs similaires',
-    color: '#8b5cf6',
-    icon: Users
-  },
-  'popular': {
-    shortLabel: 'Populaire',
-    fullLabel: 'Destination populaire',
-    color: '#f59e0b',
-    icon: ThumbsUp
-  },
-  'hybrid-behavioral': {
-    shortLabel: 'Recommandation hybride',
-    fullLabel: 'Recommandation hybride intelligente',
-    color: '#2d7a5a',
-    icon: Compass
-  }
+  'cold-start': { shortLabel: 'Vos préférences', fullLabel: 'Basé sur vos préférences', color: '#3b82f6', icon: UserCheck },
+  'content': { shortLabel: 'Vos goûts', fullLabel: 'Correspond à vos goûts', color: '#10b981', icon: Brain },
+  'collaborative': { shortLabel: 'Voyageurs similaires', fullLabel: 'Apprécié par voyageurs similaires', color: '#8b5cf6', icon: Users },
+  'popular': { shortLabel: 'Populaire', fullLabel: 'Destination populaire', color: '#f59e0b', icon: ThumbsUp },
+  'hybrid-behavioral': { shortLabel: 'Recommandation hybride', fullLabel: 'Recommandation hybride intelligente', color: '#2d7a5a', icon: Compass }
 };
 
 // ============================================================================
-// BADGE DE TECHNIQUE
+// BADGE DE TECHNIQUE - SANS createPortal (CSS TOOLTIP)
 // ============================================================================
 
 const TechniqueBadge = ({ algorithmUsed, displayCause }) => {
@@ -58,50 +32,25 @@ const TechniqueBadge = ({ algorithmUsed, displayCause }) => {
   const tech = TECHNIQUE_DISPLAY[algorithmUsed] || TECHNIQUE_DISPLAY['popular'];
   const Icon = tech.icon;
   const [showTooltip, setShowTooltip] = useState(false);
-  const badgeRef = useRef(null);
-  const [tooltipPos, setTooltipPos] = useState({ top: 0, left: 0 });
-
-  const handleMouseEnter = () => {
-    if (badgeRef.current) {
-      const rect = badgeRef.current.getBoundingClientRect();
-      setTooltipPos({
-        top: rect.bottom + window.scrollY + 8,
-        left: Math.min(rect.left + window.scrollX, window.innerWidth - 340)
-      });
-      setShowTooltip(true);
-    }
-  };
 
   return (
-    <>
-      <div 
-        ref={badgeRef}
-        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider backdrop-blur-md border border-white/20 cursor-help"
-        style={{ 
-          backgroundColor: `${tech.color}40`,
-          color: '#ffffff',
-          textShadow: '0 1px 2px rgba(0,0,0,0.3)'
-        }}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={() => setShowTooltip(false)}
-      >
-        <Icon className="w-3 h-3" />
-        <span>{tech.shortLabel}</span>
-      </div>
+    <div className="relative inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider backdrop-blur-md border border-white/20 cursor-help"
+      style={{ 
+        backgroundColor: `${tech.color}40`,
+        color: '#ffffff',
+        textShadow: '0 1px 2px rgba(0,0,0,0.3)'
+      }}
+      onMouseEnter={() => setShowTooltip(true)}
+      onMouseLeave={() => setShowTooltip(false)}
+    >
+      <Icon className="w-3 h-3" />
+      <span>{tech.shortLabel}</span>
 
-      {showTooltip && createPortal(
-        <div 
-          className="fixed w-[320px] p-4 rounded-xl bg-black/95 backdrop-blur-xl border border-white/10 shadow-2xl z-[9999]"
-          style={{ 
-            top: `${tooltipPos.top}px`, 
-            left: `${tooltipPos.left}px` 
-          }}
-        >
+      {/* Tooltip CSS pur - pas de createPortal */}
+      {showTooltip && (
+        <div className="absolute bottom-full left-0 mb-2 w-[280px] p-4 rounded-xl bg-black/95 backdrop-blur-xl border border-white/10 shadow-2xl z-50">
           <div className="flex items-center gap-2 mb-2 pb-2 border-b border-white/10">
-            <div 
-              className="w-8 h-8 rounded-lg flex items-center justify-center"
-              style={{ backgroundColor: `${tech.color}30` }}
-            >
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${tech.color}30` }}>
               <Icon className="w-4 h-4" style={{ color: tech.color }} />
             </div>
             <div>
@@ -126,10 +75,7 @@ const TechniqueBadge = ({ algorithmUsed, displayCause }) => {
               <p className="text-[10px] text-white/50 uppercase mb-1.5">Features qui matchent</p>
               <div className="flex flex-wrap gap-1">
                 {displayCause.featureMatches.map((m, i) => (
-                  <span 
-                    key={i}
-                    className="px-2 py-0.5 rounded bg-[#2d7a5a]/20 text-[#2d7a5a] text-[10px] font-medium"
-                  >
+                  <span key={i} className="px-2 py-0.5 rounded bg-[#2d7a5a]/20 text-[#2d7a5a] text-[10px] font-medium">
                     {m.label} {m.compat}%
                   </span>
                 ))}
@@ -137,11 +83,11 @@ const TechniqueBadge = ({ algorithmUsed, displayCause }) => {
             </div>
           )}
 
-          <div className="absolute -top-2 left-6 w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-b-[10px] border-b-black/95" />
-        </div>,
-        document.body
+          {/* Flèche */}
+          <div className="absolute -bottom-2 left-6 w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[10px] border-t-black/95" />
+        </div>
       )}
-    </>
+    </div>
   );
 };
 
@@ -225,7 +171,7 @@ const DebugPanel = ({ destination, onClose }) => {
 };
 
 // ============================================================================
-// CARD
+// CARD - STYLE AFALOU TOURS (IMAGE EN HAUT, CONTENU EN BAS)
 // ============================================================================
 
 const RecommendationCard = ({ destination, index, onViewDetails, openAuthModal, t }) => {
@@ -273,14 +219,11 @@ const RecommendationCard = ({ destination, index, onViewDetails, openAuthModal, 
     const token = localStorage.getItem('token');
     try {
       if (isFavorite) {
-        // ✅ CORRECTION : backticks au lieu de guillemets simples
         const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/favorites`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const data = await res.json();
-        const fav = data.favorites?.find(
-          f => f.targetId === destination.id && f.targetType === 'destination'
-        );
+        const fav = data.favorites?.find(f => f.targetId === destination.id && f.targetType === 'destination');
         if (fav) {
           await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/favorites/${fav.id}`, {
             method: 'DELETE',
@@ -289,7 +232,6 @@ const RecommendationCard = ({ destination, index, onViewDetails, openAuthModal, 
         }
         setIsFavorite(false);
       } else {
-        // ✅ CORRECTION : backticks au lieu de guillemets simples
         await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/favorites`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -303,10 +245,9 @@ const RecommendationCard = ({ destination, index, onViewDetails, openAuthModal, 
   const imageUrl = destination.image_url ||
     'https://images.unsplash.com/photo-1567874790230-3acbb51e61dd?auto=format&fit=crop&w=1200&q=80';
 
-  const matchPercentage = destination.matchPercentage ||
-    Math.round((destination.affinityScore || 0) * 100);
-
+  const matchPercentage = destination.matchPercentage || Math.round((destination.affinityScore || 0) * 100);
   const algorithmUsed = destination.algorithmUsed || 'popular';
+  const locationBadge = destination.country || destination.location || 'ALGÉRIE';
 
   return (
     <motion.div
@@ -316,120 +257,93 @@ const RecommendationCard = ({ destination, index, onViewDetails, openAuthModal, 
       className="w-full h-full"
     >
       <div
-        className="relative w-full h-[400px] md:h-[450px] rounded-3xl overflow-hidden cursor-pointer border border-[#e0dcd4] dark:border-dark-border hover:border-[#2d7a5a] transition-all duration-500 group"
+        className="relative w-full rounded-2xl overflow-hidden cursor-pointer border border-stone-200/50 dark:border-dark-border/50 hover:border-[#2d7a5a]/50 transition-all duration-500 group bg-white dark:bg-dark-surface hover:shadow-lg hover:-translate-y-1"
         onClick={onViewDetails}
       >
-        <div className="absolute inset-0">
+        {/* Image container - aspect ratio comme la capture */}
+        <div className="relative aspect-[4/3] sm:aspect-[16/10] overflow-hidden">
           <img
             src={imageUrl}
             alt={destination.name}
-            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+            loading="lazy"
           />
-        </div>
-
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
-
-        <div className="absolute inset-0 p-5 md:p-6 flex flex-col justify-between">
-
-          {/* HAUT : Badges */}
-          <div className="flex justify-between items-start">
-            <div className="flex flex-col gap-2">
-              {matchPercentage > 0 && (
-                <div className={`px-3 py-1.5 rounded-full font-bold text-[10px] uppercase tracking-widest w-fit ${
-                  matchPercentage >= 70 ? 'bg-[#2d7a5a] text-white' :
-                  matchPercentage >= 50 ? 'bg-orange-500 text-white' :
-                  'bg-white/90 text-black'
-                }`}>
-                  {matchPercentage}% Match
-                </div>
-              )}
-
-              <TechniqueBadge 
-                algorithmUsed={algorithmUsed}
-                displayCause={destination.displayCause}
-              />
+          
+          {/* Badge ALGÉRIE en haut à gauche */}
+          <div className="absolute top-3 left-3 sm:top-4 sm:left-4">
+            <div className="flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 bg-black/50 backdrop-blur-md rounded-md text-white text-[10px] sm:text-xs font-medium uppercase tracking-wider">
+              <MapPin className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+              {locationBadge}
             </div>
-
-            <button
-              onClick={toggleFavorite}
-              disabled={favoriteLoading}
-              className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/20 flex items-center justify-center hover:bg-[#2d7a5a] hover:border-[#2d7a5a] transition-all group/btn"
-            >
-              <Heart className={`w-5 h-5 transition-colors ${
-                isFavorite
-                  ? 'fill-[#2d7a5a] text-[#2d7a5a]'
-                  : 'text-white group-hover/btn:text-black'
-              }`} />
-            </button>
           </div>
 
-          {/* BAS : Informations */}
-          <div className="space-y-3">
-            {destination.explanation && (
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#2d7a5a]/20 backdrop-blur-md rounded-full border border-white/10">
-                <Star className="w-4 h-4 text-[#2d7a5a] fill-current" />
-                <span className="text-xs text-white font-medium">{destination.explanation}</span>
-              </div>
-            )}
-
-            <div>
-              <h3 className="text-xl md:text-2xl font-serif font-bold text-white mb-2">
-                {destination.name}
-              </h3>
-              <div className="flex items-center gap-3 text-white/90 text-sm">
-                <div className="flex items-center gap-1.5">
-                  <MapPin className="w-4 h-4 text-[#2d7a5a]" />
-                  <span>{destination.location || destination.country}</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <Star className="w-4 h-4 text-[#2d7a5a] fill-current" />
-                  <span className="font-bold">{avgRating || destination.rating}</span>
-                </div>
+          {/* Badge Match % */}
+          {matchPercentage > 0 && (
+            <div className="absolute top-3 right-3 sm:top-4 sm:right-4">
+              <div className={`px-2 py-1 sm:px-3 sm:py-1.5 rounded-md font-bold text-[9px] sm:text-[10px] uppercase tracking-wider ${
+                matchPercentage >= 70 ? 'bg-[#2d7a5a] text-white' :
+                matchPercentage >= 50 ? 'bg-orange-500 text-white' :
+                'bg-white/90 text-black'
+              }`}>
+                {matchPercentage}% Match
               </div>
             </div>
+          )}
 
-            {destination.displayCause?.causeDetails && (
-              <div className="flex flex-wrap gap-1.5">
-                {destination.displayCause.causeDetails.slice(0, 2).map((detail, i) => (
-                  <span 
-                    key={i}
-                    className="px-2 py-1 rounded-md bg-white/10 backdrop-blur-sm text-[9px] text-white/80 border border-white/10"
-                  >
-                    {detail}
-                  </span>
-                ))}
-              </div>
-            )}
+          {/* Bouton favori */}
+          <button
+            onClick={toggleFavorite}
+            disabled={favoriteLoading}
+            className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-black/40 backdrop-blur-md border border-white/20 flex items-center justify-center hover:bg-[#2d7a5a] hover:border-[#2d7a5a] transition-all group/btn active:scale-95 opacity-0 group-hover:opacity-100"
+            aria-label={isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}
+          >
+            <Heart className={`w-4 h-4 transition-colors ${isFavorite ? 'fill-[#2d7a5a] text-[#2d7a5a]' : 'text-white group-hover/btn:text-white'}`} />
+          </button>
+        </div>
 
+        {/* Contenu sous l'image - style capture */}
+        <div className="p-4 sm:p-5">
+          <h3 className="text-xl sm:text-2xl font-serif font-bold text-[#1a4a36] dark:text-dark-text mb-2 sm:mb-3">
+            {destination.name}
+          </h3>
+
+          <div className="flex items-center gap-3 mb-3 sm:mb-4 text-stone-500 dark:text-dark-text-muted text-xs sm:text-sm">
+            <div className="flex items-center gap-1">
+              <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 fill-amber-500" />
+              <span className="font-medium">{avgRating || destination.rating || '4.5'}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-stone-400" />
+              <span className="truncate">{destination.location || destination.country}</span>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between">
             <button
               onClick={(e) => { e.stopPropagation(); onViewDetails(); }}
-              className="mt-2 px-6 py-3 bg-[#2d7a5a] text-white rounded-full font-bold text-[10px] uppercase tracking-widest hover:bg-[#1a4a36] transition-all inline-flex items-center gap-2"
+              className="inline-flex items-center gap-1.5 sm:gap-2 text-[#2d7a5a] hover:text-[#1a4a36] font-medium text-xs sm:text-sm uppercase tracking-wider transition-colors group/link"
             >
-              {t('dashboard.viewDetails')}
-              <ChevronRight className="w-4 h-4" />
+              {t('dashboard.viewDetails') || 'Découvrir'}
+              <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover/link:translate-x-1 transition-transform" />
             </button>
+
+            <TechniqueBadge algorithmUsed={algorithmUsed} displayCause={destination.displayCause} />
           </div>
         </div>
 
         {/* Bouton info debug */}
-        <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        <div className="absolute top-1/2 right-3 sm:right-4 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
           <button
             onClick={(e) => { e.stopPropagation(); setShowDebug(!showDebug); }}
-            className="w-8 h-8 rounded-full bg-black/50 backdrop-blur-md border border-white/20 flex items-center justify-center hover:bg-[#2d7a5a] transition-colors"
+            className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-black/50 backdrop-blur-md border border-white/20 flex items-center justify-center hover:bg-[#2d7a5a] transition-colors"
             title="Voir les détails de la recommandation"
           >
-            <Info className="w-4 h-4 text-white" />
+            <Info className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
           </button>
         </div>
 
-        {/* Panneau debug */}
         <AnimatePresence>
-          {showDebug && (
-            <DebugPanel 
-              destination={destination} 
-              onClose={() => setShowDebug(false)} 
-            />
-          )}
+          {showDebug && <DebugPanel destination={destination} onClose={() => setShowDebug(false)} />}
         </AnimatePresence>
       </div>
     </motion.div>
@@ -454,9 +368,7 @@ const RecommendationsContent = ({ openAuthModal, t }) => {
   const [selectedItem, setSelectedItem] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
 
-  useEffect(() => {
-    fetchRecommendations();
-  }, []);
+  useEffect(() => { fetchRecommendations(); }, []);
 
   useEffect(() => {
     if (activeTab === 'all' && allDestinations.length === 0) {
@@ -470,14 +382,12 @@ const RecommendationsContent = ({ openAuthModal, t }) => {
       setFilteredItems(source);
     } else {
       const q = searchQuery.toLowerCase();
-      setFilteredItems(
-        source.filter(dest =>
-          (dest.name || '').toLowerCase().includes(q) ||
-          (dest.location || '').toLowerCase().includes(q) ||
-          (dest.country || '').toLowerCase().includes(q) ||
-          (dest.city || '').toLowerCase().includes(q)
-        )
-      );
+      setFilteredItems(source.filter(dest =>
+        (dest.name || '').toLowerCase().includes(q) ||
+        (dest.location || '').toLowerCase().includes(q) ||
+        (dest.country || '').toLowerCase().includes(q) ||
+        (dest.city || '').toLowerCase().includes(q)
+      ));
     }
   }, [searchQuery, recommendations, allDestinations, activeTab]);
 
@@ -485,86 +395,49 @@ const RecommendationsContent = ({ openAuthModal, t }) => {
     setLoading(true);
     setError(null);
     const token = localStorage.getItem('token');
-
-    if (!token) {
-      await fetchPopular();
-      return;
-    }
+    if (!token) { await fetchPopular(); return; }
 
     try {
-      // ✅ CORRECTION : backticks au lieu de guillemets simples
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/recommendations/hybrid?limit=10`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/recommendations/hybrid?limit=15`, {
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
       });
-
-      if (!res.ok) {
-        console.warn('Hybrid API error, fallback to popular');
-        await fetchPopular();
-        return;
-      }
-
+      if (!res.ok) { await fetchPopular(); return; }
       const data = await res.json();
       const recs = data.recommendations || [];
       setRecommendations(recs);
       setFilteredItems(recs);
     } catch (err) {
-      console.error('fetchRecommendations error:', err);
-      setError(err.message);
       await fetchPopular();
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
   const fetchAllDestinations = async () => {
     setLoadingAll(true);
     try {
-      // ✅ CORRECTION : backticks au lieu de guillemets simples
       const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/recommendations/all-destinations`);
       if (res.ok) {
         const data = await res.json();
         setAllDestinations(data.destinations || []);
       }
-    } catch (err) {
-      console.error('fetchAllDestinations error:', err);
-    } finally {
-      setLoadingAll(false);
-    }
+    } catch (err) { /* silencieux */ } finally { setLoadingAll(false); }
   };
 
   const fetchPopular = async () => {
     try {
-      // ✅ CORRECTION : backticks au lieu de guillemets simples
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/recommendations/popular?limit=10`);
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/recommendations/popular?limit=15`);
       if (res.ok) {
         const data = await res.json();
         const recs = data.recommendations || [];
         setRecommendations(recs);
         setFilteredItems(recs);
       }
-    } catch (err) {
-      console.error('fetchPopular error:', err);
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { /* silencieux */ } finally { setLoading(false); }
   };
 
-  const handleTabChange = (tab) => {
-    setActiveTab(tab);
-    setSearchQuery('');
-  };
+  const handleTabChange = (tab) => { setActiveTab(tab); setSearchQuery(''); };
 
   if (selectedItem) {
-    return (
-      <DestinationDetailPage
-        item={selectedItem}
-        onBack={() => setSelectedItem(null)}
-        openAuthModal={openAuthModal}
-      />
-    );
+    return <DestinationDetailPage item={selectedItem} onBack={() => setSelectedItem(null)} openAuthModal={openAuthModal} />;
   }
 
   if (loading) {
@@ -572,15 +445,13 @@ const RecommendationsContent = ({ openAuthModal, t }) => {
       <div className="py-20 text-center text-[#6b8f7b] animate-pulse">
         <Star size={48} className="mx-auto mb-4 text-[#2d7a5a] opacity-20" />
         <p>{t('dashboard.analyzingPreferences')}</p>
-        <p className="text-sm mt-2 opacity-60">{t('dashboard.basedOnTastes')}</p>
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-      {/* HEADER */}
       <header className="mb-8">
         <h1 className="text-3xl font-serif font-bold mb-2 dark:text-dark-text">
           {t('dashboard.personalizedRecommendations')}
@@ -590,118 +461,58 @@ const RecommendationsContent = ({ openAuthModal, t }) => {
         </p>
       </header>
 
-      {/* ONGLETS */}
-      <div className="flex gap-3 mb-8">
-        <button
-          onClick={() => handleTabChange('all')}
-          className={`px-5 py-2.5 rounded-full font-bold text-[11px] uppercase tracking-widest transition-all duration-300 ${
-            activeTab === 'all'
-              ? 'bg-[#2d7a5a] text-white border border-[#2d7a5a]'
-              : 'bg-transparent border border-[#e0dcd4] dark:border-dark-border text-[#6b8f7b] hover:border-[#2d7a5a] hover:text-[#2d7a5a]'
-          }`}
-        >
+      <div className="flex gap-3 mb-8 overflow-x-auto pb-1 scrollbar-hide">
+        <button onClick={() => handleTabChange('all')}
+          className={`px-5 py-2.5 rounded-full font-bold text-[11px] uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === 'all' ? 'bg-[#2d7a5a] text-white border border-[#2d7a5a]' : 'bg-transparent border border-[#e0dcd4] dark:border-dark-border text-[#6b8f7b] hover:border-[#2d7a5a] hover:text-[#2d7a5a]'}`}>
           Toutes les destinations
-          {allDestinations.length > 0 && (
-            <span className="ml-2 text-[9px] opacity-70">({allDestinations.length})</span>
-          )}
+          {allDestinations.length > 0 && <span className="ml-2 text-[9px] opacity-70">({allDestinations.length})</span>}
         </button>
-        <button
-          onClick={() => handleTabChange('recommendations')}
-          className={`px-5 py-2.5 rounded-full font-bold text-[11px] uppercase tracking-widest transition-all duration-300 ${
-            activeTab === 'recommendations'
-              ? 'bg-[#2d7a5a] text-white border border-[#2d7a5a]'
-              : 'bg-transparent border border-[#e0dcd4] dark:border-dark-border text-[#6b8f7b] hover:border-[#2d7a5a] hover:text-[#2d7a5a]'
-          }`}
-        >
+        <button onClick={() => handleTabChange('recommendations')}
+          className={`px-5 py-2.5 rounded-full font-bold text-[11px] uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === 'recommendations' ? 'bg-[#2d7a5a] text-white border border-[#2d7a5a]' : 'bg-transparent border border-[#e0dcd4] dark:border-dark-border text-[#6b8f7b] hover:border-[#2d7a5a] hover:text-[#2d7a5a]'}`}>
           Recommandations
-          {recommendations.length > 0 && (
-            <span className="ml-2 text-[9px] opacity-70">({recommendations.length})</span>
-          )}
+          {recommendations.length > 0 && <span className="ml-2 text-[9px] opacity-70">({recommendations.length})</span>}
         </button>
       </div>
 
-      {/* BARRE DE RECHERCHE */}
       <div className="mb-8">
         <div className="relative max-w-md">
           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
             <Search className="w-5 h-5 text-[#6b8f7b]" />
           </div>
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+          <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={t('dashboard.searchDestinations') || 'Rechercher une destination...'}
-            className="w-full pl-12 pr-4 py-3 bg-white dark:bg-dark-surface border border-[#e0dcd4] dark:border-dark-border rounded-3xl text-[#1a4a36] dark:text-dark-text placeholder-[#6b8f7b] focus:outline-none focus:border-[#2d7a5a] focus:ring-2 focus:ring-[#2d7a5a]/20 transition-all shadow-sm"
-          />
+            className="w-full pl-12 pr-4 py-3 bg-white dark:bg-dark-surface border border-[#e0dcd4] dark:border-dark-border rounded-3xl text-[#1a4a36] dark:text-dark-text placeholder-[#6b8f7b] focus:outline-none focus:border-[#2d7a5a] focus:ring-2 focus:ring-[#2d7a5a]/20 transition-all shadow-sm" />
           {searchQuery && (
-            <button
-              onClick={() => setSearchQuery('')}
-              className="absolute inset-y-0 right-0 pr-4 flex items-center text-[#6b8f7b] hover:text-[#1a4a36] transition-colors"
-            >
+            <button onClick={() => setSearchQuery('')} className="absolute inset-y-0 right-0 pr-4 flex items-center text-[#6b8f7b] hover:text-[#1a4a36] transition-colors">
               <span className="text-sm">✕</span>
             </button>
           )}
         </div>
-        {searchQuery && (
-          <p className="mt-3 text-sm text-[#6b8f7b]">
-            {filteredItems.length} résultat{filteredItems.length !== 1 ? 's' : ''} pour "{searchQuery}"
-          </p>
-        )}
+        {searchQuery && <p className="mt-3 text-sm text-[#6b8f7b]">{filteredItems.length} résultat{filteredItems.length !== 1 ? 's' : ''} pour "{searchQuery}"</p>}
       </div>
 
-      {/* CONTENU */}
       {loadingAll && activeTab === 'all' ? (
         <div className="py-20 text-center text-[#6b8f7b] animate-pulse">
           <Star size={48} className="mx-auto mb-4 text-[#2d7a5a] opacity-20" />
           <p>Chargement de toutes les destinations...</p>
         </div>
-
       ) : filteredItems.length === 0 ? (
         <div className="py-20 text-center">
           <div className="w-20 h-20 bg-[#f7f5f0] dark:bg-dark-surface rounded-full flex items-center justify-center mx-auto mb-6">
-            {searchQuery
-              ? <Search size={32} className="text-[#2d7a5a]" />
-              : <Star size={32} className="text-[#2d7a5a]" />
-            }
+            {searchQuery ? <Search size={32} className="text-[#2d7a5a]" /> : <Star size={32} className="text-[#2d7a5a]" />}
           </div>
-          <h3 className="text-xl font-bold mb-2 dark:text-dark-text">
-            {searchQuery
-              ? t('dashboard.noResultsFound')
-              : t('dashboard.noRecommendationsAvailable')}
-          </h3>
-          <p className="text-[#6b8f7b] max-w-md mx-auto mb-6">
-            {searchQuery
-              ? `Aucune destination ne correspond à "${searchQuery}"`
-              : t('dashboard.noRecommendationsDescription')}
-          </p>
+          <h3 className="text-xl font-bold mb-2 dark:text-dark-text">{searchQuery ? t('dashboard.noResultsFound') : t('dashboard.noRecommendationsAvailable')}</h3>
+          <p className="text-[#6b8f7b] max-w-md mx-auto mb-6">{searchQuery ? `Aucune destination ne correspond à "${searchQuery}"` : t('dashboard.noRecommendationsDescription')}</p>
           {searchQuery ? (
-            <button
-              onClick={() => setSearchQuery('')}
-              className="bg-[#2d7a5a] text-white px-6 py-3 rounded-full font-bold hover:bg-[#1a4a36] transition"
-            >
-              {t('dashboard.clearSearch')}
-            </button>
+            <button onClick={() => setSearchQuery('')} className="bg-[#2d7a5a] text-white px-6 py-3 rounded-full font-bold hover:bg-[#1a4a36] transition">{t('dashboard.clearSearch')}</button>
           ) : (
-            <button
-              onClick={() => window.dispatchEvent(new CustomEvent('nav-explorer'))}
-              className="bg-[#2d7a5a] text-black px-6 py-3 rounded-full font-bold hover:bg-[#1a4a36] hover:text-white transition"
-            >
-              {t('dashboard.exploreDestinations')}
-            </button>
+            <button onClick={() => window.dispatchEvent(new CustomEvent('nav-explorer'))} className="bg-[#2d7a5a] text-black px-6 py-3 rounded-full font-bold hover:bg-[#1a4a36] hover:text-white transition">{t('dashboard.exploreDestinations')}</button>
           )}
         </div>
-
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredItems.map((dest, index) => (
-            <RecommendationCard
-              key={dest.id}
-              destination={dest}
-              index={index}
-              onViewDetails={() => setSelectedItem(dest)}
-              openAuthModal={openAuthModal}
-              t={t}
-            />
+            <RecommendationCard key={dest.id} destination={dest} index={index} onViewDetails={() => setSelectedItem(dest)} openAuthModal={openAuthModal} t={t} />
           ))}
         </div>
       )}
