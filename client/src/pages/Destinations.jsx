@@ -111,11 +111,11 @@ const Destinations = ({ openAuthModal, isChatbotOpen, toggleChatbot }) => {
   });
 
   return (
-    <div className="min-h-screen bg-[#f7f5f0] dark:bg-dark-bg text-[#1a4a36] dark:text-dark-text">
+    <div className="min-h-screen bg-[#f7f5f0] dark:bg-[#1a2320] text-[#1a4a36] dark:text-[#e8ece9]">
       <section className="relative h-25 flex flex-col items-center justify-center text-center overflow-hidden"></section>
 
       <motion.section
-        className="py-12 px-6 bg-white/60 dark:bg-dark-surface/60"
+        className="py-12 px-6 bg-white/60 dark:bg-[#242d2a]/60"
         initial="hidden"
         whileInView="animate"
         viewport={{ once: true, amount: 0.3 }}
@@ -127,11 +127,11 @@ const Destinations = ({ openAuthModal, isChatbotOpen, toggleChatbot }) => {
               <input
                 type="text"
                 placeholder={t('destinationsPage.searchPlaceholder')}
-                className="w-full bg-white dark:bg-dark-surface border border-[#e0dcd4] dark:border-dark-border rounded-full py-3 px-4 pl-12 text-[#1a4a36] dark:text-dark-text placeholder-[#6b8f7b] dark:placeholder-dark-text-muted focus:outline-none focus:ring-2 focus:ring-[#2d7a5a] shadow-sm"
+                className="w-full bg-white dark:bg-[#0f1412] border border-[#e0dcd4] dark:border-[#2d3a36] rounded-full py-3 px-4 pl-12 text-[#1a4a36] dark:text-[#e8ece9] placeholder-[#6b8f7b] dark:placeholder-[#9db8aa] focus:outline-none focus:ring-2 focus:ring-[#2d7a5a] shadow-sm"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
-              <svg className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[#6b8f7b] dark:text-dark-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[#6b8f7b] dark:text-[#9db8aa]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
               </svg>
             </div>
@@ -142,20 +142,20 @@ const Destinations = ({ openAuthModal, isChatbotOpen, toggleChatbot }) => {
       <section className="py-16 px-6">
         <div className="max-w-7xl mx-auto">
           <motion.div className="mb-12 text-center" initial="hidden" whileInView="animate" viewport={{ once: true, amount: 0.3 }} variants={fadeInUp}>
-            <h2 className="text-3xl font-serif italic mb-4 text-[#1a4a36] dark:text-dark-text">{t('destinationsPage.allContinents')}</h2>
-            <p className="text-[#2d7a5a] dark:text-surface max-w-2xl mx-auto">{t('destinationsPage.notFoundDescription')}</p>
+            <h2 className="text-3xl font-serif italic mb-4 text-[#1a4a36] dark:text-[#e8ece9]">{t('destinationsPage.allContinents')}</h2>
+            <p className="text-[#2d7a5a] dark:text-[#9db8aa] max-w-2xl mx-auto">{t('destinationsPage.notFoundDescription')}</p>
           </motion.div>
 
           {fetchError && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center py-12 mb-8">
-              <div className="bg-white dark:bg-dark-surface border border-[#e0dcd4] dark:border-dark-border rounded-2xl p-6 inline-block shadow-sm">
+              <div className="bg-white dark:bg-[#242d2a] border border-[#e0dcd4] dark:border-[#2d3a36] rounded-2xl p-6 inline-block shadow-sm">
                 <p className="text-[#b08a30] text-lg mb-4">
                   {retryCount >= MAX_RETRIES ? "Échec de chargement des destinations après plusieurs tentatives." : "Une erreur est survenue lors du chargement."}
                 </p>
                 <button
                   onClick={handleRetry}
                   disabled={retryCount >= MAX_RETRIES}
-                  className={`flex items-center gap-2 mx-auto px-6 py-3 rounded-full font-bold text-sm uppercase tracking-widest transition ${retryCount >= MAX_RETRIES ? 'bg-[#e0dcd4] text-[#6b8f7b] cursor-not-allowed' : 'bg-[#c9a844] text-white hover:bg-[#b08a30]'}`}
+                  className={`flex items-center gap-2 mx-auto px-6 py-3 rounded-full font-bold text-sm uppercase tracking-widest transition ${retryCount >= MAX_RETRIES ? 'bg-[#e0dcd4] dark:bg-[#2d3a36] text-[#6b8f7b] dark:text-[#9db8aa] cursor-not-allowed' : 'bg-[#c9a844] text-white hover:bg-[#b08a30]'}`}
                 >
                   <RefreshCw className={`w-4 h-4 ${retryCount < MAX_RETRIES ? 'animate-spin' : ''}`} />
                   {retryCount >= MAX_RETRIES ? 'Échec des tentatives' : `Réessayer (${retryCount + 1}/${MAX_RETRIES})`}
@@ -166,36 +166,51 @@ const Destinations = ({ openAuthModal, isChatbotOpen, toggleChatbot }) => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {loading ? (
-              <p className="text-[#6b8f7b] col-span-3 text-center">{t('featured.loading')}</p>
+              <p className="text-[#6b8f7b] dark:text-[#9db8aa] col-span-3 text-center">{t('featured.loading')}</p>
             ) : fetchError ? (
               <p className="text-[#b08a30] col-span-3 text-center">Erreur de chargement</p>
             ) : filteredDestinations.length === 0 ? (
               <div className="text-center py-20 col-span-3">
-                <h3 className="text-2xl font-serif italic mb-4">{t('destinationsPage.notFound')}</h3>
-                <p className="text-[#2d7a5a]">{t('destinationsPage.notFoundDescription')}</p>
+                <h3 className="text-2xl font-serif italic mb-4 text-[#1a4a36] dark:text-[#e8ece9]">{t('destinationsPage.notFound')}</h3>
+                <p className="text-[#2d7a5a] dark:text-[#9db8aa]">{t('destinationsPage.notFoundDescription')}</p>
               </div>
             ) : (
               filteredDestinations.map((destination) => (
-                <Link key={destination.id} to="/register" className="group relative overflow-hidden rounded-2xl bg-white border border-[#e0dcd4] shadow-sm hover:shadow-md transition-all hover:-translate-y-2 block no-underline">
-                  <div className="relative">
-                    <img src={destination.image_url || FALLBACK_IMAGE} alt={destination.name} className="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-500" onError={(e) => { e.target.onerror = null; e.target.src = FALLBACK_IMAGE; }} />
-                  </div>
-                  <div className="p-6">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Star className="w-4 h-4 text-[#c9a844] fill-current" />
-                      <span className="text-sm font-medium">{destination.rating}</span>
-                      {reviewsData[destination.id]?.totalReviews > 0 && (
-                        <span className="text-xs text-[#6b8f7b]">({reviewsData[destination.id].totalReviews} {t('destinationsPage.reviews')})</span>
-                      )}
-                      <MapPin className="w-4 h-4 ml-4 text-[#2d7a5a]" />
-                      <span className="text-sm text-[#2d7a5a]">{destination.country || destination.location}</span>
+                <Link 
+                  key={destination.id} 
+                  to="/register" 
+                  className="group block no-underline"
+                >
+                  {/* Card Style - Image pleine largeur, pas de bordure visible */}
+                  <div className="relative overflow-hidden rounded-sm">
+                    {/* Image pleine largeur sans padding ni bordure */}
+                    <img 
+                      src={destination.image_url || FALLBACK_IMAGE} 
+                      alt={destination.name} 
+                      className="w-full h-72 object-cover group-hover:scale-105 transition-transform duration-700 ease-out" 
+                      onError={(e) => { e.target.onerror = null; e.target.src = FALLBACK_IMAGE; }} 
+                    />
+
+                    {/* Badge pays en haut à gauche */}
+                    <div className="absolute top-4 left-4 flex items-center gap-1.5 bg-black/40 backdrop-blur-sm px-3 py-1 rounded-sm">
+                      <MapPin className="w-3 h-3 text-white/90" />
+                      <span className="text-xs font-medium text-white/90 uppercase tracking-wider">
+                        {destination.country || destination.location || 'Algérie'}
+                      </span>
                     </div>
-                    <h3 className="text-xl font-serif font-bold mb-2">{destination.name}</h3>
-                    <p className="text-[#2d7a5a] mb-4 text-sm line-clamp-2">{destination.description}</p>
-                    <div className="flex justify-end">
-                      <div className="bg-[#c9a844] text-white px-5 py-2.5 rounded-full font-bold text-sm hover:bg-[#b08a30] transition-all flex items-center gap-1">
-                        Découvrir <ChevronRight className="w-4 h-4" />
-                      </div>
+                  </div>
+
+                  {/* Info sous l'image - style minimal */}
+                  <div className="pt-5 pb-2">
+                    {/* Nom en italique serif */}
+                    <h3 className="text-2xl font-serif italic text-[#1a4a36] dark:text-[#e8ece9] mb-3 group-hover:text-[#2d7a5a] dark:group-hover:text-[#3db383] transition-colors duration-300">
+                      {destination.name}
+                    </h3>
+
+                    {/* Bouton DÉCOUVRIR discret */}
+                    <div className="flex items-center gap-1 text-xs font-medium uppercase tracking-[0.15em] text-[#6b8f7b] dark:text-[#9db8aa] group-hover:text-[#2d7a5a] dark:group-hover:text-[#3db383] transition-colors duration-300">
+                      <span>DÉCOUVRIR</span>
+                      <ChevronRight className="w-3.5 h-3.5" />
                     </div>
                   </div>
                 </Link>

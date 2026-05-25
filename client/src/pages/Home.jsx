@@ -154,7 +154,7 @@ const StatsStrip = () => (
     <div style={{ maxWidth:1100, margin:'0 auto', display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(160px,1fr))', gap:24, textAlign:'center' }}>
       {[
         { n:'10 000+', l:'Voyageurs satisfaits' },
-        { n:'48',      l:"Wilayas d'Algérie" },
+        { n:'68',      l:"Wilayas d'Algérie" },
         { n:'15 ans',  l:"D'expérience" },
         { n:'24/7',    l:'Support dédié' },
       ].map((s,i) => (
