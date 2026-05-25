@@ -97,12 +97,16 @@ const FlightReservationModal = ({ isOpen, onClose, transport, user }) => {
         }
       };
 
-      const response = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/reservations/create-invoice`, invoiceData, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/reservations/create-invoice`,
+        invoiceData,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
         }
-      });
+      );
 
       return response.data.invoice;
     } catch (error) {
@@ -114,18 +118,22 @@ const FlightReservationModal = ({ isOpen, onClose, transport, user }) => {
   const handleChargilyPayment = async (reservation) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/payment/create-chargily-checkout`, {
-        amount: totalPrice,
-        currency: 'dzd',
-        reservationId: reservation.id,
-        customer: {
-          name: `${travelerDetails[0]?.firstName || ''} ${travelerDetails[0]?.lastName || ''}`.trim(),
-          email: travelerDetails[0]?.email || '',
-          phone: travelerDetails[0]?.phone || ''
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/payment/create-chargily-checkout`,
+        {
+          amount: totalPrice,
+          currency: 'dzd',
+          reservationId: reservation.id,
+          customer: {
+            name: `${travelerDetails[0]?.firstName || ''} ${travelerDetails[0]?.lastName || ''}`.trim(),
+            email: travelerDetails[0]?.email || '',
+            phone: travelerDetails[0]?.phone || ''
+          }
+        },
+        {
+          headers: { 'Authorization': `Bearer ${token}` }
         }
-      }, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      );
       if (response.data.checkoutUrl) {
         window.location.href = response.data.checkoutUrl;
       }
@@ -138,13 +146,17 @@ const FlightReservationModal = ({ isOpen, onClose, transport, user }) => {
   const handleStripePayment = async (reservation) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/payment/create-stripe-checkout`, {
-        amount: totalPrice,
-        currency: 'dzd',
-        reservationId: reservation.id
-      }, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/payment/create-stripe-checkout`,
+        {
+          amount: totalPrice,
+          currency: 'dzd',
+          reservationId: reservation.id
+        },
+        {
+          headers: { 'Authorization': `Bearer ${token}` }
+        }
+      );
       if (response.data.checkoutUrl) {
         window.location.href = response.data.checkoutUrl;
       }
@@ -160,23 +172,27 @@ const FlightReservationModal = ({ isOpen, onClose, transport, user }) => {
     setError('');
     try {
       const token = localStorage.getItem('token');
-      const reservationResponse = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/reservations`, {
-        transport_id: transport.id,
-        trip_type: tripType,
-        departure_date: departureDate,
-        return_date: tripType === 'round_trip' ? returnDate : null,
-        adults: travelers.adults,
-        children: travelers.children,
-        infants: travelers.infants,
-        travelers_details: travelerDetails,
-        payment_method: paymentMethod,
-        notes: ''
-      }, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+      const reservationResponse = await axios.post(
+        `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/reservations`,
+        {
+          transport_id: transport.id,
+          trip_type: tripType,
+          departure_date: departureDate,
+          return_date: tripType === 'round_trip' ? returnDate : null,
+          adults: travelers.adults,
+          children: travelers.children,
+          infants: travelers.infants,
+          travelers_details: travelerDetails,
+          payment_method: paymentMethod,
+          notes: ''
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
         }
-      });
+      );
 
       const reservation = reservationResponse.data.reservation;
       setConfirmationNumber(reservation.confirmation_number);

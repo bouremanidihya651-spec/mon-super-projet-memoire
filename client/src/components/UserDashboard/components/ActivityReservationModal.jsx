@@ -86,12 +86,16 @@ const ActivityReservationModal = ({ isOpen, onClose, activity, user }) => {
         }
       };
 
-      const response = await axios.post('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/reservations/create-invoice', invoiceData, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/reservations/create-invoice`,
+        invoiceData,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
         }
-      });
+      );
 
       return response.data.invoice;
     } catch (error) {
@@ -104,20 +108,24 @@ const ActivityReservationModal = ({ isOpen, onClose, activity, user }) => {
     try {
       const token = localStorage.getItem('token');
 
-      const response = await axios.post('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/payment/create-chargily-checkout', {
-        amount: totalPrice,
-        currency: 'dzd',
-        reservationId: reservation.id,
-        customer: {
-          name: `${participantDetails.firstName || ''} ${participantDetails.lastName || ''}`.trim(),
-          email: participantDetails.email || '',
-          phone: participantDetails.phone || ''
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/payment/create-chargily-checkout`,
+        {
+          amount: totalPrice,
+          currency: 'dzd',
+          reservationId: reservation.id,
+          customer: {
+            name: `${participantDetails.firstName || ''} ${participantDetails.lastName || ''}`.trim(),
+            email: participantDetails.email || '',
+            phone: participantDetails.phone || ''
+          }
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
         }
-      }, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      );
 
       if (response.data.checkoutUrl) {
         window.location.href = response.data.checkoutUrl;
@@ -132,15 +140,19 @@ const ActivityReservationModal = ({ isOpen, onClose, activity, user }) => {
     try {
       const token = localStorage.getItem('token');
 
-      const response = await axios.post('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/payment/create-stripe-checkout', {
-        amount: totalPrice,
-        currency: 'dzd',
-        reservationId: reservation.id
-      }, {
-        headers: {
-          'Authorization': `Bearer ${token}`
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/payment/create-stripe-checkout`,
+        {
+          amount: totalPrice,
+          currency: 'dzd',
+          reservationId: reservation.id
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
         }
-      });
+      );
 
       if (response.data.checkoutUrl) {
         window.location.href = response.data.checkoutUrl;
@@ -159,21 +171,25 @@ const ActivityReservationModal = ({ isOpen, onClose, activity, user }) => {
     try {
       const token = localStorage.getItem('token');
 
-      const reservationResponse = await axios.post('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/reservations/activity', {
-        activity_id: activity.id,
-        activity_date: activityDate,
-        activity_time: activityTime,
-        adults: participants.adults,
-        children: participants.children,
-        participant_details: participantDetails,
-        payment_method: paymentMethod,
-        notes: participantDetails.specialRequests
-      }, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+      const reservationResponse = await axios.post(
+        `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/reservations/activity`,
+        {
+          activity_id: activity.id,
+          activity_date: activityDate,
+          activity_time: activityTime,
+          adults: participants.adults,
+          children: participants.children,
+          participant_details: participantDetails,
+          payment_method: paymentMethod,
+          notes: participantDetails.specialRequests
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
         }
-      });
+      );
 
       const reservation = reservationResponse.data.reservation;
       setConfirmationNumber(reservation.confirmation_number);
@@ -671,5 +687,3 @@ const ActivityReservationModal = ({ isOpen, onClose, activity, user }) => {
 };
 
 export default ActivityReservationModal;
-
-

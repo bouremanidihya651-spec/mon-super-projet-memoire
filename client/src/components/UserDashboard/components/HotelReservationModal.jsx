@@ -12,7 +12,7 @@ const HotelReservationModal = ({ isOpen, onClose, hotel, user }) => {
   const [checkInDate, setCheckInDate] = useState('');
   const [checkOutDate, setCheckOutDate] = useState('');
   const [guests, setGuests] = useState({ adults: 2, children: 0 });
-  const [paymentMethod, setPaymentMethod] = useState('chargily'); // chargily, stripe, on_arrival
+  const [paymentMethod, setPaymentMethod] = useState('chargily');
   const [guestDetails, setGuestDetails] = useState({
     firstName: '',
     lastName: '',
@@ -26,7 +26,6 @@ const HotelReservationModal = ({ isOpen, onClose, hotel, user }) => {
   const [invoiceData, setInvoiceData] = useState(null);
   const [error, setError] = useState('');
 
-  // Initialize default dates
   React.useEffect(() => {
     if (isOpen) {
       const today = new Date();
@@ -74,7 +73,6 @@ const HotelReservationModal = ({ isOpen, onClose, hotel, user }) => {
   const createInvoice = async (reservation, paymentStatus) => {
     try {
       const token = localStorage.getItem('token');
-
       const invoiceNumber = `INV-${Date.now().toString().slice(-6)}`;
 
       const invoiceData = {
@@ -100,12 +98,16 @@ const HotelReservationModal = ({ isOpen, onClose, hotel, user }) => {
         }
       };
 
-      const response = await axios.post('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/reservations/create-invoice', invoiceData, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/reservations/create-invoice`,
+        invoiceData,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
         }
-      });
+      );
 
       return response.data.invoice;
     } catch (error) {
@@ -118,20 +120,24 @@ const HotelReservationModal = ({ isOpen, onClose, hotel, user }) => {
     try {
       const token = localStorage.getItem('token');
 
-      const response = await axios.post('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/payment/create-chargily-checkout', {
-        amount: totalPrice,
-        currency: 'dzd',
-        reservationId: reservation.id,
-        customer: {
-          name: `${guestDetails.firstName || ''} ${guestDetails.lastName || ''}`.trim(),
-          email: guestDetails.email || '',
-          phone: guestDetails.phone || ''
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/payment/create-chargily-checkout`,
+        {
+          amount: totalPrice,
+          currency: 'dzd',
+          reservationId: reservation.id,
+          customer: {
+            name: `${guestDetails.firstName || ''} ${guestDetails.lastName || ''}`.trim(),
+            email: guestDetails.email || '',
+            phone: guestDetails.phone || ''
+          }
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
         }
-      }, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      );
 
       if (response.data.checkoutUrl) {
         window.location.href = response.data.checkoutUrl;
@@ -146,15 +152,19 @@ const HotelReservationModal = ({ isOpen, onClose, hotel, user }) => {
     try {
       const token = localStorage.getItem('token');
 
-      const response = await axios.post('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/payment/create-stripe-checkout', {
-        amount: totalPrice,
-        currency: 'dzd',
-        reservationId: reservation.id
-      }, {
-        headers: {
-          'Authorization': `Bearer ${token}`
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/payment/create-stripe-checkout`,
+        {
+          amount: totalPrice,
+          currency: 'dzd',
+          reservationId: reservation.id
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
         }
-      });
+      );
 
       if (response.data.checkoutUrl) {
         window.location.href = response.data.checkoutUrl;
@@ -173,21 +183,25 @@ const HotelReservationModal = ({ isOpen, onClose, hotel, user }) => {
     try {
       const token = localStorage.getItem('token');
 
-      const reservationResponse = await axios.post('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/reservations/hotel', {
-        hotel_id: hotel.id,
-        check_in_date: checkInDate,
-        check_out_date: checkOutDate,
-        adults: guests.adults,
-        children: guests.children,
-        guest_details: guestDetails,
-        payment_method: paymentMethod,
-        notes: guestDetails.specialRequests
-      }, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+      const reservationResponse = await axios.post(
+        `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/reservations/hotel`,
+        {
+          hotel_id: hotel.id,
+          check_in_date: checkInDate,
+          check_out_date: checkOutDate,
+          adults: guests.adults,
+          children: guests.children,
+          guest_details: guestDetails,
+          payment_method: paymentMethod,
+          notes: guestDetails.specialRequests
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
         }
-      });
+      );
 
       const reservation = reservationResponse.data.reservation;
       setConfirmationNumber(reservation.confirmation_number);
@@ -694,5 +708,3 @@ const HotelReservationModal = ({ isOpen, onClose, hotel, user }) => {
 };
 
 export default HotelReservationModal;
-
-

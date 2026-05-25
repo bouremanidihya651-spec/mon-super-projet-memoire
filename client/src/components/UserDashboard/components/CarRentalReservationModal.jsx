@@ -56,7 +56,7 @@ const CarRentalReservationModal = ({ isOpen, onClose, transport, user }) => {
   const rentalDays = pickupDate && returnDate 
     ? Math.max(1, Math.ceil((new Date(returnDate) - new Date(pickupDate)) / (1000 * 60 * 60 * 24))) + 1
     : 1;
-  
+
   const unitPrice = transport ? parseFloat(transport.price) : 0;
   const totalPrice = unitPrice * rentalDays;
 
@@ -109,7 +109,7 @@ const CarRentalReservationModal = ({ isOpen, onClose, transport, user }) => {
       };
 
       // Save invoice to database
-      const response = await axios.post('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/reservations/create-invoice', invoiceData, {
+      const response = await axios.post((import.meta.env.VITE_API_URL || 'http://localhost:3000') + '/api/reservations/create-invoice', invoiceData, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -131,7 +131,7 @@ const CarRentalReservationModal = ({ isOpen, onClose, transport, user }) => {
       console.log('Amount:', totalPrice);
       console.log('Reservation ID:', reservation.id);
 
-      const response = await axios.post('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/payment/create-chargily-checkout', {
+      const response = await axios.post((import.meta.env.VITE_API_URL || 'http://localhost:3000') + '/api/payment/create-chargily-checkout', {
         amount: totalPrice,
         currency: 'dzd',
         reservationId: reservation.id,
@@ -156,9 +156,9 @@ const CarRentalReservationModal = ({ isOpen, onClose, transport, user }) => {
     } catch (error) {
       console.error('Chargily payment error:', error);
       console.error('Error response:', error.response?.data);
-      
+
       let errorMsg = 'Erreur lors de la création du paiement Chargily';
-      
+
       if (error.response?.data?.details) {
         errorMsg = error.response.data.details;
       } else if (error.response?.data?.error) {
@@ -166,12 +166,12 @@ const CarRentalReservationModal = ({ isOpen, onClose, transport, user }) => {
       } else if (error.message) {
         errorMsg = error.message;
       }
-      
+
       // Add server availability check
       if (error.code === 'ERR_NETWORK') {
-        errorMsg = 'Le serveur backend n\'est pas accessible. Veuillez vérifier que le serveur est démarré (port 3000).';
+        errorMsg = "Le serveur backend n'est pas accessible. Veuillez vérifier que le serveur est démarré (port 3000).";
       }
-      
+
       throw new Error(errorMsg);
     }
   };
@@ -180,7 +180,7 @@ const CarRentalReservationModal = ({ isOpen, onClose, transport, user }) => {
     try {
       const token = localStorage.getItem('token');
 
-      const response = await axios.post('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/payment/create-stripe-checkout', {
+      const response = await axios.post((import.meta.env.VITE_API_URL || 'http://localhost:3000') + '/api/payment/create-stripe-checkout', {
         amount: totalPrice,
         currency: 'dzd',
         reservationId: reservation.id
@@ -209,7 +209,7 @@ const CarRentalReservationModal = ({ isOpen, onClose, transport, user }) => {
       const token = localStorage.getItem('token');
 
       // Create reservation
-      const reservationResponse = await axios.post('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/reservations/car-rental', {
+      const reservationResponse = await axios.post((import.meta.env.VITE_API_URL || 'http://localhost:3000') + '/api/reservations/car-rental', {
         transport_id: transport.id,
         pickup_date: pickupDate,
         return_date: returnDate,
@@ -771,5 +771,3 @@ const CarRentalReservationModal = ({ isOpen, onClose, transport, user }) => {
 };
 
 export default CarRentalReservationModal;
-
-

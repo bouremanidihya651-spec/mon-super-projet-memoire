@@ -18,7 +18,7 @@ const GroundTransportReservationModal = ({ isOpen, onClose, transport, user }) =
   const [travelDate, setTravelDate] = useState('');
   const [travelTime, setTravelTime] = useState('');
   const [passengers, setPassengers] = useState({ adults: 1, children: 0 });
-  const [paymentMethod, setPaymentMethod] = useState('chargily'); // chargily, stripe, on_arrival
+  const [paymentMethod, setPaymentMethod] = useState('chargily');
   const [passengerDetails, setPassengerDetails] = useState({
     firstName: '',
     lastName: '',
@@ -31,18 +31,13 @@ const GroundTransportReservationModal = ({ isOpen, onClose, transport, user }) =
   const [invoiceData, setInvoiceData] = useState(null);
   const [error, setError] = useState('');
 
-  // Initialize default dates
   React.useEffect(() => {
     if (isOpen) {
       const today = new Date();
       const tomorrow = new Date(today);
       tomorrow.setDate(today.getDate() + 1);
-
       setTravelDate(tomorrow.toISOString().split('T')[0]);
-      
-      // Set default time to 08:00
       setTravelTime('08:00');
-
       setStep(1);
       setReservationComplete(false);
       setError('');
@@ -54,13 +49,9 @@ const GroundTransportReservationModal = ({ isOpen, onClose, transport, user }) =
   const totalPrice = unitPrice * totalPassengers;
 
   const handleNextStep = () => {
-    if (step === 1) {
-      setStep(2);
-    } else if (step === 2) {
-      setStep(3);
-    } else if (step === 3) {
-      submitReservation();
-    }
+    if (step === 1) setStep(2);
+    else if (step === 2) setStep(3);
+    else if (step === 3) submitReservation();
   };
 
   const handlePrevStep = () => {
@@ -74,8 +65,6 @@ const GroundTransportReservationModal = ({ isOpen, onClose, transport, user }) =
   const createInvoice = async (reservation, paymentStatus) => {
     try {
       const token = localStorage.getItem('token');
-
-      // Generate invoice number
       const invoiceNumber = `INV-${Date.now().toString().slice(-6)}`;
 
       const invoiceData = {
@@ -101,18 +90,17 @@ const GroundTransportReservationModal = ({ isOpen, onClose, transport, user }) =
         }
       };
 
-      // Save invoice to database
-      const response = await axios.post('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/reservations/create-invoice', invoiceData, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/reservations/create-invoice`,
+        invoiceData,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
         }
-      });
+      );
 
-
-
-
-      
       return response.data.invoice;
     } catch (error) {
       console.error('Error creating invoice:', error);
@@ -124,22 +112,25 @@ const GroundTransportReservationModal = ({ isOpen, onClose, transport, user }) =
     try {
       const token = localStorage.getItem('token');
 
-      const response = await axios.post('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/payment/create-chargily-checkout', {
-        amount: totalPrice,
-        currency: 'dzd',
-        reservationId: reservation.id,
-        customer: {
-          name: `${passengerDetails.firstName || ''} ${passengerDetails.lastName || ''}`.trim(),
-          email: passengerDetails.email || '',
-          phone: passengerDetails.phone || ''
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/payment/create-chargily-checkout`,
+        {
+          amount: totalPrice,
+          currency: 'dzd',
+          reservationId: reservation.id,
+          customer: {
+            name: `${passengerDetails.firstName || ''} ${passengerDetails.lastName || ''}`.trim(),
+            email: passengerDetails.email || '',
+            phone: passengerDetails.phone || ''
+          }
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
         }
-      }, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      );
 
-      // Redirect to Chargily payment page
       if (response.data.checkoutUrl) {
         window.location.href = response.data.checkoutUrl;
       }
@@ -153,17 +144,20 @@ const GroundTransportReservationModal = ({ isOpen, onClose, transport, user }) =
     try {
       const token = localStorage.getItem('token');
 
-      const response = await axios.post('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/payment/create-stripe-checkout', {
-        amount: totalPrice,
-        currency: 'dzd',
-        reservationId: reservation.id
-      }, {
-        headers: {
-          'Authorization': `Bearer ${token}`
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/payment/create-stripe-checkout`,
+        {
+          amount: totalPrice,
+          currency: 'dzd',
+          reservationId: reservation.id
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
         }
-      });
+      );
 
-      // Redirect to Stripe Checkout page
       if (response.data.checkoutUrl) {
         window.location.href = response.data.checkoutUrl;
       }
@@ -181,27 +175,29 @@ const GroundTransportReservationModal = ({ isOpen, onClose, transport, user }) =
     try {
       const token = localStorage.getItem('token');
 
-      // Create reservation
-      const reservationResponse = await axios.post('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/reservations/ground-transport', {
-        transport_id: transport.id,
-        travel_date: travelDate,
-        travel_time: travelTime,
-        adults: passengers.adults,
-        children: passengers.children,
-        passenger_details: passengerDetails,
-        payment_method: paymentMethod,
-        notes: ''
-      }, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+      const reservationResponse = await axios.post(
+        `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/reservations/ground-transport`,
+        {
+          transport_id: transport.id,
+          travel_date: travelDate,
+          travel_time: travelTime,
+          adults: passengers.adults,
+          children: passengers.children,
+          passenger_details: passengerDetails,
+          payment_method: paymentMethod,
+          notes: ''
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
         }
-      });
+      );
 
       const reservation = reservationResponse.data.reservation;
       setConfirmationNumber(reservation.confirmation_number);
 
-      // Handle payment based on method
       if (paymentMethod === 'chargily') {
         await handleChargilyPayment(reservation);
         return;
@@ -210,10 +206,7 @@ const GroundTransportReservationModal = ({ isOpen, onClose, transport, user }) =
         return;
       }
 
-      // For on_arrival (no redirect needed)
       const paymentStatus = 'pending';
-
-      // Create invoice
       const invoice = await createInvoice(reservation, paymentStatus);
 
       if (invoice) {
@@ -233,7 +226,6 @@ const GroundTransportReservationModal = ({ isOpen, onClose, transport, user }) =
 
   if (!isOpen) return null;
 
-  // Theme colors
   const t = {
     bg: isDark ? '#1a2320' : '#f7f5f0',
     bgSecondary: isDark ? '#242d2a' : '#f7f5f0',
@@ -247,7 +239,6 @@ const GroundTransportReservationModal = ({ isOpen, onClose, transport, user }) =
     card: isDark ? '#242d2a' : '#f7f5f0'
   };
 
-  // Step 4: Confirmation
   if (step === 4) {
     return (
       <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4">
@@ -357,7 +348,6 @@ const GroundTransportReservationModal = ({ isOpen, onClose, transport, user }) =
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6">
           <AnimatePresence mode="wait">
-            {/* Step 1: Travel Selection */}
             {step === 1 && (
               <motion.div
                 key="step1"
@@ -366,7 +356,6 @@ const GroundTransportReservationModal = ({ isOpen, onClose, transport, user }) =
                 exit={{ opacity: 0, x: -20 }}
                 className="space-y-6"
               >
-                {/* Transport Info Banner */}
                 <div className="bg-gradient-to-r from-[#2d7a5a]/10 to-transparent border border-[#e0dcd4] rounded-full p-4">
                   <div className="flex items-center justify-between">
                     <div>
@@ -377,7 +366,6 @@ const GroundTransportReservationModal = ({ isOpen, onClose, transport, user }) =
                   </div>
                 </div>
 
-                {/* Route Info */}
                 <div>
                   <label className="text-[#6b8f7b] text-sm mb-2 block">Trajet</label>
                   <div className="bg-[#f7f5f0] border border-[#e0dcd4] rounded-full px-4 py-3 text-[#1a4a36] flex items-center gap-2">
@@ -386,7 +374,6 @@ const GroundTransportReservationModal = ({ isOpen, onClose, transport, user }) =
                   </div>
                 </div>
 
-                {/* Schedule Info */}
                 {transport?.schedule && (
                   <div>
                     <label className="text-[#6b8f7b] text-sm mb-2 block">Horaires</label>
@@ -397,7 +384,6 @@ const GroundTransportReservationModal = ({ isOpen, onClose, transport, user }) =
                   </div>
                 )}
 
-                {/* Date */}
                 <div>
                   <label className="text-[#1a4a36] font-medium mb-2 block flex items-center gap-2">
                     <Calendar className="w-4 h-4" />
@@ -411,7 +397,6 @@ const GroundTransportReservationModal = ({ isOpen, onClose, transport, user }) =
                   />
                 </div>
 
-                {/* Time */}
                 <div>
                   <label className="text-[#1a4a36] font-medium mb-2 block flex items-center gap-2">
                     <Clock className="w-4 h-4" />
@@ -425,11 +410,9 @@ const GroundTransportReservationModal = ({ isOpen, onClose, transport, user }) =
                   />
                 </div>
 
-                {/* Passengers */}
                 <div>
                   <label className="text-[#1a4a36] font-medium mb-3 block">Voyageurs</label>
                   <div className="bg-[#f7f5f0] border border-[#e0dcd4] rounded-full p-4 space-y-4">
-                    {/* Adults */}
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-[#1a4a36] font-medium">Adultes</p>
@@ -452,7 +435,6 @@ const GroundTransportReservationModal = ({ isOpen, onClose, transport, user }) =
                       </div>
                     </div>
 
-                    {/* Children */}
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-[#1a4a36] font-medium">Enfants</p>
@@ -500,7 +482,6 @@ const GroundTransportReservationModal = ({ isOpen, onClose, transport, user }) =
               </motion.div>
             )}
 
-            {/* Step 2: Passenger Details */}
             {step === 2 && (
               <motion.div
                 key="step2"
@@ -564,7 +545,6 @@ const GroundTransportReservationModal = ({ isOpen, onClose, transport, user }) =
               </motion.div>
             )}
 
-            {/* Step 3: Payment */}
             {step === 3 && (
               <motion.div
                 key="step3"
@@ -573,7 +553,6 @@ const GroundTransportReservationModal = ({ isOpen, onClose, transport, user }) =
                 exit={{ opacity: 0, x: -20 }}
                 className="space-y-6"
               >
-                {/* Summary */}
                 <div className="bg-gradient-to-r from-[#2d7a5a]/10 to-transparent border border-[#e0dcd4] rounded-full p-4">
                   <h3 className="text-[#1a4a36] font-bold mb-3">Récapitulatif</h3>
                   <div className="space-y-2 text-sm">
@@ -608,11 +587,9 @@ const GroundTransportReservationModal = ({ isOpen, onClose, transport, user }) =
                   </div>
                 </div>
 
-                {/* Payment Method */}
                 <div>
                   <label className="text-[#1a4a36] font-medium mb-3 block">Mode de paiement</label>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    {/* Chargily */}
                     <button
                       onClick={() => setPaymentMethod('chargily')}
                       className={`p-4 rounded-full font-medium transition border-2 flex flex-col items-center gap-2 ${
@@ -625,7 +602,6 @@ const GroundTransportReservationModal = ({ isOpen, onClose, transport, user }) =
                       <span className="text-sm text-center">Carte Edahabia / CIB</span>
                     </button>
 
-                    {/* Stripe */}
                     <button
                       onClick={() => setPaymentMethod('stripe')}
                       className={`p-4 rounded-full font-medium transition border-2 flex flex-col items-center gap-2 ${
@@ -638,7 +614,6 @@ const GroundTransportReservationModal = ({ isOpen, onClose, transport, user }) =
                       <span className="text-sm text-center">Carte Bancaire</span>
                     </button>
 
-                    {/* Pay on Arrival */}
                     <button
                       onClick={() => setPaymentMethod('on_arrival')}
                       className={`p-4 rounded-full font-medium transition border-2 flex flex-col items-center gap-2 ${
@@ -653,7 +628,6 @@ const GroundTransportReservationModal = ({ isOpen, onClose, transport, user }) =
                   </div>
                 </div>
 
-                {/* Payment Info */}
                 {paymentMethod === 'chargily' && (
                   <div className="bg-[#f7f5f0]/50 border border-[#e0dcd4] rounded-full p-4">
                     <p className="text-[#6b8f7b] text-sm">
@@ -692,7 +666,6 @@ const GroundTransportReservationModal = ({ isOpen, onClose, transport, user }) =
           </AnimatePresence>
         </div>
 
-        {/* Footer Navigation */}
         {step < 4 && (
           <div className="flex items-center justify-between p-6 border-t border-[#e0dcd4]">
             {step > 1 ? (
@@ -734,5 +707,3 @@ const GroundTransportReservationModal = ({ isOpen, onClose, transport, user }) =
 };
 
 export default GroundTransportReservationModal;
-
-
