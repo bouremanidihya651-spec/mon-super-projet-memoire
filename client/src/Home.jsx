@@ -120,7 +120,7 @@ const Home = ({ openAuthModal, isChatbotOpen, toggleChatbot }) => {
             className="text-5xl md:text-7xl font-serif italic mb-6 leading-tight"
             variants={heroItemVariant}
           >
-            Voyagez dans l'élégance
+            Explorez les trésors de l'Algérie
           </motion.h1>
           <motion.p 
             className="max-w-2xl mx-auto text-zinc-300 text-lg leading-relaxed tracking-wide mb-10"
