@@ -1,17 +1,127 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Calendar, Clock, MapPin, User, CreditCard, CheckCircle, XCircle, 
-  AlertCircle, Plane, Hotel, Car, Ticket, Download, Eye, X, Bus, 
-  Filter, ChevronLeft, SlidersHorizontal 
+  AlertCircle, Plane, Hotel, Car, Ticket, Download, Eye, X, Bus,
+  ChevronLeft, Filter, SlidersHorizontal
 } from 'lucide-react';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 
-// ✅ API URL corrigée avec backticks
-const API_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api`;
+/* ============================================
+   STYLES GLOBAUX INLINE - RESPONSIVE UTILITIES
+   ============================================ */
+const GlobalStyles = () => (
+  <style>{`
+    /* Cache scrollbar mais garde fonctionnalité */
+    .scrollbar-hide {
+      -ms-overflow-style: none !important;
+      scrollbar-width: none !important;
+    }
+    .scrollbar-hide::-webkit-scrollbar {
+      display: none !important;
+      width: 0 !important;
+      height: 0 !important;
+    }
+    
+    /* Empêche zoom input sur iOS */
+    @supports (-webkit-touch-callout: none) {
+      .ios-no-zoom input,
+      .ios-no-zoom textarea,
+      .ios-no-zoom select {
+        font-size: 16px !important;
+      }
+    }
+    
+    /* Safe area pour mobiles modernes */
+    .safe-bottom {
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    .safe-top {
+      padding-top: env(safe-area-inset-top, 0px);
+    }
+    
+    /* Touch action optimisation */
+    .touch-pan-y {
+      touch-action: pan-y;
+    }
+    
+    /* Prevent text selection on interactive elements */
+    .no-select {
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    
+    /* Smooth scroll */
+    .scroll-smooth {
+      scroll-behavior: smooth;
+      -webkit-overflow-scrolling: touch;
+    }
+    
+    /* Line clamp utilities */
+    .line-clamp-1 {
+      display: -webkit-box;
+      -webkit-line-clamp: 1;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .line-clamp-2 {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    
+    /* Animation utilities */
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes slideUp {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .animate-fade-in {
+      animation: fadeIn 0.3s ease-out;
+    }
+    .animate-slide-up {
+      animation: slideUp 0.4s ease-out;
+    }
+    
+    /* Focus visible for accessibility */
+    .focus-ring:focus-visible {
+      outline: 2px solid #2d7a5a;
+      outline-offset: 2px;
+    }
+    
+    /* Reduce motion preference */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+    
+    /* Modal animation */
+    @keyframes modalSlideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+    @keyframes modalFadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    .modal-mobile-enter {
+      animation: modalSlideUp 0.3s ease-out;
+    }
+    .modal-desktop-enter {
+      animation: modalFadeIn 0.3s ease-out;
+    }
+  `}</style>
+);
 
 /* ============================================
-   HOOK PERSONNALISÉ POUR DETECTER MOBILE
+   HOOK PERSONNALISÉ POUR DÉTECTER MOBILE
    ============================================ */
 const useMediaQuery = (query) => {
   const [matches, setMatches] = useState(false);
@@ -27,52 +137,62 @@ const useMediaQuery = (query) => {
   return matches;
 };
 
-/* ============================================
-   BADGE DE STATUT - RESPONSIVE
-   ============================================ */
+// ✅ CORRECTION LIGNE 6 : backticks au lieu de guillemets simples
+const API_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api`;
+
+/**
+ * Badge de statut - RESPONSIVE
+ */
 const StatusBadge = ({ status }) => {
   const statusConfig = {
     pending: { 
       color: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800', 
       icon: AlertCircle, 
-      label: 'En attente' 
+      label: 'En attente',
+      shortLabel: 'Attente'
     },
     confirmed: { 
       color: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800', 
       icon: CheckCircle, 
-      label: 'Confirmé' 
+      label: 'Confirmé',
+      shortLabel: 'Confirmé'
     },
     cancelled: { 
       color: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800', 
       icon: XCircle, 
-      label: 'Annulé' 
+      label: 'Annulé',
+      shortLabel: 'Annulé'
     },
     completed: { 
       color: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800', 
       icon: CheckCircle, 
-      label: 'Terminé' 
+      label: 'Terminé',
+      shortLabel: 'Terminé'
     },
     paid: { 
       color: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800', 
       icon: CreditCard, 
-      label: 'Payé' 
+      label: 'Payé',
+      shortLabel: 'Payé'
     }
   };
 
   const config = statusConfig[status] || statusConfig.pending;
   const Icon = config.icon;
+  const isMobile = useMediaQuery('(max-width: 640px)');
 
   return (
-    <span className={`inline-flex items-center gap-1 px-2 py-1 sm:px-3 sm:py-1 rounded-full text-xs sm:text-sm font-medium border ${config.color}`}>
+    <span className={`inline-flex items-center gap-1 px-2 py-1 sm:px-3 sm:py-1 rounded-full text-xs font-medium border ${config.color} no-select`}>
       <Icon size={12} className="shrink-0" />
       <span className="hidden sm:inline">{config.label}</span>
+      <span className="sm:hidden">{config.shortLabel}</span>
     </span>
   );
 };
 
-/* ============================================
-   BADGE DE TYPE - RESPONSIVE
-   ============================================ */
+/**
+ * Badge de type de réservation - RESPONSIVE
+ */
 const TypeBadge = ({ type }) => {
   const typeConfig = {
     flight: { icon: Plane, label: 'Vol', shortLabel: 'Vol', color: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800' },
@@ -89,19 +209,20 @@ const TypeBadge = ({ type }) => {
     color: 'bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 border-stone-200 dark:border-stone-700' 
   };
   const Icon = config.icon;
+  const isMobile = useMediaQuery('(max-width: 640px)');
 
   return (
-    <span className={`inline-flex items-center gap-1 px-2 py-1 sm:px-3 sm:py-1 rounded-full text-xs font-medium border ${config.color}`}>
+    <span className={`inline-flex items-center gap-1 px-2 py-1 sm:px-3 sm:py-1 rounded-full text-xs font-medium border ${config.color} no-select`}>
       <Icon size={12} className="shrink-0" />
-      <span className="sm:hidden">{config.shortLabel}</span>
       <span className="hidden sm:inline">{config.label}</span>
+      <span className="sm:hidden">{config.shortLabel}</span>
     </span>
   );
 };
 
-/* ============================================
-   CARTE DE RÉSERVATION - RESPONSIVE
-   ============================================ */
+/**
+ * Carte de réservation - RESPONSIVE
+ */
 const ReservationCard = ({ reservation, onViewDetails, onDownloadInvoice }) => {
   const { t } = useTranslation();
   const isMobile = useMediaQuery('(max-width: 640px)');
@@ -144,7 +265,7 @@ const ReservationCard = ({ reservation, onViewDetails, onDownloadInvoice }) => {
   const name = getReservationName();
 
   return (
-    <div className="bg-white dark:bg-dark-surface rounded-2xl sm:rounded-3xl border border-stone-200 dark:border-dark-border overflow-hidden hover:border-[#2d7a5a] transition-all group shadow-sm hover:shadow-md">
+    <div className="bg-white dark:bg-dark-surface rounded-2xl sm:rounded-3xl border border-stone-200 dark:border-dark-border overflow-hidden hover:border-[#2d7a5a] transition-all group shadow-sm hover:shadow-md touch-pan-y">
       {/* Header avec image - hauteur responsive */}
       <div className="relative h-40 sm:h-48 bg-stone-100 dark:bg-dark-bg overflow-hidden">
         {imageUrl ? (
@@ -172,7 +293,7 @@ const ReservationCard = ({ reservation, onViewDetails, onDownloadInvoice }) => {
 
       {/* Corps de la carte - padding responsive */}
       <div className="p-4 sm:p-6">
-        <h3 className="text-base sm:text-lg font-bold mb-2 truncate text-[#1a4a36] dark:text-dark-text">
+        <h3 className="text-base sm:text-lg font-bold mb-2 truncate text-[#1a4a36] dark:text-dark-text line-clamp-1">
           {name}
         </h3>
         
@@ -216,7 +337,7 @@ const ReservationCard = ({ reservation, onViewDetails, onDownloadInvoice }) => {
           <div className="flex gap-1.5 sm:gap-2">
             <button
               onClick={() => onViewDetails(reservation)}
-              className="p-2 sm:p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center bg-white dark:bg-dark-surface hover:bg-stone-50 dark:hover:bg-dark-surface-2 border border-stone-200 dark:border-dark-border rounded-full transition-all active:scale-95"
+              className="p-2 sm:p-2.5 min-w-[40px] min-h-[40px] sm:min-w-[44px] sm:min-h-[44px] flex items-center justify-center bg-white dark:bg-dark-surface hover:bg-stone-50 dark:hover:bg-dark-surface-2 border border-stone-200 dark:border-dark-border rounded-full transition-all active:scale-95 focus-ring no-select"
               title="Voir détails"
               aria-label="Voir détails"
             >
@@ -225,7 +346,7 @@ const ReservationCard = ({ reservation, onViewDetails, onDownloadInvoice }) => {
             {reservation.payment_status === 'paid' && (
               <button
                 onClick={() => onDownloadInvoice(reservation)}
-                className="p-2 sm:p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center bg-[#2d7a5a]/10 hover:bg-[#2d7a5a]/20 border border-stone-200 dark:border-dark-border rounded-full transition-all active:scale-95"
+                className="p-2 sm:p-2.5 min-w-[40px] min-h-[40px] sm:min-w-[44px] sm:min-h-[44px] flex items-center justify-center bg-[#2d7a5a]/10 hover:bg-[#2d7a5a]/20 border border-stone-200 dark:border-dark-border rounded-full transition-all active:scale-95 focus-ring no-select"
                 title="Télécharger facture"
                 aria-label="Télécharger facture"
               >
@@ -239,13 +360,12 @@ const ReservationCard = ({ reservation, onViewDetails, onDownloadInvoice }) => {
   );
 };
 
-/* ============================================
-   MODAL DE DÉTAILS - FULLY RESPONSIVE
-   ============================================ */
+/**
+ * Modal de détails de réservation - FULLY RESPONSIVE
+ */
 const ReservationDetailsModal = ({ reservation, onClose }) => {
   const { t } = useTranslation();
   const isMobile = useMediaQuery('(max-width: 640px)');
-  const [activeTab, setActiveTab] = useState('info');
 
   if (!reservation) return null;
 
@@ -255,6 +375,7 @@ const ReservationDetailsModal = ({ reservation, onClose }) => {
     return () => { document.body.style.overflow = 'unset'; };
   }, []);
 
+  // Helper pour afficher les détails spécifiques au type
   const renderTypeSpecificDetails = () => {
     const detailSections = {
       flight: {
@@ -263,8 +384,8 @@ const ReservationDetailsModal = ({ reservation, onClose }) => {
         fields: [
           { label: 'Numéro de vol', value: reservation.transport?.flight_number },
           { label: 'Compagnie', value: reservation.transport?.company },
-          { label: 'Départ', value: reservation.transport?.departure_airport },
-          { label: 'Arrivée', value: reservation.transport?.arrival_airport },
+          { label: 'Aéroport départ', value: reservation.transport?.departure_airport },
+          { label: 'Aéroport arrivée', value: reservation.transport?.arrival_airport },
           { label: 'Trajet', value: reservation.transport?.departure_city && reservation.transport?.arrival_city ? `${reservation.transport.departure_city} → ${reservation.transport.arrival_city}` : null },
           { label: 'Heure départ', value: reservation.transport?.departure_time },
           { label: 'Heure arrivée', value: reservation.transport?.arrival_time },
@@ -345,7 +466,7 @@ const ReservationDetailsModal = ({ reservation, onClose }) => {
           ))}
         </div>
 
-        {/* Équipements / Tags spéciaux */}
+        {/* Équipements spéciaux */}
         {reservation.trip_type === 'hotel' && reservation.hotel?.amenities && (
           <div className="mt-4">
             <span className="text-xs text-stone-500 dark:text-dark-text-muted block mb-2">Équipements</span>
@@ -391,11 +512,11 @@ const ReservationDetailsModal = ({ reservation, onClose }) => {
 
   return (
     <div 
-      className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+      className={`fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 ${isMobile ? 'modal-mobile-enter' : 'modal-desktop-enter'}`}
       onClick={onClose}
     >
       <div 
-        className="bg-[#f7f5f0] dark:bg-dark-bg w-full sm:max-w-2xl sm:rounded-3xl rounded-t-3xl sm:border border-stone-200 dark:border-dark-border max-h-[90vh] sm:max-h-[85vh] overflow-y-auto shadow-2xl"
+        className="bg-[#f7f5f0] dark:bg-dark-bg w-full sm:max-w-2xl sm:rounded-3xl rounded-t-3xl sm:border border-stone-200 dark:border-dark-border max-h-[90vh] sm:max-h-[85vh] overflow-y-auto shadow-2xl scroll-smooth"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header sticky */}
@@ -403,7 +524,7 @@ const ReservationDetailsModal = ({ reservation, onClose }) => {
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <button 
               onClick={onClose}
-              className="sm:hidden p-2 -ml-2 hover:bg-stone-200 rounded-full transition-colors"
+              className="sm:hidden p-2 -ml-2 hover:bg-stone-200 dark:hover:bg-dark-surface rounded-full transition-colors focus-ring"
               aria-label="Retour"
             >
               <ChevronLeft size={20} />
@@ -417,7 +538,7 @@ const ReservationDetailsModal = ({ reservation, onClose }) => {
           </div>
           <button 
             onClick={onClose} 
-            className="hidden sm:block p-2 hover:bg-stone-200 dark:hover:bg-dark-surface rounded-full transition-all"
+            className="hidden sm:block p-2 hover:bg-stone-200 dark:hover:bg-dark-surface rounded-full transition-all focus-ring"
             aria-label="Fermer"
           >
             <X size={20} className="text-stone-500" />
@@ -426,9 +547,9 @@ const ReservationDetailsModal = ({ reservation, onClose }) => {
 
         {/* Contenu */}
         <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
-          {/* Numéro de confirmation */}
+          {/* Confirmation number */}
           <div className="bg-[#2d7a5a]/10 border border-stone-200 dark:border-dark-border rounded-2xl p-3 sm:p-4 text-center">
-            <p className="text-xs text-[#2d7a5a] uppercase tracking-wider mb-1">Confirmation</p>
+            <p className="text-xs text-[#2d7a5a] uppercase tracking-wider mb-1">Numéro de confirmation</p>
             <p className="text-xl sm:text-2xl font-bold text-[#2d7a5a] break-all">{reservation.confirmation_number}</p>
           </div>
 
@@ -499,7 +620,7 @@ const ReservationDetailsModal = ({ reservation, onClose }) => {
           {/* Date de création */}
           <div className="border-t border-stone-200 dark:border-dark-border pt-4">
             <p className="text-xs text-stone-500 dark:text-dark-text-muted">
-              Créée le {new Date(reservation.created_at).toLocaleDateString('fr-FR', {
+              Réservation créée le {new Date(reservation.created_at).toLocaleDateString('fr-FR', {
                 day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
               })}
             </p>
@@ -507,10 +628,10 @@ const ReservationDetailsModal = ({ reservation, onClose }) => {
         </div>
 
         {/* Footer actions - sticky bottom */}
-        <div className="sticky bottom-0 bg-[#f7f5f0] dark:bg-dark-bg border-t border-stone-200 dark:border-dark-border p-4 sm:p-6 flex gap-2 sm:gap-3">
+        <div className="sticky bottom-0 bg-[#f7f5f0] dark:bg-dark-bg border-t border-stone-200 dark:border-dark-border p-4 sm:p-6 flex gap-2 sm:gap-3 safe-bottom">
           <button
             onClick={onClose}
-            className="flex-1 px-4 sm:px-6 py-3 bg-white dark:bg-dark-surface border border-stone-200 dark:border-dark-border rounded-full font-semibold text-sm sm:text-base hover:bg-stone-50 transition-all active:scale-95 min-h-[48px]"
+            className="flex-1 px-4 sm:px-6 py-3 bg-white dark:bg-dark-surface border border-stone-200 dark:border-dark-border rounded-full font-semibold text-sm sm:text-base hover:bg-stone-50 transition-all active:scale-95 min-h-[48px] focus-ring no-select"
           >
             Fermer
           </button>
@@ -519,10 +640,10 @@ const ReservationDetailsModal = ({ reservation, onClose }) => {
               onClick={() => {
                 window.open(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/invoices/${reservation.id}/download`, '_blank');
               }}
-              className="flex-1 px-4 sm:px-6 py-3 bg-[#2d7a5a] hover:bg-[#1a4a36] text-white rounded-full font-semibold text-sm sm:text-base transition-all flex items-center justify-center gap-2 active:scale-95 min-h-[48px]"
+              className="flex-1 px-4 sm:px-6 py-3 bg-[#2d7a5a] hover:bg-[#1a4a36] text-white rounded-full font-semibold text-sm sm:text-base transition-all flex items-center justify-center gap-2 active:scale-95 min-h-[48px] focus-ring no-select"
             >
               <Download size={16} />
-              <span className="hidden sm:inline">Télécharger</span>
+              <span className="hidden sm:inline">Télécharger facture</span>
               <span className="sm:hidden">Facture</span>
             </button>
           )}
@@ -532,9 +653,9 @@ const ReservationDetailsModal = ({ reservation, onClose }) => {
   );
 };
 
-/* ============================================
-   COMPOSANT PRINCIPAL - RESPONSIVE
-   ============================================ */
+/**
+ * Composant principal ReservationsContent - FULLY RESPONSIVE
+ */
 const ReservationsContent = ({ openAuthModal, t }) => {
   const [reservations, setReservations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -556,6 +677,7 @@ const ReservationsContent = ({ openAuthModal, t }) => {
       setLoading(true);
       setError(null);
 
+      // Get user ID from token
       const userData = JSON.parse(atob(token.split('.')[1]));
       const userId = userData.id;
 
@@ -568,7 +690,7 @@ const ReservationsContent = ({ openAuthModal, t }) => {
       }
     } catch (err) {
       console.error('Error fetching reservations:', err);
-      setError(err.response?.data?.message || 'Erreur lors du chargement');
+      setError(err.response?.data?.message || 'Erreur lors du chargement des réservations');
     } finally {
       setLoading(false);
     }
@@ -582,13 +704,14 @@ const ReservationsContent = ({ openAuthModal, t }) => {
     window.open(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/invoices/${reservation.id}/download`, '_blank');
   };
 
+  // Filtrer par statut ET par catégorie
   const filteredReservations = reservations.filter(r => {
     const statusMatch = filterStatus === 'all' || r.status === filterStatus;
     const categoryMatch = filterCategory === 'all' || r.trip_type === filterCategory;
     return statusMatch && categoryMatch;
   });
 
-  // Stats
+  // Statistiques par statut
   const stats = {
     total: reservations.length,
     pending: reservations.filter(r => r.status === 'pending').length,
@@ -597,6 +720,7 @@ const ReservationsContent = ({ openAuthModal, t }) => {
     completed: reservations.filter(r => r.status === 'completed').length
   };
 
+  // Statistiques par catégorie
   const categoryStats = {
     flight: reservations.filter(r => r.trip_type === 'flight').length,
     hotel: reservations.filter(r => r.trip_type === 'hotel').length,
@@ -623,197 +747,203 @@ const ReservationsContent = ({ openAuthModal, t }) => {
   ];
 
   return (
-    <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20 sm:pb-0">
-      {/* Header */}
-      <header className="mb-6 sm:mb-8">
-        <h1 className="text-2xl sm:text-3xl font-serif font-bold mb-1 sm:mb-2 text-[#1a4a36] dark:text-dark-text">
-          Mes Réservations
-        </h1>
-        <p className="text-sm sm:text-base text-stone-500 dark:text-dark-text-muted">
-          Consultez et gérez vos réservations
-        </p>
-      </header>
+    <>
+      <GlobalStyles />
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 animate-fade-in animate-slide-up pb-20 sm:pb-0 safe-bottom ios-no-zoom">
+        {/* Header */}
+        <header className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-serif font-bold mb-1 sm:mb-2 text-[#1a4a36] dark:text-dark-text">
+            Mes Réservations
+          </h1>
+          <p className="text-sm sm:text-base text-stone-500 dark:text-dark-text-muted">
+            Consultez et gérez toutes vos réservations de voyage
+          </p>
+        </header>
 
-      {/* Stats par statut - scrollable horizontal sur mobile */}
-      <div className="mb-6 sm:mb-8">
-        <div className="flex sm:grid sm:grid-cols-5 gap-2 sm:gap-4 overflow-x-auto pb-2 sm:pb-0 -mx-3 px-3 sm:mx-0 sm:px-0 scrollbar-hide">
-          {[
-            { key: 'total', label: 'Total', color: 'text-[#1a4a36]' },
-            { key: 'pending', label: 'Attente', color: 'text-yellow-600' },
-            { key: 'confirmed', label: 'Confirmé', color: 'text-green-600' },
-            { key: 'completed', label: 'Terminé', color: 'text-blue-600' },
-            { key: 'cancelled', label: 'Annulé', color: 'text-red-600' }
-          ].map(({ key, label, color }) => (
-            <div 
-              key={key}
-              className="flex-shrink-0 w-[100px] sm:w-auto bg-white dark:bg-dark-surface p-3 sm:p-4 rounded-2xl border border-stone-200 dark:border-dark-border"
-            >
-              <div className={`text-xl sm:text-2xl font-bold ${color}`}>{stats[key]}</div>
-              <div className="text-xs text-stone-500 dark:text-dark-text-muted">{label}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Stats par catégorie - scrollable horizontal sur mobile */}
-      <div className="mb-6 sm:mb-8">
-        <div className="flex sm:grid sm:grid-cols-6 gap-2 sm:gap-4 overflow-x-auto pb-2 sm:pb-0 -mx-3 px-3 sm:mx-0 sm:px-0 scrollbar-hide">
-          {Object.entries(categoryConfig).map(([key, config]) => {
-            const Icon = config.icon;
-            const count = key === 'all' ? stats.total : categoryStats[key];
-            const isActive = filterCategory === key;
-            return (
-              <button
+        {/* Stats par statut - scrollable horizontal sur mobile */}
+        <div className="mb-6 sm:mb-8">
+          <div className="flex sm:grid sm:grid-cols-5 gap-2 sm:gap-4 overflow-x-auto pb-2 sm:pb-0 -mx-3 px-3 sm:mx-0 sm:px-0 scrollbar-hide scroll-smooth">
+            {[
+              { key: 'total', label: 'Total', color: 'text-[#1a4a36] dark:text-dark-text' },
+              { key: 'pending', label: 'Attente', color: 'text-yellow-600' },
+              { key: 'confirmed', label: 'Confirmé', color: 'text-green-600' },
+              { key: 'completed', label: 'Terminé', color: 'text-blue-600' },
+              { key: 'cancelled', label: 'Annulé', color: 'text-red-600' }
+            ].map(({ key, label, color }) => (
+              <div 
                 key={key}
-                onClick={() => setFilterCategory(key)}
-                className={`flex-shrink-0 w-[110px] sm:w-auto p-3 sm:p-4 rounded-2xl border transition-all text-left sm:text-center ${
-                  isActive
-                    ? 'bg-[#2d7a5a]/10 border-[#2d7a5a]/30'
-                    : 'bg-white dark:bg-dark-surface border-stone-200 dark:border-dark-border hover:border-stone-300'
-                }`}
+                className="flex-shrink-0 w-[100px] sm:w-auto bg-white dark:bg-dark-surface p-3 sm:p-4 rounded-2xl border border-stone-200 dark:border-dark-border"
               >
-                <div className="flex items-center sm:justify-between gap-2 sm:mb-2">
-                  <Icon size={18} className={isActive ? 'text-[#2d7a5a]' : config.color} />
-                  <div className={`text-lg sm:text-2xl font-bold ${isActive ? 'text-[#2d7a5a]' : 'text-[#1a4a36] dark:text-dark-text'}`}>
-                    {count}
-                  </div>
-                </div>
-                <div className={`text-xs ${isActive ? 'text-[#2d7a5a]' : 'text-stone-500 dark:text-dark-text-muted'}`}>
-                  <span className="sm:hidden">{config.shortLabel}</span>
-                  <span className="hidden sm:inline">{config.label}</span>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Filtres par statut - version mobile compacte */}
-      <div className="flex items-center justify-between mb-4 sm:mb-6">
-        <div className="flex gap-1.5 sm:gap-2 overflow-x-auto pb-1 scrollbar-hide flex-1">
-          {statusFilters.map(({ value, label }) => (
-            <button
-              key={value}
-              onClick={() => setFilterStatus(value)}
-              className={`px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition-all min-h-[36px] ${
-                filterStatus === value
-                  ? 'bg-[#2d7a5a] text-white shadow-md'
-                  : 'bg-white dark:bg-dark-surface text-stone-600 dark:text-dark-text-muted border border-stone-200 dark:border-dark-border hover:bg-stone-50'
-              }`}
-            >
-              {isMobile && value !== 'all' ? label.split(' ')[0] : label}
-            </button>
-          ))}
-        </div>
-        
-        {/* Bouton filtres mobile */}
-        <button 
-          className="sm:hidden ml-2 p-2 bg-white dark:bg-dark-surface border border-stone-200 dark:border-dark-border rounded-full"
-          onClick={() => setShowMobileFilters(!showMobileFilters)}
-        >
-          <SlidersHorizontal size={18} />
-        </button>
-      </div>
-
-      {/* Filtre actif */}
-      {(filterCategory !== 'all' || filterStatus !== 'all') && (
-        <div className="mb-4 sm:mb-6 flex items-center gap-2 flex-wrap">
-          <span className="text-stone-500 text-sm">Filtres :</span>
-          {filterCategory !== 'all' && (
-            <span className="px-2 py-1 bg-[#2d7a5a]/10 text-[#2d7a5a] rounded-full text-xs font-medium border border-[#2d7a5a]/20 flex items-center gap-1">
-              {categoryConfig[filterCategory]?.label}
-              <button onClick={() => setFilterCategory('all')} className="hover:bg-[#2d7a5a]/20 rounded-full p-0.5">
-                <X size={12} />
-              </button>
-            </span>
-          )}
-          {filterStatus !== 'all' && (
-            <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium border border-blue-200 flex items-center gap-1">
-              {statusFilters.find(s => s.value === filterStatus)?.label}
-              <button onClick={() => setFilterStatus('all')} className="hover:bg-blue-200 rounded-full p-0.5">
-                <X size={12} />
-              </button>
-            </span>
-          )}
-          <button
-            onClick={() => { setFilterCategory('all'); setFilterStatus('all'); }}
-            className="text-xs text-stone-500 hover:text-[#1a4a36] underline"
-          >
-            Tout effacer
-          </button>
-        </div>
-      )}
-
-      {/* Contenu */}
-      {loading ? (
-        <div className="text-center py-12 sm:py-20">
-          <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-t-2 border-b-2 border-[#2d7a5a] mx-auto mb-4"></div>
-          <p className="text-stone-500 dark:text-dark-text-muted text-sm sm:text-base">Chargement...</p>
-        </div>
-      ) : error ? (
-        <div className="text-center py-12 sm:py-20 px-4">
-          <AlertCircle size={40} className="mx-auto mb-4 text-red-500 sm:size-12" />
-          <p className="text-red-600 mb-4 text-sm sm:text-base">{error}</p>
-          <button
-            onClick={fetchReservations}
-            className="px-5 sm:px-6 py-2.5 sm:py-3 bg-[#2d7a5a] text-white rounded-full font-semibold hover:bg-[#1a4a36] transition-all text-sm sm:text-base min-h-[44px]"
-          >
-            Réessayer
-          </button>
-        </div>
-      ) : filteredReservations.length === 0 ? (
-        <div className="text-center py-12 sm:py-20 px-4">
-          <Calendar size={48} className="mx-auto mb-4 text-stone-400 sm:size-16" />
-          <p className="text-stone-500 dark:text-dark-text-muted mb-2 text-sm sm:text-base">
-            {filterCategory === 'all' && filterStatus === 'all'
-              ? "Aucune réservation"
-              : "Aucun résultat pour ces filtres"}
-          </p>
-          <p className="text-stone-400 text-xs sm:text-sm">
-            {(filterCategory !== 'all' || filterStatus !== 'all') && (
-              <button 
-                onClick={() => { setFilterCategory('all'); setFilterStatus('all'); }}
-                className="text-[#2d7a5a] hover:underline"
-              >
-                Réinitialiser les filtres
-              </button>
-            )}
-          </p>
-        </div>
-      ) : (
-        <div>
-          {/* Titre de section */}
-          <div className="flex items-center justify-between mb-4 sm:mb-6">
-            <h2 className="text-lg sm:text-xl font-bold text-[#1a4a36] dark:text-dark-text">
-              {filterCategory === 'all' ? 'Toutes' : categoryConfig[filterCategory]?.label}
-              <span className="text-stone-500 dark:text-dark-text-muted text-xs sm:text-sm font-normal ml-2">
-                ({filteredReservations.length})
-              </span>
-            </h2>
-          </div>
-
-          {/* Grille responsive : 1 col mobile, 2 cols tablet, 3 cols desktop */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            {filteredReservations.map((reservation) => (
-              <ReservationCard
-                key={reservation.id}
-                reservation={reservation}
-                onViewDetails={handleViewDetails}
-                onDownloadInvoice={handleDownloadInvoice}
-              />
+                <div className={`text-xl sm:text-2xl font-bold ${color}`}>{stats[key]}</div>
+                <div className="text-xs text-stone-500 dark:text-dark-text-muted">{label}</div>
+              </div>
             ))}
           </div>
         </div>
-      )}
 
-      {/* Modal */}
-      {selectedReservation && (
-        <ReservationDetailsModal
-          reservation={selectedReservation}
-          onClose={() => setSelectedReservation(null)}
-        />
-      )}
-    </div>
+        {/* Stats par catégorie - scrollable horizontal sur mobile */}
+        <div className="mb-6 sm:mb-8">
+          <div className="flex sm:grid sm:grid-cols-6 gap-2 sm:gap-4 overflow-x-auto pb-2 sm:pb-0 -mx-3 px-3 sm:mx-0 sm:px-0 scrollbar-hide scroll-smooth">
+            {Object.entries(categoryConfig).map(([key, config]) => {
+              const Icon = config.icon;
+              const count = key === 'all' ? stats.total : categoryStats[key];
+              const isActive = filterCategory === key;
+              return (
+                <button
+                  key={key}
+                  onClick={() => setFilterCategory(key)}
+                  className={`flex-shrink-0 w-[110px] sm:w-auto p-3 sm:p-4 rounded-2xl border transition-all text-left sm:text-center focus-ring no-select active:scale-95 ${
+                    isActive
+                      ? 'bg-[#2d7a5a]/10 border-[#2d7a5a]/30'
+                      : 'bg-white dark:bg-dark-surface border-stone-200 dark:border-dark-border hover:border-stone-300'
+                  }`}
+                >
+                  <div className="flex items-center sm:justify-between gap-2 sm:mb-2">
+                    <Icon size={18} className={isActive ? 'text-[#2d7a5a]' : config.color} />
+                    <div className={`text-lg sm:text-2xl font-bold ${isActive ? 'text-[#2d7a5a]' : 'text-[#1a4a36] dark:text-dark-text'}`}>
+                      {count}
+                    </div>
+                  </div>
+                  <div className={`text-xs ${isActive ? 'text-[#2d7a5a]' : 'text-stone-500 dark:text-dark-text-muted'}`}>
+                    <span className="sm:hidden">{config.shortLabel}</span>
+                    <span className="hidden sm:inline">{config.label}</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Filtres par statut - version mobile compacte */}
+        <div className="flex items-center justify-between mb-4 sm:mb-6">
+          <div className="flex gap-1.5 sm:gap-2 overflow-x-auto pb-1 scrollbar-hide flex-1 scroll-smooth">
+            {statusFilters.map(({ value, label }) => (
+              <button
+                key={value}
+                onClick={() => setFilterStatus(value)}
+                className={`px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition-all min-h-[36px] focus-ring no-select active:scale-95 ${
+                  filterStatus === value
+                    ? 'bg-[#2d7a5a] text-white shadow-md'
+                    : 'bg-white dark:bg-dark-surface text-stone-600 dark:text-dark-text-muted border border-stone-200 dark:border-dark-border hover:bg-stone-50'
+                }`}
+              >
+                {isMobile && value !== 'all' ? label.split(' ')[0] : label}
+              </button>
+            ))}
+          </div>
+          
+          {/* Bouton filtres mobile */}
+          <button 
+            className="sm:hidden ml-2 p-2 bg-white dark:bg-dark-surface border border-stone-200 dark:border-dark-border rounded-full focus-ring no-select active:scale-95"
+            onClick={() => setShowMobileFilters(!showMobileFilters)}
+          >
+            <SlidersHorizontal size={18} />
+          </button>
+        </div>
+
+        {/* Filtre actif */}
+        {(filterCategory !== 'all' || filterStatus !== 'all') && (
+          <div className="mb-4 sm:mb-6 flex items-center gap-2 flex-wrap animate-fade-in">
+            <span className="text-stone-500 text-sm">Filtres :</span>
+            {filterCategory !== 'all' && (
+              <span className="px-2 py-1 bg-[#2d7a5a]/10 text-[#2d7a5a] rounded-full text-xs font-medium border border-[#2d7a5a]/20 flex items-center gap-1 no-select">
+                {categoryConfig[filterCategory]?.label}
+                <button onClick={() => setFilterCategory('all')} className="hover:bg-[#2d7a5a]/20 rounded-full p-0.5 focus-ring">
+                  <X size={12} />
+                </button>
+              </span>
+            )}
+            {filterStatus !== 'all' && (
+              <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium border border-blue-200 flex items-center gap-1 no-select">
+                {statusFilters.find(s => s.value === filterStatus)?.label}
+                <button onClick={() => setFilterStatus('all')} className="hover:bg-blue-200 rounded-full p-0.5 focus-ring">
+                  <X size={12} />
+                </button>
+              </span>
+            )}
+            <button
+              onClick={() => { setFilterCategory('all'); setFilterStatus('all'); }}
+              className="text-xs text-stone-500 hover:text-[#1a4a36] underline focus-ring"
+            >
+              Tout effacer
+            </button>
+          </div>
+        )}
+
+        {/* Contenu */}
+        {loading ? (
+          <div className="text-center py-12 sm:py-20">
+            <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-t-2 border-b-2 border-[#2d7a5a] mx-auto mb-4"></div>
+            <p className="text-stone-500 dark:text-dark-text-muted text-sm sm:text-base">Chargement de vos réservations...</p>
+          </div>
+        ) : error ? (
+          <div className="text-center py-12 sm:py-20 px-4">
+            <AlertCircle size={40} className="mx-auto mb-4 text-red-500 sm:size-12" />
+            <p className="text-red-600 mb-4 text-sm sm:text-base">{error}</p>
+            <button
+              onClick={fetchReservations}
+              className="px-5 sm:px-6 py-2.5 sm:py-3 bg-[#2d7a5a] text-white rounded-full font-semibold hover:bg-[#1a4a36] transition-all text-sm sm:text-base min-h-[44px] focus-ring no-select active:scale-95"
+            >
+              Réessayer
+            </button>
+          </div>
+        ) : filteredReservations.length === 0 ? (
+          <div className="text-center py-12 sm:py-20 px-4 animate-slide-up">
+            <Calendar size={48} className="mx-auto mb-4 text-stone-400 sm:size-16" />
+            <p className="text-stone-500 dark:text-dark-text-muted mb-2 text-sm sm:text-base">
+              {filterCategory === 'all' && filterStatus === 'all'
+                ? "Vous n'avez aucune réservation pour le moment"
+                : "Aucun résultat pour ces filtres"}
+            </p>
+            <p className="text-stone-400 text-xs sm:text-sm">
+              {(filterCategory !== 'all' || filterStatus !== 'all') && (
+                <button 
+                  onClick={() => { setFilterCategory('all'); setFilterStatus('all'); }}
+                  className="text-[#2d7a5a] hover:underline focus-ring"
+                >
+                  Réinitialiser les filtres
+                </button>
+              )}
+              {filterCategory === 'all' && filterStatus === 'all' && "Réservez votre premier voyage pour commencer"}
+            </p>
+          </div>
+        ) : (
+          <div>
+            {/* Titre de section */}
+            <div className="flex items-center justify-between mb-4 sm:mb-6">
+              <h2 className="text-lg sm:text-xl font-bold text-[#1a4a36] dark:text-dark-text">
+                {filterCategory === 'all' 
+                  ? 'Toutes les réservations' 
+                  : categoryConfig[filterCategory]?.label}
+                <span className="text-stone-500 dark:text-dark-text-muted text-xs sm:text-sm font-normal ml-2">
+                  ({filteredReservations.length} {filteredReservations.length > 1 ? 'réservations' : 'réservation'})
+                </span>
+              </h2>
+            </div>
+
+            {/* Grille responsive : 1 col mobile, 2 cols tablet, 3 cols desktop */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+              {filteredReservations.map((reservation) => (
+                <ReservationCard
+                  key={reservation.id}
+                  reservation={reservation}
+                  onViewDetails={handleViewDetails}
+                  onDownloadInvoice={handleDownloadInvoice}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Modal de détails */}
+        {selectedReservation && (
+          <ReservationDetailsModal
+            reservation={selectedReservation}
+            onClose={() => setSelectedReservation(null)}
+          />
+        )}
+      </div>
+    </>
   );
 };
 
