@@ -14,7 +14,8 @@ const StatusBadge = ({ status }) => {
     pending: { color: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-500 border-yellow-200 dark:border-yellow-900/50', icon: AlertCircle, label: 'En attente' },
     confirmed: { color: 'bg-[#dcfce7] dark:bg-green-900/30 text-[#16a34a] dark:text-green-500 border-[#bbf7d0] dark:border-green-900/50', icon: CheckCircle, label: 'Confirmé' },
     cancelled: { color: 'bg-[#fef2f2] dark:bg-red-900/30 text-[#dc2626] dark:text-red-500 border-[#fecaca] dark:border-red-900/50', icon: XCircle, label: 'Annulé' },
-    completed: { color: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-500 border-blue-200 dark:border-blue-900/50', icon: CheckCircle, label: 'Terminé' }
+    completed: { color: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-500 border-blue-200 dark:border-blue-900/50', icon: CheckCircle, label: 'Terminé' },
+    paid: { color: 'bg-[#dcfce7] dark:bg-green-900/30 text-[#16a34a] dark:text-green-500 border-[#bbf7d0] dark:border-green-900/50', icon: CheckCircle, label: 'Payé' }
   };
 
   const config = statusConfig[status] || statusConfig.pending;
@@ -75,14 +76,14 @@ const ReservationCard = ({ reservation, onViewDetails, onDownloadInvoice }) => {
     const departure = new Date(reservation.departure_date).toLocaleDateString('fr-FR', { 
       day: 'numeric', month: 'short', year: 'numeric' 
     });
-    
+
     if (reservation.return_date && reservation.return_date !== reservation.departure_date) {
       const returnDate = new Date(reservation.return_date).toLocaleDateString('fr-FR', { 
         day: 'numeric', month: 'short', year: 'numeric' 
       });
       return `${departure} - ${returnDate}`;
     }
-    
+
     return departure;
   };
 
@@ -92,7 +93,7 @@ const ReservationCard = ({ reservation, onViewDetails, onDownloadInvoice }) => {
   };
 
   return (
-    <div className="bg-white dark:bg-dark-surface dark:bg-dark-surface rounded-3xl border border-[#e0dcd4] dark:border-dark-border dark:border-dark-border overflow-hidden hover:border-[#2d7a5a] transition-all group shadow-sm hover:shadow-md">
+    <div className="bg-white dark:bg-dark-surface rounded-3xl border border-[#e0dcd4] dark:border-dark-border overflow-hidden hover:border-[#2d7a5a] transition-all group shadow-sm hover:shadow-md">
       {/* Header avec image et type */}
       <div className="relative h-48 bg-[#e8e4de] dark:bg-dark-bg overflow-hidden">
         {getReservationImage() ? (
@@ -103,14 +104,14 @@ const ReservationCard = ({ reservation, onViewDetails, onDownloadInvoice }) => {
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
-            <Calendar size={48} className="text-[#6b8f7b] dark:text-dark-text-muted dark:text-dark-text-muted" />
+            <Calendar size={48} className="text-[#6b8f7b] dark:text-dark-text-muted" />
           </div>
         )}
-        
+
         <div className="absolute top-4 left-4 flex gap-2">
           <TypeBadge type={reservation.trip_type} />
         </div>
-        
+
         <div className="absolute top-4 right-4">
           <StatusBadge status={reservation.status} />
         </div>
@@ -118,46 +119,46 @@ const ReservationCard = ({ reservation, onViewDetails, onDownloadInvoice }) => {
 
       {/* Corps de la carte */}
       <div className="p-6">
-        <h3 className="text-lg font-bold mb-2 truncate text-[#1a4a36] dark:text-dark-text dark:text-dark-text">{getReservationName()}</h3>
-        
+        <h3 className="text-lg font-bold mb-2 truncate text-[#1a4a36] dark:text-dark-text">{getReservationName()}</h3>
+
         <div className="space-y-3 mb-4">
-          <div className="flex items-center gap-2 text-sm text-[#6b8f7b] dark:text-dark-text-muted dark:text-dark-text-muted">
+          <div className="flex items-center gap-2 text-sm text-[#6b8f7b] dark:text-dark-text-muted">
             <Calendar size={14} />
             <span>{getReservationDates()}</span>
           </div>
-          
-          <div className="flex items-center gap-2 text-sm text-[#6b8f7b] dark:text-dark-text-muted dark:text-dark-text-muted">
+
+          <div className="flex items-center gap-2 text-sm text-[#6b8f7b] dark:text-dark-text-muted">
             <User size={14} />
             <span>{getTravelersCount()}</span>
           </div>
-          
+
           {reservation.transport?.departure_city && reservation.transport?.arrival_city && (
-            <div className="flex items-center gap-2 text-sm text-[#6b8f7b] dark:text-dark-text-muted dark:text-dark-text-muted">
+            <div className="flex items-center gap-2 text-sm text-[#6b8f7b] dark:text-dark-text-muted">
               <MapPin size={14} />
               <span>{reservation.transport.departure_city} → {reservation.transport.arrival_city}</span>
             </div>
           )}
-          
+
           {reservation.transport?.company && (
-            <div className="flex items-center gap-2 text-sm text-[#6b8f7b] dark:text-dark-text-muted dark:text-dark-text-muted">
+            <div className="flex items-center gap-2 text-sm text-[#6b8f7b] dark:text-dark-text-muted">
               <Plane size={14} />
               <span>{reservation.transport.company}</span>
             </div>
           )}
         </div>
 
-        <div className="flex items-center justify-between pt-4 border-t border-[#e0dcd4] dark:border-dark-border dark:border-dark-border">
+        <div className="flex items-center justify-between pt-4 border-t border-[#e0dcd4] dark:border-dark-border">
           <div>
-            <span className="text-xs text-[#6b8f7b] dark:text-dark-text-muted dark:text-dark-text-muted">Total payé</span>
+            <span className="text-xs text-[#6b8f7b] dark:text-dark-text-muted">Total payé</span>
             <div className="text-xl font-bold text-[#2d7a5a] dark:text-surface">
               {parseFloat(reservation.total_price || 0).toFixed(2)} DA
             </div>
           </div>
-          
+
           <div className="flex gap-2">
             <button
               onClick={() => onViewDetails(reservation)}
-              className="p-2.5 bg-white dark:bg-dark-surface dark:bg-dark-bg hover:bg-[#f7f5f0] dark:bg-dark-bg dark:hover:bg-dark-surface-2 border border-[#e0dcd4] dark:border-dark-border dark:border-dark-border rounded-full transition-all"
+              className="p-2.5 bg-white dark:bg-dark-bg hover:bg-[#f7f5f0] dark:hover:bg-dark-surface-2 border border-[#e0dcd4] dark:border-dark-border rounded-full transition-all"
               title="Voir détails"
             >
               <Eye size={16} className="text-[#2d7a5a] dark:text-surface" />
@@ -165,7 +166,7 @@ const ReservationCard = ({ reservation, onViewDetails, onDownloadInvoice }) => {
             {reservation.payment_status === 'paid' && (
               <button
                 onClick={() => onDownloadInvoice(reservation)}
-                className="p-2.5 bg-[#2d7a5a]/10 dark:bg-dark-bg hover:bg-[#2d7a5a]/20 dark:hover:bg-dark-surface-2 border border-[#e0dcd4] dark:border-dark-border dark:border-dark-border rounded-full transition-all"
+                className="p-2.5 bg-[#2d7a5a]/10 dark:bg-dark-bg hover:bg-[#2d7a5a]/20 dark:hover:bg-dark-surface-2 border border-[#e0dcd4] dark:border-dark-border rounded-full transition-all"
                 title="Télécharger facture"
               >
                 <Download size={16} className="text-[#2d7a5a] dark:text-surface" />
@@ -196,69 +197,69 @@ const ReservationDetailsModal = ({ reservation, onClose }) => {
               <Plane size={16} />
               Détails du vol
             </h3>
-            
+
             <div className="space-y-3">
               {reservation.transport?.flight_number && (
-                <div className="flex justify-between py-2 border-b border-[#e0dcd4] dark:border-dark-border dark:border-dark-border">
-                  <span className="text-[#6b8f7b] dark:text-dark-text-muted dark:text-dark-text-muted">Numéro de vol</span>
-                  <span className="font-medium text-[#1a4a36] dark:text-dark-text dark:text-dark-text">{reservation.transport.flight_number}</span>
+                <div className="flex justify-between py-2 border-b border-[#e0dcd4] dark:border-dark-border">
+                  <span className="text-[#6b8f7b] dark:text-dark-text-muted">Numéro de vol</span>
+                  <span className="font-medium text-[#1a4a36] dark:text-dark-text">{reservation.transport.flight_number}</span>
                 </div>
               )}
-              
+
               {reservation.transport?.company && (
-                <div className="flex justify-between py-2 border-b border-[#e0dcd4] dark:border-dark-border dark:border-dark-border">
-                  <span className="text-[#6b8f7b] dark:text-dark-text-muted dark:text-dark-text-muted">Compagnie aérienne</span>
-                  <span className="font-medium text-[#1a4a36] dark:text-dark-text dark:text-dark-text">{reservation.transport.company}</span>
+                <div className="flex justify-between py-2 border-b border-[#e0dcd4] dark:border-dark-border">
+                  <span className="text-[#6b8f7b] dark:text-dark-text-muted">Compagnie aérienne</span>
+                  <span className="font-medium text-[#1a4a36] dark:text-dark-text">{reservation.transport.company}</span>
                 </div>
               )}
-              
+
               {reservation.transport?.departure_airport && (
-                <div className="flex justify-between py-2 border-b border-[#e0dcd4] dark:border-dark-border dark:border-dark-border">
-                  <span className="text-[#6b8f7b] dark:text-dark-text-muted dark:text-dark-text-muted">Aéroport de départ</span>
-                  <span className="font-medium text-[#1a4a36] dark:text-dark-text dark:text-dark-text">{reservation.transport.departure_airport}</span>
+                <div className="flex justify-between py-2 border-b border-[#e0dcd4] dark:border-dark-border">
+                  <span className="text-[#6b8f7b] dark:text-dark-text-muted">Aéroport de départ</span>
+                  <span className="font-medium text-[#1a4a36] dark:text-dark-text">{reservation.transport.departure_airport}</span>
                 </div>
               )}
-              
+
               {reservation.transport?.arrival_airport && (
-                <div className="flex justify-between py-2 border-b border-[#e0dcd4] dark:border-dark-border dark:border-dark-border">
-                  <span className="text-[#6b8f7b] dark:text-dark-text-muted dark:text-dark-text-muted">Aéroport d'arrivée</span>
-                  <span className="font-medium text-[#1a4a36] dark:text-dark-text dark:text-dark-text">{reservation.transport.arrival_airport}</span>
+                <div className="flex justify-between py-2 border-b border-[#e0dcd4] dark:border-dark-border">
+                  <span className="text-[#6b8f7b] dark:text-dark-text-muted">Aéroport d'arrivée</span>
+                  <span className="font-medium text-[#1a4a36] dark:text-dark-text">{reservation.transport.arrival_airport}</span>
                 </div>
               )}
-              
+
               {reservation.transport?.departure_city && reservation.transport?.arrival_city && (
-                <div className="flex justify-between py-2 border-b border-[#e0dcd4] dark:border-dark-border dark:border-dark-border">
-                  <span className="text-[#6b8f7b] dark:text-dark-text-muted dark:text-dark-text-muted">Trajet</span>
-                  <span className="font-medium text-[#1a4a36] dark:text-dark-text dark:text-dark-text">
+                <div className="flex justify-between py-2 border-b border-[#e0dcd4] dark:border-dark-border">
+                  <span className="text-[#6b8f7b] dark:text-dark-text-muted">Trajet</span>
+                  <span className="font-medium text-[#1a4a36] dark:text-dark-text">
                     {reservation.transport.departure_city} → {reservation.transport.arrival_city}
                   </span>
                 </div>
               )}
-              
+
               {reservation.transport?.departure_time && (
-                <div className="flex justify-between py-2 border-b border-[#e0dcd4] dark:border-dark-border dark:border-dark-border">
-                  <span className="text-[#6b8f7b] dark:text-dark-text-muted dark:text-dark-text-muted">Heure de départ</span>
-                  <span className="font-medium text-[#1a4a36] dark:text-dark-text dark:text-dark-text">{reservation.transport.departure_time}</span>
+                <div className="flex justify-between py-2 border-b border-[#e0dcd4] dark:border-dark-border">
+                  <span className="text-[#6b8f7b] dark:text-dark-text-muted">Heure de départ</span>
+                  <span className="font-medium text-[#1a4a36] dark:text-dark-text">{reservation.transport.departure_time}</span>
                 </div>
               )}
-              
+
               {reservation.transport?.arrival_time && (
-                <div className="flex justify-between py-2 border-b border-[#e0dcd4] dark:border-dark-border dark:border-dark-border">
-                  <span className="text-[#6b8f7b] dark:text-dark-text-muted dark:text-dark-text-muted">Heure d'arrivée</span>
-                  <span className="font-medium text-[#1a4a36] dark:text-dark-text dark:text-dark-text">{reservation.transport.arrival_time}</span>
+                <div className="flex justify-between py-2 border-b border-[#e0dcd4] dark:border-dark-border">
+                  <span className="text-[#6b8f7b] dark:text-dark-text-muted">Heure d'arrivée</span>
+                  <span className="font-medium text-[#1a4a36] dark:text-dark-text">{reservation.transport.arrival_time}</span>
                 </div>
               )}
-              
+
               {reservation.transport?.duration && (
-                <div className="flex justify-between py-2 border-b border-[#e0dcd4] dark:border-dark-border dark:border-dark-border">
-                  <span className="text-[#6b8f7b] dark:text-dark-text-muted dark:text-dark-text-muted">Durée du vol</span>
-                  <span className="font-medium text-[#1a4a36] dark:text-dark-text dark:text-dark-text">{reservation.transport.duration}</span>
+                <div className="flex justify-between py-2 border-b border-[#e0dcd4] dark:border-dark-border">
+                  <span className="text-[#6b8f7b] dark:text-dark-text-muted">Durée du vol</span>
+                  <span className="font-medium text-[#1a4a36] dark:text-dark-text">{reservation.transport.duration}</span>
                 </div>
               )}
-              
+
               {reservation.trip_type === 'round_trip' && (
-                <div className="flex justify-between py-2 border-b border-[#e0dcd4] dark:border-dark-border dark:border-dark-border">
-                  <span className="text-[#6b8f7b] dark:text-dark-text-muted dark:text-dark-text-muted">Type de billet</span>
+                <div className="flex justify-between py-2 border-b border-[#e0dcd4] dark:border-dark-border">
+                  <span className="text-[#6b8f7b] dark:text-dark-text-muted">Type de billet</span>
                   <span className="font-medium text-[#2d7a5a] dark:text-surface">Aller-Retour</span>
                 </div>
               )}
@@ -268,71 +269,71 @@ const ReservationDetailsModal = ({ reservation, onClose }) => {
 
       case 'hotel':
         return (
-          <div className="border-t border-[#e0dcd4] dark:border-dark-border dark:border-dark-border pt-6">
+          <div className="border-t border-[#e0dcd4] dark:border-dark-border pt-6">
             <h3 className="text-sm font-bold uppercase tracking-widest text-[#2d7a5a] dark:text-surface mb-4 flex items-center gap-2">
               <Hotel size={16} />
               Détails de l'hôtel
             </h3>
-            
+
             <div className="space-y-3">
               {reservation.hotel?.name && (
-                <div className="flex justify-between py-2 border-b border-[#e0dcd4] dark:border-dark-border dark:border-dark-border">
-                  <span className="text-[#6b8f7b] dark:text-dark-text-muted dark:text-dark-text-muted">Nom de l'hôtel</span>
-                  <span className="font-medium text-[#1a4a36] dark:text-dark-text dark:text-dark-text">{reservation.hotel.name}</span>
+                <div className="flex justify-between py-2 border-b border-[#e0dcd4] dark:border-dark-border">
+                  <span className="text-[#6b8f7b] dark:text-dark-text-muted">Nom de l'hôtel</span>
+                  <span className="font-medium text-[#1a4a36] dark:text-dark-text">{reservation.hotel.name}</span>
                 </div>
               )}
-              
+
               {reservation.hotel?.stars && (
-                <div className="flex justify-between py-2 border-b border-[#e0dcd4] dark:border-dark-border dark:border-dark-border">
-                  <span className="text-[#6b8f7b] dark:text-dark-text-muted dark:text-dark-text-muted">Catégorie</span>
+                <div className="flex justify-between py-2 border-b border-[#e0dcd4] dark:border-dark-border">
+                  <span className="text-[#6b8f7b] dark:text-dark-text-muted">Catégorie</span>
                   <span className="font-medium text-[#2d7a5a] dark:text-surface">
                     {'★'.repeat(reservation.hotel.stars)} ({reservation.hotel.stars} étoiles)
                   </span>
                 </div>
               )}
-              
+
               {reservation.hotel?.location && (
-                <div className="flex justify-between py-2 border-b border-[#e0dcd4] dark:border-dark-border dark:border-dark-border">
-                  <span className="text-[#6b8f7b] dark:text-dark-text-muted dark:text-dark-text-muted">Adresse</span>
-                  <span className="font-medium text-[#1a4a36] dark:text-dark-text dark:text-dark-text">{reservation.hotel.location}</span>
+                <div className="flex justify-between py-2 border-b border-[#e0dcd4] dark:border-dark-border">
+                  <span className="text-[#6b8f7b] dark:text-dark-text-muted">Adresse</span>
+                  <span className="font-medium text-[#1a4a36] dark:text-dark-text">{reservation.hotel.location}</span>
                 </div>
               )}
-              
+
               {reservation.hotel?.city && (
-                <div className="flex justify-between py-2 border-b border-[#e0dcd4] dark:border-dark-border dark:border-dark-border">
-                  <span className="text-[#6b8f7b] dark:text-dark-text-muted dark:text-dark-text-muted">Ville</span>
-                  <span className="font-medium text-[#1a4a36] dark:text-dark-text dark:text-dark-text">{reservation.hotel.city}</span>
+                <div className="flex justify-between py-2 border-b border-[#e0dcd4] dark:border-dark-border">
+                  <span className="text-[#6b8f7b] dark:text-dark-text-muted">Ville</span>
+                  <span className="font-medium text-[#1a4a36] dark:text-dark-text">{reservation.hotel.city}</span>
                 </div>
               )}
-              
-              <div className="flex justify-between py-2 border-b border-[#e0dcd4] dark:border-dark-border dark:border-dark-border">
-                <span className="text-[#6b8f7b] dark:text-dark-text-muted dark:text-dark-text-muted">Check-in</span>
-                <span className="font-medium text-[#1a4a36] dark:text-dark-text dark:text-dark-text">
+
+              <div className="flex justify-between py-2 border-b border-[#e0dcd4] dark:border-dark-border">
+                <span className="text-[#6b8f7b] dark:text-dark-text-muted">Check-in</span>
+                <span className="font-medium text-[#1a4a36] dark:text-dark-text">
                   {new Date(reservation.departure_date).toLocaleDateString('fr-FR', {
                     day: 'numeric', month: 'long', year: 'numeric'
                   })}
                 </span>
               </div>
-              
-              <div className="flex justify-between py-2 border-b border-[#e0dcd4] dark:border-dark-border dark:border-dark-border">
-                <span className="text-[#6b8f7b] dark:text-dark-text-muted dark:text-dark-text-muted">Check-out</span>
-                <span className="font-medium text-[#1a4a36] dark:text-dark-text dark:text-dark-text">
+
+              <div className="flex justify-between py-2 border-b border-[#e0dcd4] dark:border-dark-border">
+                <span className="text-[#6b8f7b] dark:text-dark-text-muted">Check-out</span>
+                <span className="font-medium text-[#1a4a36] dark:text-dark-text">
                   {new Date(reservation.return_date).toLocaleDateString('fr-FR', {
                     day: 'numeric', month: 'long', year: 'numeric'
                   })}
                 </span>
               </div>
-              
+
               {reservation.number_of_nights && (
-                <div className="flex justify-between py-2 border-b border-[#e0dcd4] dark:border-dark-border dark:border-dark-border">
-                  <span className="text-[#6b8f7b] dark:text-dark-text-muted dark:text-dark-text-muted">Nombre de nuits</span>
-                  <span className="font-medium text-[#1a4a36] dark:text-dark-text dark:text-dark-text">{reservation.number_of_nights} nuits</span>
+                <div className="flex justify-between py-2 border-b border-[#e0dcd4] dark:border-dark-border">
+                  <span className="text-[#6b8f7b] dark:text-dark-text-muted">Nombre de nuits</span>
+                  <span className="font-medium text-[#1a4a36] dark:text-dark-text">{reservation.number_of_nights} nuits</span>
                 </div>
               )}
-              
+
               {reservation.hotel?.amenities && (
-                <div className="py-3 border-b border-[#e0dcd4] dark:border-dark-border dark:border-dark-border">
-                  <span className="text-[#6b8f7b] dark:text-dark-text-muted dark:text-dark-text-muted block mb-2">Équipements</span>
+                <div className="py-3 border-b border-[#e0dcd4] dark:border-dark-border">
+                  <span className="text-[#6b8f7b] dark:text-dark-text-muted block mb-2">Équipements</span>
                   <div className="flex flex-wrap gap-2">
                     {(() => {
                       try {
@@ -340,7 +341,7 @@ const ReservationDetailsModal = ({ reservation, onClose }) => {
                           ? JSON.parse(reservation.hotel.amenities) 
                           : reservation.hotel.amenities;
                         return amenities?.map((amenity, idx) => (
-                          <span key={idx} className="px-2 py-1 bg-[#2d7a5a]/10 dark:bg-dark-bg text-[#2d7a5a] dark:text-surface text-xs rounded border border-[#e0dcd4] dark:border-dark-border dark:border-dark-border">
+                          <span key={idx} className="px-2 py-1 bg-[#2d7a5a]/10 dark:bg-dark-bg text-[#2d7a5a] dark:text-surface text-xs rounded border border-[#e0dcd4] dark:border-dark-border">
                             {amenity}
                           </span>
                         ));
@@ -362,7 +363,7 @@ const ReservationDetailsModal = ({ reservation, onClose }) => {
               <Car size={16} />
               Détails de la location
             </h3>
-            
+
             <div className="space-y-3">
               {reservation.transport?.car_model && (
                 <div className="flex justify-between py-2 border-b border-[#e0dcd4] dark:border-dark-border">
@@ -370,28 +371,28 @@ const ReservationDetailsModal = ({ reservation, onClose }) => {
                   <span className="font-medium">{reservation.transport.car_model}</span>
                 </div>
               )}
-              
+
               {reservation.transport?.category && (
                 <div className="flex justify-between py-2 border-b border-[#e0dcd4] dark:border-dark-border">
                   <span className="text-[#6b8f7b] dark:text-dark-text-muted">Catégorie</span>
                   <span className="font-medium">{reservation.transport.category}</span>
                 </div>
               )}
-              
+
               {reservation.transport?.rental_agency && (
                 <div className="flex justify-between py-2 border-b border-[#e0dcd4] dark:border-dark-border">
                   <span className="text-[#6b8f7b] dark:text-dark-text-muted">Agence de location</span>
                   <span className="font-medium">{reservation.transport.rental_agency}</span>
                 </div>
               )}
-              
+
               {reservation.transport?.pickup_location && (
                 <div className="flex justify-between py-2 border-b border-[#e0dcd4] dark:border-dark-border">
                   <span className="text-[#6b8f7b] dark:text-dark-text-muted">Lieu de prise en charge</span>
                   <span className="font-medium">{reservation.transport.pickup_location}</span>
                 </div>
               )}
-              
+
               <div className="flex justify-between py-2 border-b border-[#e0dcd4] dark:border-dark-border">
                 <span className="text-[#6b8f7b] dark:text-dark-text-muted">Date de prise en charge</span>
                 <span className="font-medium">
@@ -400,14 +401,14 @@ const ReservationDetailsModal = ({ reservation, onClose }) => {
                   })}
                 </span>
               </div>
-              
+
               {reservation.pickup_time && (
                 <div className="flex justify-between py-2 border-b border-[#e0dcd4] dark:border-dark-border">
                   <span className="text-[#6b8f7b] dark:text-dark-text-muted">Heure de prise en charge</span>
                   <span className="font-medium">{reservation.pickup_time}</span>
                 </div>
               )}
-              
+
               <div className="flex justify-between py-2 border-b border-[#e0dcd4] dark:border-dark-border">
                 <span className="text-[#6b8f7b] dark:text-dark-text-muted">Date de retour</span>
                 <span className="font-medium">
@@ -416,21 +417,21 @@ const ReservationDetailsModal = ({ reservation, onClose }) => {
                   })}
                 </span>
               </div>
-              
+
               {reservation.return_time && (
                 <div className="flex justify-between py-2 border-b border-[#e0dcd4] dark:border-dark-border">
                   <span className="text-[#6b8f7b] dark:text-dark-text-muted">Heure de retour</span>
                   <span className="font-medium">{reservation.return_time}</span>
                 </div>
               )}
-              
+
               {reservation.transport?.deposit && (
                 <div className="flex justify-between py-2 border-b border-[#e0dcd4] dark:border-dark-border">
                   <span className="text-[#6b8f7b] dark:text-dark-text-muted">Caution</span>
                   <span className="font-medium">{reservation.transport.deposit} DA</span>
                 </div>
               )}
-              
+
               {reservation.travelers_details && reservation.travelers_details[0] && (
                 <>
                   <div className="py-3 border-b border-[#e0dcd4] dark:border-dark-border">
@@ -469,7 +470,7 @@ const ReservationDetailsModal = ({ reservation, onClose }) => {
               <Bus size={16} />
               Détails du transport terrestre
             </h3>
-            
+
             <div className="space-y-3">
               {reservation.transport?.name && (
                 <div className="flex justify-between py-2 border-b border-[#e0dcd4] dark:border-dark-border">
@@ -477,21 +478,21 @@ const ReservationDetailsModal = ({ reservation, onClose }) => {
                   <span className="font-medium">{reservation.transport.name}</span>
                 </div>
               )}
-              
+
               {reservation.transport?.type && (
                 <div className="flex justify-between py-2 border-b border-[#e0dcd4] dark:border-dark-border">
                   <span className="text-[#6b8f7b] dark:text-dark-text-muted">Catégorie</span>
                   <span className="font-medium">{reservation.transport.type}</span>
                 </div>
               )}
-              
+
               {reservation.transport?.company && (
                 <div className="flex justify-between py-2 border-b border-[#e0dcd4] dark:border-dark-border">
                   <span className="text-[#6b8f7b] dark:text-dark-text-muted">Compagnie</span>
                   <span className="font-medium">{reservation.transport.company}</span>
                 </div>
               )}
-              
+
               {reservation.transport?.departure_city && reservation.transport?.arrival_city && (
                 <div className="flex justify-between py-2 border-b border-[#e0dcd4] dark:border-dark-border">
                   <span className="text-[#6b8f7b] dark:text-dark-text-muted">Trajet</span>
@@ -500,14 +501,14 @@ const ReservationDetailsModal = ({ reservation, onClose }) => {
                   </span>
                 </div>
               )}
-              
+
               {reservation.pickup_time && (
                 <div className="flex justify-between py-2 border-b border-[#e0dcd4] dark:border-dark-border">
                   <span className="text-[#6b8f7b] dark:text-dark-text-muted">Heure de départ</span>
                   <span className="font-medium">{reservation.pickup_time}</span>
                 </div>
               )}
-              
+
               {reservation.transport?.schedule && (
                 <div className="flex justify-between py-2 border-b border-[#e0dcd4] dark:border-dark-border">
                   <span className="text-[#6b8f7b] dark:text-dark-text-muted">Horaires</span>
@@ -525,7 +526,7 @@ const ReservationDetailsModal = ({ reservation, onClose }) => {
               <Ticket size={16} />
               Détails de l'activité
             </h3>
-            
+
             <div className="space-y-3">
               {reservation.activity?.name && (
                 <div className="flex justify-between py-2 border-b border-[#e0dcd4] dark:border-dark-border">
@@ -533,28 +534,28 @@ const ReservationDetailsModal = ({ reservation, onClose }) => {
                   <span className="font-medium">{reservation.activity.name}</span>
                 </div>
               )}
-              
+
               {reservation.activity?.category && (
                 <div className="flex justify-between py-2 border-b border-[#e0dcd4] dark:border-dark-border">
                   <span className="text-[#6b8f7b] dark:text-dark-text-muted">Type d'activité</span>
                   <span className="font-medium">{reservation.activity.category}</span>
                 </div>
               )}
-              
+
               {reservation.activity?.location && (
                 <div className="flex justify-between py-2 border-b border-[#e0dcd4] dark:border-dark-border">
                   <span className="text-[#6b8f7b] dark:text-dark-text-muted">Lieu</span>
                   <span className="font-medium">{reservation.activity.location}</span>
                 </div>
               )}
-              
+
               {reservation.activity?.city && (
                 <div className="flex justify-between py-2 border-b border-[#e0dcd4] dark:border-dark-border">
                   <span className="text-[#6b8f7b] dark:text-dark-text-muted">Ville</span>
                   <span className="font-medium">{reservation.activity.city}</span>
                 </div>
               )}
-              
+
               <div className="flex justify-between py-2 border-b border-[#e0dcd4] dark:border-dark-border">
                 <span className="text-[#6b8f7b] dark:text-dark-text-muted">Date de l'activité</span>
                 <span className="font-medium">
@@ -563,21 +564,21 @@ const ReservationDetailsModal = ({ reservation, onClose }) => {
                   })}
                 </span>
               </div>
-              
+
               {reservation.pickup_time && (
                 <div className="flex justify-between py-2 border-b border-[#e0dcd4] dark:border-dark-border">
                   <span className="text-[#6b8f7b] dark:text-dark-text-muted">Heure de rendez-vous</span>
                   <span className="font-medium">{reservation.pickup_time}</span>
                 </div>
               )}
-              
+
               {reservation.activity?.duration && (
                 <div className="flex justify-between py-2 border-b border-[#e0dcd4] dark:border-dark-border">
                   <span className="text-[#6b8f7b] dark:text-dark-text-muted">Durée</span>
                   <span className="font-medium">{reservation.activity.duration}</span>
                 </div>
               )}
-              
+
               {reservation.activity?.tags && (
                 <div className="py-3 border-b border-[#e0dcd4] dark:border-dark-border">
                   <span className="text-[#6b8f7b] dark:text-dark-text-muted block mb-2">Points forts</span>
@@ -658,7 +659,7 @@ const ReservationDetailsModal = ({ reservation, onClose }) => {
                 <span>{new Date(reservation.departure_date).toLocaleDateString('fr-FR')}</span>
               </div>
             </div>
-            
+
             {reservation.return_date && (
               <div>
                 <p className="text-xs text-[#6b8f7b] dark:text-dark-text-muted uppercase tracking-widest mb-2">Date de fin</p>
