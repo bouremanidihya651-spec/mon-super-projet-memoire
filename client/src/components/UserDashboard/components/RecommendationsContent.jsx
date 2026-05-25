@@ -3,7 +3,8 @@ import { createPortal } from 'react-dom';
 import { 
   Star, MapPin, ChevronRight, Heart, Search, 
   Sparkles, Users, TrendingUp, UserCheck, Info, X,
-  Brain, Compass, ThumbsUp, BarChart3, Filter, SlidersHorizontal
+  Brain, Compass, ThumbsUp, BarChart3, Filter, SlidersHorizontal,
+  ArrowRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -12,61 +13,121 @@ import DestinationDetailPage from './DestinationDetailPage';
 import { useTheme } from '../../../contexts/ThemeContext';
 
 /* ============================================
-   HOOK PERSONNALISÉ POUR DÉTECTER MOBILE
+   STYLES GLOBAUX INLINE
+   ============================================ */
+const GlobalStyles = () => (
+  <style>{`
+    .scrollbar-hide {
+      -ms-overflow-style: none !important;
+      scrollbar-width: none !important;
+    }
+    .scrollbar-hide::-webkit-scrollbar {
+      display: none !important;
+      width: 0 !important;
+      height: 0 !important;
+    }
+    
+    @supports (-webkit-touch-callout: none) {
+      .ios-no-zoom input, .ios-no-zoom textarea, .ios-no-zoom select {
+        font-size: 16px !important;
+      }
+    }
+    
+    .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
+    .touch-pan-y { touch-action: pan-y; }
+    .no-select { -webkit-user-select: none; user-select: none; }
+    .scroll-smooth { scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
+    
+    .line-clamp-1 {
+      display: -webkit-box;
+      -webkit-line-clamp: 1;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .animate-fade-in { animation: fadeIn 0.3s ease-out; }
+    .animate-slide-up { animation: slideUp 0.4s ease-out; }
+    
+    .focus-ring:focus-visible { outline: 2px solid #2d7a5a; outline-offset: 2px; }
+    
+    .card-hover-lift {
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .card-hover-lift:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+    }
+    
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  `}</style>
+);
+
+/* ============================================
+   HOOK useMediaQuery CORRIGÉ
    ============================================ */
 const useMediaQuery = (query) => {
   const [matches, setMatches] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
+    
+    if (typeof window === 'undefined' || !window.matchMedia) {
+      return;
+    }
+    
     const media = window.matchMedia(query);
-    if (media.matches !== matches) setMatches(media.matches);
-    const listener = () => setMatches(media.matches);
-    media.addEventListener('change', listener);
-    return () => media.removeEventListener('change', listener);
-  }, [matches, query]);
+    setMatches(media.matches);
+    
+    const listener = (event) => {
+      setMatches(event.matches);
+    };
+    
+    // Support moderne + ancien
+    try {
+      media.addEventListener('change', listener);
+    } catch (e) {
+      // Fallback pour très vieux navigateurs
+      media.addListener(listener);
+    }
+    
+    return () => {
+      try {
+        media.removeEventListener('change', listener);
+      } catch (e) {
+        media.removeListener(listener);
+      }
+    };
+  }, [query]); // ← Dépendance fixe, pas de boucle !
 
+  // Ne pas rendre avant le montage pour éviter les erreurs SSR
+  if (!mounted) return false;
+  
   return matches;
 };
 
 // ============================================================================
-// MAPPING TECHNIQUE → LABEL AFFICHÉ SUR LA CARTE
+// MAPPING TECHNIQUE
 // ============================================================================
 
 const TECHNIQUE_DISPLAY = {
-  'cold-start': {
-    shortLabel: 'Vos préférences',
-    fullLabel: 'Basé sur vos préférences d\'inscription',
-    color: '#3b82f6',
-    icon: UserCheck
-  },
-  'content': {
-    shortLabel: 'Vos goûts',
-    fullLabel: 'Correspond à vos goûts analysés',
-    color: '#10b981',
-    icon: Brain
-  },
-  'collaborative': {
-    shortLabel: 'Similaires',
-    fullLabel: 'Apprécié par voyageurs similaires',
-    color: '#8b5cf6',
-    icon: Users
-  },
-  'popular': {
-    shortLabel: 'Populaire',
-    fullLabel: 'Destination populaire',
-    color: '#f59e0b',
-    icon: ThumbsUp
-  },
-  'hybrid-behavioral': {
-    shortLabel: 'Hybride',
-    fullLabel: 'Recommandation hybride intelligente',
-    color: '#2d7a5a',
-    icon: Compass
-  }
+  'cold-start': { shortLabel: 'Vos préférences', fullLabel: 'Basé sur vos préférences', color: '#3b82f6', icon: UserCheck },
+  'content': { shortLabel: 'Vos goûts', fullLabel: 'Correspond à vos goûts', color: '#10b981', icon: Brain },
+  'collaborative': { shortLabel: 'Similaires', fullLabel: 'Apprécié par voyageurs similaires', color: '#8b5cf6', icon: Users },
+  'popular': { shortLabel: 'Populaire', fullLabel: 'Destination populaire', color: '#f59e0b', icon: ThumbsUp },
+  'hybrid-behavioral': { shortLabel: 'Hybride', fullLabel: 'Recommandation hybride', color: '#2d7a5a', icon: Compass }
 };
 
 // ============================================================================
-// BADGE DE TECHNIQUE - RESPONSIVE
+// BADGE DE TECHNIQUE
 // ============================================================================
 
 const TechniqueBadge = ({ algorithmUsed, displayCause }) => {
@@ -78,23 +139,28 @@ const TechniqueBadge = ({ algorithmUsed, displayCause }) => {
   const badgeRef = useRef(null);
   const [tooltipPos, setTooltipPos] = useState({ top: 0, left: 0 });
   const isMobile = useMediaQuery('(max-width: 640px)');
+  const [portalReady, setPortalReady] = useState(false);
 
-  const handleMouseEnter = () => {
+  useEffect(() => {
+    setPortalReady(true);
+  }, []);
+
+  const handleMouseEnter = useCallback(() => {
     if (isMobile || !badgeRef.current) return;
     const rect = badgeRef.current.getBoundingClientRect();
-    const tooltipWidth = isMobile ? 280 : 320;
+    const tooltipWidth = 320;
     setTooltipPos({
       top: rect.bottom + window.scrollY + 8,
       left: Math.min(rect.left + window.scrollX, window.innerWidth - tooltipWidth - 16)
     });
     setShowTooltip(true);
-  };
+  }, [isMobile]);
 
   return (
     <>
       <div 
         ref={badgeRef}
-        className="inline-flex items-center gap-1 px-2 py-1 sm:px-3 sm:py-1.5 rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-wider backdrop-blur-md border border-white/20 cursor-help"
+        className="inline-flex items-center gap-1 px-2 py-1 sm:px-3 sm:py-1.5 rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-wider backdrop-blur-md border border-white/20 cursor-help no-select touch-pan-y"
         style={{ 
           backgroundColor: `${tech.color}40`,
           color: '#ffffff',
@@ -109,31 +175,28 @@ const TechniqueBadge = ({ algorithmUsed, displayCause }) => {
         <span className="sm:hidden">{tech.shortLabel.slice(0, 8)}</span>
       </div>
 
-      {showTooltip && !isMobile && createPortal(
+      {portalReady && showTooltip && !isMobile && typeof document !== 'undefined' && createPortal(
         <div 
-          className="fixed w-[280px] sm:w-[320px] p-3 sm:p-4 rounded-xl bg-black/95 backdrop-blur-xl border border-white/10 shadow-2xl z-[9999]"
+          className="fixed w-[320px] p-4 rounded-xl bg-black/95 backdrop-blur-xl border border-white/10 shadow-2xl z-[9999] animate-fade-in"
           style={{ 
             top: `${tooltipPos.top}px`, 
             left: `${tooltipPos.left}px` 
           }}
         >
           <div className="flex items-center gap-2 mb-2 pb-2 border-b border-white/10">
-            <div 
-              className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center"
-              style={{ backgroundColor: `${tech.color}30` }}
-            >
-              <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" style={{ color: tech.color }} />
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${tech.color}30` }}>
+              <Icon className="w-4 h-4" style={{ color: tech.color }} />
             </div>
             <div>
-              <p className="text-white font-bold text-xs sm:text-sm">{tech.fullLabel}</p>
-              <p className="text-[9px] sm:text-[10px] text-white/50">Technique : {algorithmUsed}</p>
+              <p className="text-white font-bold text-sm">{tech.fullLabel}</p>
+              <p className="text-[10px] text-white/50">Technique : {algorithmUsed}</p>
             </div>
           </div>
 
           {displayCause?.causeDetails && (
             <ul className="space-y-1 mt-2">
               {displayCause.causeDetails.map((detail, i) => (
-                <li key={i} className="text-white/70 text-[10px] sm:text-[11px] flex items-start gap-2">
+                <li key={i} className="text-white/70 text-[11px] flex items-start gap-2">
                   <div className="w-1.5 h-1.5 rounded-full bg-[#2d7a5a] mt-1 shrink-0" />
                   <span>{detail}</span>
                 </li>
@@ -143,13 +206,10 @@ const TechniqueBadge = ({ algorithmUsed, displayCause }) => {
 
           {displayCause?.featureMatches && displayCause.featureMatches.length > 0 && (
             <div className="mt-2 pt-2 border-t border-white/10">
-              <p className="text-[9px] sm:text-[10px] text-white/50 uppercase mb-1.5">Features qui matchent</p>
+              <p className="text-[10px] text-white/50 uppercase mb-1.5">Features qui matchent</p>
               <div className="flex flex-wrap gap-1">
                 {displayCause.featureMatches.map((m, i) => (
-                  <span 
-                    key={i}
-                    className="px-1.5 py-0.5 sm:px-2 sm:py-0.5 rounded bg-[#2d7a5a]/20 text-[#2d7a5a] text-[9px] sm:text-[10px] font-medium"
-                  >
+                  <span key={i} className="px-2 py-0.5 rounded bg-[#2d7a5a]/20 text-[#2d7a5a] text-[10px] font-medium">
                     {m.label} {m.compat}%
                   </span>
                 ))}
@@ -166,7 +226,7 @@ const TechniqueBadge = ({ algorithmUsed, displayCause }) => {
 };
 
 // ============================================================================
-// PANNEAU DEBUG - RESPONSIVE
+// PANNEAU DEBUG
 // ============================================================================
 
 const DebugPanel = ({ destination, onClose }) => {
@@ -181,32 +241,32 @@ const DebugPanel = ({ destination, onClose }) => {
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
-      className={`absolute inset-2 sm:inset-3 rounded-2xl bg-black/95 backdrop-blur-xl border border-[#2d7a5a]/30 p-3 sm:p-4 overflow-y-auto z-50 ${isMobile ? 'text-xs' : ''}`}
+      className={`absolute inset-2 sm:inset-3 rounded-2xl bg-black/95 backdrop-blur-xl border border-[#2d7a5a]/30 p-3 sm:p-4 overflow-y-auto z-50 scroll-smooth ${isMobile ? 'text-xs' : ''}`}
       onClick={(e) => e.stopPropagation()}
     >
       <div className="flex justify-between items-center mb-3">
         <div className="flex items-center gap-2">
-          <Info className="w-4 h-4 sm:w-5 sm:h-5 text-[#2d7a5a]" />
-          <h4 className="text-[#2d7a5a] font-bold text-xs sm:text-sm">Pourquoi cette destination ?</h4>
+          <Info className="w-5 h-5 text-[#2d7a5a]" />
+          <h4 className="text-[#2d7a5a] font-bold text-sm">Pourquoi cette destination ?</h4>
         </div>
-        <button onClick={onClose} className="text-white/50 hover:text-white p-1">
-          <X className="w-4 h-4 sm:w-5 sm:h-5" />
+        <button onClick={onClose} className="text-white/50 hover:text-white p-1 focus-ring rounded">
+          <X className="w-5 h-5" />
         </button>
       </div>
 
-      <div className="p-2.5 sm:p-3 rounded-lg mb-3" style={{ backgroundColor: `${tech.color}15`, border: `1px solid ${tech.color}30` }}>
+      <div className="p-3 rounded-lg mb-3" style={{ backgroundColor: `${tech.color}15`, border: `1px solid ${tech.color}30` }}>
         <div className="flex items-center gap-2 mb-2">
-          <TechIcon className="w-4 h-4 sm:w-5 sm:h-5" style={{ color: tech.color }} />
-          <span className="text-white font-bold text-xs sm:text-sm">{tech.fullLabel}</span>
+          <TechIcon className="w-5 h-5" style={{ color: tech.color }} />
+          <span className="text-white font-bold text-sm">{tech.fullLabel}</span>
         </div>
-        <p className="text-white/60 text-[10px] sm:text-[11px]">
+        <p className="text-white/60 text-[11px]">
           {destination.displayCause?.mainCause || 'Recommandation basée sur votre profil'}
         </p>
       </div>
 
       {destination.algorithmScores && (
-        <div className="p-2.5 sm:p-3 rounded-lg bg-white/5 border border-white/10 mb-3">
-          <p className="text-white/50 text-[9px] sm:text-[10px] uppercase mb-2">Contribution de chaque technique</p>
+        <div className="p-3 rounded-lg bg-white/5 border border-white/10 mb-3">
+          <p className="text-white/50 text-[10px] uppercase mb-2">Contribution de chaque technique</p>
           {Object.entries(destination.algorithmScores).map(([algo, score]) => {
             const algoTech = TECHNIQUE_DISPLAY[algo] || TECHNIQUE_DISPLAY['popular'];
             const AlgoIcon = algoTech.icon;
@@ -214,13 +274,13 @@ const DebugPanel = ({ destination, onClose }) => {
               <div key={algo} className="flex items-center justify-between mt-1.5">
                 <div className="flex items-center gap-1.5">
                   <AlgoIcon className="w-3 h-3" style={{ color: algoTech.color }} />
-                  <span className="text-white/60 text-[10px] sm:text-[11px] capitalize">{algo}</span>
+                  <span className="text-white/60 text-[11px] capitalize">{algo}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-12 sm:w-16 h-1 rounded-full bg-white/10">
+                  <div className="w-16 h-1 rounded-full bg-white/10">
                     <div className="h-full rounded-full" style={{ width: `${score * 100}%`, backgroundColor: algoTech.color }} />
                   </div>
-                  <span className="text-[9px] sm:text-[10px] text-white/50 w-8 text-right">{(score * 100).toFixed(1)}%</span>
+                  <span className="text-[10px] text-white/50 w-8 text-right">{(score * 100).toFixed(1)}%</span>
                 </div>
               </div>
             );
@@ -228,17 +288,17 @@ const DebugPanel = ({ destination, onClose }) => {
         </div>
       )}
 
-      <div className="p-2.5 sm:p-3 rounded-lg bg-[#2d7a5a]/20 border border-[#2d7a5a]/30">
+      <div className="p-3 rounded-lg bg-[#2d7a5a]/20 border border-[#2d7a5a]/30">
         <div className="flex justify-between">
-          <span className="text-white/70 text-[10px] sm:text-[11px]">Score final</span>
-          <span className="text-[#2d7a5a] font-bold text-sm">{(destination.finalScore * 100).toFixed(1)}%</span>
+          <span className="text-white/70 text-[11px]">Score final</span>
+          <span className="text-[#2d7a5a] font-bold">{(destination.finalScore * 100).toFixed(1)}%</span>
         </div>
       </div>
 
-      <div className="p-2.5 sm:p-3 rounded-lg bg-white/5 border border-white/10 mt-2">
+      <div className="p-3 rounded-lg bg-white/5 border border-white/10 mt-2">
         <div className="flex justify-between">
-          <span className="text-white/70 text-[10px] sm:text-[11px]">Match préférences</span>
-          <span className="text-white font-bold text-sm">{destination.matchPercentage}%</span>
+          <span className="text-white/70 text-[11px]">Match préférences</span>
+          <span className="text-white font-bold">{destination.matchPercentage}%</span>
         </div>
       </div>
     </motion.div>
@@ -246,7 +306,7 @@ const DebugPanel = ({ destination, onClose }) => {
 };
 
 // ============================================================================
-// CARD - FULLY RESPONSIVE
+// CARD - STYLE AFALOU TOURS
 // ============================================================================
 
 const RecommendationCard = ({ destination, index, onViewDetails, openAuthModal, t }) => {
@@ -299,9 +359,7 @@ const RecommendationCard = ({ destination, index, onViewDetails, openAuthModal, 
           headers: { Authorization: `Bearer ${token}` }
         });
         const data = await res.json();
-        const fav = data.favorites?.find(
-          f => f.targetId === destination.id && f.targetType === 'destination'
-        );
+        const fav = data.favorites?.find(f => f.targetId === destination.id && f.targetType === 'destination');
         if (fav) {
           await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/favorites/${fav.id}`, {
             method: 'DELETE',
@@ -323,10 +381,9 @@ const RecommendationCard = ({ destination, index, onViewDetails, openAuthModal, 
   const imageUrl = destination.image_url ||
     'https://images.unsplash.com/photo-1567874790230-3acbb51e61dd?auto=format&fit=crop&w=1200&q=80';
 
-  const matchPercentage = destination.matchPercentage ||
-    Math.round((destination.affinityScore || 0) * 100);
-
+  const matchPercentage = destination.matchPercentage || Math.round((destination.affinityScore || 0) * 100);
   const algorithmUsed = destination.algorithmUsed || 'popular';
+  const locationBadge = destination.country || destination.location || 'ALGÉRIE';
 
   return (
     <motion.div
@@ -336,124 +393,95 @@ const RecommendationCard = ({ destination, index, onViewDetails, openAuthModal, 
       className="w-full h-full"
     >
       <div
-        className="relative w-full h-[320px] sm:h-[380px] md:h-[420px] lg:h-[450px] rounded-2xl sm:rounded-3xl overflow-hidden cursor-pointer border border-stone-200 dark:border-dark-border hover:border-[#2d7a5a] transition-all duration-500 group"
+        className="relative w-full rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer border border-stone-200/50 dark:border-dark-border/50 hover:border-[#2d7a5a]/50 transition-all duration-500 group card-hover-lift bg-white dark:bg-dark-surface touch-pan-y"
         onClick={onViewDetails}
       >
-        <div className="absolute inset-0">
+        {/* Image container */}
+        <div className="relative aspect-[4/3] sm:aspect-[16/10] overflow-hidden">
           <img
             src={imageUrl}
             alt={destination.name}
-            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
             loading="lazy"
           />
-        </div>
+          
+          <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
-
-        <div className="absolute inset-0 p-3 sm:p-4 md:p-5 lg:p-6 flex flex-col justify-between">
-
-          {/* HAUT : Badges */}
-          <div className="flex justify-between items-start gap-2">
-            <div className="flex flex-col gap-1.5 sm:gap-2 max-w-[75%]">
-              {matchPercentage > 0 && (
-                <div className={`px-2 py-1 sm:px-3 sm:py-1.5 rounded-full font-bold text-[9px] sm:text-[10px] uppercase tracking-wider w-fit ${
-                  matchPercentage >= 70 ? 'bg-[#2d7a5a] text-white' :
-                  matchPercentage >= 50 ? 'bg-orange-500 text-white' :
-                  'bg-white/90 text-black'
-                }`}>
-                  {matchPercentage}% Match
-                </div>
-              )}
-
-              <TechniqueBadge 
-                algorithmUsed={algorithmUsed}
-                displayCause={destination.displayCause}
-              />
+          {/* Badge ALGÉRIE */}
+          <div className="absolute top-3 left-3 sm:top-4 sm:left-4">
+            <div className="flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 bg-black/50 backdrop-blur-md rounded-md text-white text-[10px] sm:text-xs font-medium uppercase tracking-wider">
+              <MapPin className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+              {locationBadge}
             </div>
-
-            <button
-              onClick={toggleFavorite}
-              disabled={favoriteLoading}
-              className="w-9 h-9 sm:w-10 sm:h-10 min-w-[36px] min-h-[36px] rounded-full bg-black/40 backdrop-blur-md border border-white/20 flex items-center justify-center hover:bg-[#2d7a5a] hover:border-[#2d7a5a] transition-all group/btn active:scale-95"
-              aria-label={isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}
-            >
-              <Heart className={`w-4 h-4 sm:w-5 sm:h-5 transition-colors ${
-                isFavorite
-                  ? 'fill-[#2d7a5a] text-[#2d7a5a]'
-                  : 'text-white group-hover/btn:text-white'
-              }`} />
-            </button>
           </div>
 
-          {/* BAS : Informations */}
-          <div className="space-y-2 sm:space-y-3">
-            {destination.explanation && (
-              <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 py-1.5 sm:px-4 sm:py-2 bg-[#2d7a5a]/20 backdrop-blur-md rounded-full border border-white/10">
-                <Star className="w-3 h-3 sm:w-4 sm:h-4 text-[#2d7a5a] fill-current" />
-                <span className="text-[10px] sm:text-xs text-white font-medium truncate max-w-[200px] sm:max-w-none">{destination.explanation}</span>
-              </div>
-            )}
-
-            <div>
-              <h3 className="text-lg sm:text-xl md:text-2xl font-serif font-bold text-white mb-1 sm:mb-2 leading-tight">
-                {destination.name}
-              </h3>
-              <div className="flex items-center gap-2 sm:gap-3 text-white/90 text-xs sm:text-sm flex-wrap">
-                <div className="flex items-center gap-1 sm:gap-1.5">
-                  <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-[#2d7a5a]" />
-                  <span>{destination.location || destination.country}</span>
-                </div>
-                <div className="flex items-center gap-1 sm:gap-1.5">
-                  <Star className="w-3 h-3 sm:w-4 sm:h-4 text-[#2d7a5a] fill-current" />
-                  <span className="font-bold">{avgRating || destination.rating}</span>
-                </div>
+          {/* Badge Match % */}
+          {matchPercentage > 0 && (
+            <div className="absolute top-3 right-3 sm:top-4 sm:right-4">
+              <div className={`px-2 py-1 sm:px-3 sm:py-1.5 rounded-md font-bold text-[9px] sm:text-[10px] uppercase tracking-wider ${
+                matchPercentage >= 70 ? 'bg-[#2d7a5a] text-white' :
+                matchPercentage >= 50 ? 'bg-orange-500 text-white' :
+                'bg-white/90 text-black'
+              }`}>
+                {matchPercentage}% Match
               </div>
             </div>
+          )}
 
-            {destination.displayCause?.causeDetails && (
-              <div className="flex flex-wrap gap-1 sm:gap-1.5">
-                {destination.displayCause.causeDetails.slice(0, isMobile ? 1 : 2).map((detail, i) => (
-                  <span 
-                    key={i}
-                    className="px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-md bg-white/10 backdrop-blur-sm text-[8px] sm:text-[9px] text-white/80 border border-white/10"
-                  >
-                    {detail}
-                  </span>
-                ))}
-              </div>
-            )}
+          {/* Bouton favori */}
+          <button
+            onClick={toggleFavorite}
+            disabled={favoriteLoading}
+            className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 w-8 h-8 sm:w-9 sm:h-9 min-w-[32px] min-h-[32px] rounded-full bg-black/40 backdrop-blur-md border border-white/20 flex items-center justify-center hover:bg-[#2d7a5a] hover:border-[#2d7a5a] transition-all group/btn active:scale-95 focus-ring no-select opacity-0 group-hover:opacity-100"
+            aria-label={isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}
+          >
+            <Heart className={`w-4 h-4 transition-colors ${isFavorite ? 'fill-[#2d7a5a] text-[#2d7a5a]' : 'text-white group-hover/btn:text-white'}`} />
+          </button>
+        </div>
 
+        {/* Contenu sous l'image */}
+        <div className="p-4 sm:p-5">
+          <h3 className="text-lg sm:text-xl md:text-2xl font-serif font-bold text-[#1a4a36] dark:text-dark-text mb-2 sm:mb-3 line-clamp-1">
+            {destination.name}
+          </h3>
+
+          <div className="flex items-center gap-3 mb-3 sm:mb-4 text-stone-500 dark:text-dark-text-muted text-xs sm:text-sm">
+            <div className="flex items-center gap-1">
+              <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 fill-amber-500" />
+              <span className="font-medium">{avgRating || destination.rating || '4.5'}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-stone-400" />
+              <span className="truncate">{destination.location || destination.country}</span>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between">
             <button
               onClick={(e) => { e.stopPropagation(); onViewDetails(); }}
-              className="mt-1 sm:mt-2 px-4 py-2 sm:px-6 sm:py-3 bg-[#2d7a5a] text-white rounded-full font-bold text-[9px] sm:text-[10px] uppercase tracking-widest hover:bg-[#1a4a36] transition-all inline-flex items-center gap-1.5 sm:gap-2 min-h-[36px] sm:min-h-[44px]"
+              className="inline-flex items-center gap-1.5 sm:gap-2 text-[#2d7a5a] hover:text-[#1a4a36] font-medium text-xs sm:text-sm uppercase tracking-wider transition-colors group/link focus-ring no-select"
             >
-              <span className="hidden sm:inline">{t('dashboard.viewDetails')}</span>
-              <span className="sm:hidden">Détails</span>
-              <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4" />
+              {t('dashboard.viewDetails') || 'Découvrir'}
+              <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover/link:translate-x-1 transition-transform" />
             </button>
+
+            <TechniqueBadge algorithmUsed={algorithmUsed} displayCause={destination.displayCause} />
           </div>
         </div>
 
         {/* Bouton info debug */}
-        <div className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        <div className="absolute top-1/2 right-3 sm:right-4 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
           <button
             onClick={(e) => { e.stopPropagation(); setShowDebug(!showDebug); }}
-            className="w-7 h-7 sm:w-8 sm:h-8 min-w-[28px] min-h-[28px] rounded-full bg-black/50 backdrop-blur-md border border-white/20 flex items-center justify-center hover:bg-[#2d7a5a] transition-colors"
-            title="Voir les détails de la recommandation"
+            className="w-7 h-7 sm:w-8 sm:h-8 min-w-[28px] min-h-[28px] rounded-full bg-black/50 backdrop-blur-md border border-white/20 flex items-center justify-center hover:bg-[#2d7a5a] transition-colors focus-ring"
             aria-label="Détails recommandation"
           >
             <Info className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
           </button>
         </div>
 
-        {/* Panneau debug */}
         <AnimatePresence>
-          {showDebug && (
-            <DebugPanel 
-              destination={destination} 
-              onClose={() => setShowDebug(false)} 
-            />
-          )}
+          {showDebug && <DebugPanel destination={destination} onClose={() => setShowDebug(false)} />}
         </AnimatePresence>
       </div>
     </motion.div>
@@ -461,7 +489,7 @@ const RecommendationCard = ({ destination, index, onViewDetails, openAuthModal, 
 };
 
 // ============================================================================
-// RECOMMENDATIONS CONTENT - FULLY RESPONSIVE
+// RECOMMENDATIONS CONTENT
 // ============================================================================
 
 const RecommendationsContent = ({ openAuthModal, t }) => {
@@ -478,11 +506,8 @@ const RecommendationsContent = ({ openAuthModal, t }) => {
   const [error, setError] = useState(null);
   const [selectedItem, setSelectedItem] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [showMobileSearch, setShowMobileSearch] = useState(false);
 
-  useEffect(() => {
-    fetchRecommendations();
-  }, []);
+  useEffect(() => { fetchRecommendations(); }, []);
 
   useEffect(() => {
     if (activeTab === 'all' && allDestinations.length === 0) {
@@ -496,14 +521,12 @@ const RecommendationsContent = ({ openAuthModal, t }) => {
       setFilteredItems(source);
     } else {
       const q = searchQuery.toLowerCase();
-      setFilteredItems(
-        source.filter(dest =>
-          (dest.name || '').toLowerCase().includes(q) ||
-          (dest.location || '').toLowerCase().includes(q) ||
-          (dest.country || '').toLowerCase().includes(q) ||
-          (dest.city || '').toLowerCase().includes(q)
-        )
-      );
+      setFilteredItems(source.filter(dest =>
+        (dest.name || '').toLowerCase().includes(q) ||
+        (dest.location || '').toLowerCase().includes(q) ||
+        (dest.country || '').toLowerCase().includes(q) ||
+        (dest.city || '').toLowerCase().includes(q)
+      ));
     }
   }, [searchQuery, recommendations, allDestinations, activeTab]);
 
@@ -511,37 +534,20 @@ const RecommendationsContent = ({ openAuthModal, t }) => {
     setLoading(true);
     setError(null);
     const token = localStorage.getItem('token');
-
-    if (!token) {
-      await fetchPopular();
-      return;
-    }
+    if (!token) { await fetchPopular(); return; }
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/recommendations/hybrid?limit=10`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/recommendations/hybrid?limit=15`, {
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
       });
-
-      if (!res.ok) {
-        console.warn('Hybrid API error, fallback to popular');
-        await fetchPopular();
-        return;
-      }
-
+      if (!res.ok) { await fetchPopular(); return; }
       const data = await res.json();
       const recs = data.recommendations || [];
       setRecommendations(recs);
       setFilteredItems(recs);
     } catch (err) {
-      console.error('fetchRecommendations error:', err);
-      setError(err.message);
       await fetchPopular();
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
   const fetchAllDestinations = async () => {
@@ -552,42 +558,25 @@ const RecommendationsContent = ({ openAuthModal, t }) => {
         const data = await res.json();
         setAllDestinations(data.destinations || []);
       }
-    } catch (err) {
-      console.error('fetchAllDestinations error:', err);
-    } finally {
-      setLoadingAll(false);
-    }
+    } catch (err) { /* silencieux */ } finally { setLoadingAll(false); }
   };
 
   const fetchPopular = async () => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/recommendations/popular?limit=10`);
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/recommendations/popular?limit=15`);
       if (res.ok) {
         const data = await res.json();
         const recs = data.recommendations || [];
         setRecommendations(recs);
         setFilteredItems(recs);
       }
-    } catch (err) {
-      console.error('fetchPopular error:', err);
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { /* silencieux */ } finally { setLoading(false); }
   };
 
-  const handleTabChange = (tab) => {
-    setActiveTab(tab);
-    setSearchQuery('');
-  };
+  const handleTabChange = (tab) => { setActiveTab(tab); setSearchQuery(''); };
 
   if (selectedItem) {
-    return (
-      <DestinationDetailPage
-        item={selectedItem}
-        onBack={() => setSelectedItem(null)}
-        openAuthModal={openAuthModal}
-      />
-    );
+    return <DestinationDetailPage item={selectedItem} onBack={() => setSelectedItem(null)} openAuthModal={openAuthModal} />;
   }
 
   if (loading) {
@@ -595,143 +584,85 @@ const RecommendationsContent = ({ openAuthModal, t }) => {
       <div className="py-16 sm:py-20 text-center text-stone-500 animate-pulse px-4">
         <Star size={40} className="mx-auto mb-4 text-[#2d7a5a] opacity-20 sm:size-12" />
         <p className="text-sm sm:text-base">{t('dashboard.analyzingPreferences')}</p>
-        <p className="text-xs sm:text-sm mt-2 opacity-60">{t('dashboard.basedOnTastes')}</p>
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 pb-20 sm:pb-0">
-
-      {/* HEADER RESPONSIVE */}
-      <header className="mb-6 sm:mb-8">
-        <h1 className="text-2xl sm:text-3xl font-serif font-bold mb-1 sm:mb-2 dark:text-dark-text">
-          {t('dashboard.personalizedRecommendations')}
-        </h1>
-        <p className="text-sm sm:text-base text-stone-500 dark:text-dark-text-muted">
-          {t('dashboard.premiumSelection')}
-        </p>
-      </header>
-
-      {/* ONGLETS - scrollable sur mobile */}
-      <div className="flex gap-2 sm:gap-3 mb-6 sm:mb-8 overflow-x-auto pb-1 -mx-3 px-3 sm:mx-0 sm:px-0 scrollbar-hide">
-        <button
-          onClick={() => handleTabChange('all')}
-          className={`px-4 py-2 sm:px-5 sm:py-2.5 rounded-full font-bold text-[10px] sm:text-[11px] uppercase tracking-widest transition-all duration-300 whitespace-nowrap min-h-[40px] ${
-            activeTab === 'all'
-              ? 'bg-[#2d7a5a] text-white border border-[#2d7a5a]'
-              : 'bg-transparent border border-stone-200 dark:border-dark-border text-stone-500 hover:border-[#2d7a5a] hover:text-[#2d7a5a]'
-          }`}
-        >
-          <span className="hidden sm:inline">Toutes les destinations</span>
-          <span className="sm:hidden">Toutes</span>
-          {allDestinations.length > 0 && (
-            <span className="ml-1.5 sm:ml-2 text-[9px] opacity-70">({allDestinations.length})</span>
-          )}
-        </button>
-        <button
-          onClick={() => handleTabChange('recommendations')}
-          className={`px-4 py-2 sm:px-5 sm:py-2.5 rounded-full font-bold text-[10px] sm:text-[11px] uppercase tracking-widest transition-all duration-300 whitespace-nowrap min-h-[40px] ${
-            activeTab === 'recommendations'
-              ? 'bg-[#2d7a5a] text-white border border-[#2d7a5a]'
-              : 'bg-transparent border border-stone-200 dark:border-dark-border text-stone-500 hover:border-[#2d7a5a] hover:text-[#2d7a5a]'
-          }`}
-        >
-          <span className="hidden sm:inline">Recommandations</span>
-          <span className="sm:hidden">Recommandé</span>
-          {recommendations.length > 0 && (
-            <span className="ml-1.5 sm:ml-2 text-[9px] opacity-70">({recommendations.length})</span>
-          )}
-        </button>
-      </div>
-
-      {/* BARRE DE RECHERCHE - responsive */}
-      <div className="mb-6 sm:mb-8">
-        <div className="relative max-w-full sm:max-w-md">
-          <div className="absolute inset-y-0 left-0 pl-3 sm:pl-4 flex items-center pointer-events-none">
-            <Search className="w-4 h-4 sm:w-5 sm:h-5 text-stone-400" />
-          </div>
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={isMobile ? 'Rechercher...' : (t('dashboard.searchDestinations') || 'Rechercher une destination...')}
-            className="w-full pl-9 sm:pl-12 pr-10 py-2.5 sm:py-3 bg-white dark:bg-dark-surface border border-stone-200 dark:border-dark-border rounded-2xl sm:rounded-3xl text-sm sm:text-base text-[#1a4a36] dark:text-dark-text placeholder-stone-400 focus:outline-none focus:border-[#2d7a5a] focus:ring-2 focus:ring-[#2d7a5a]/20 transition-all shadow-sm min-h-[44px]"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery('')}
-              className="absolute inset-y-0 right-0 pr-3 sm:pr-4 flex items-center text-stone-400 hover:text-[#1a4a36] transition-colors"
-              aria-label="Effacer la recherche"
-            >
-              <X className="w-4 h-4 sm:w-5 sm:h-5" />
-            </button>
-          )}
-        </div>
-        {searchQuery && (
-          <p className="mt-2 sm:mt-3 text-xs sm:text-sm text-stone-500">
-            {filteredItems.length} résultat{filteredItems.length !== 1 ? 's' : ''} pour "{searchQuery}"
+    <>
+      <GlobalStyles />
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 pb-20 sm:pb-0 safe-bottom ios-no-zoom">
+        
+        <header className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-serif font-bold mb-1 sm:mb-2 dark:text-dark-text">
+            {t('dashboard.personalizedRecommendations') || 'Recommandations'}
+          </h1>
+          <p className="text-sm sm:text-base text-stone-500 dark:text-dark-text-muted">
+            {t('dashboard.premiumSelection') || 'Sélection personnalisée pour vous'}
           </p>
+        </header>
+
+        <div className="flex gap-2 sm:gap-3 mb-6 sm:mb-8 overflow-x-auto pb-1 -mx-3 px-3 sm:mx-0 sm:px-0 scrollbar-hide scroll-smooth">
+          <button onClick={() => handleTabChange('all')}
+            className={`px-4 py-2 sm:px-5 sm:py-2.5 rounded-full font-bold text-[10px] sm:text-[11px] uppercase tracking-widest transition-all whitespace-nowrap min-h-[40px] focus-ring no-select active:scale-95 ${activeTab === 'all' ? 'bg-[#2d7a5a] text-white border border-[#2d7a5a]' : 'bg-transparent border border-stone-200 dark:border-dark-border text-stone-500 hover:border-[#2d7a5a] hover:text-[#2d7a5a]'}`}>
+            <span className="hidden sm:inline">Toutes les destinations</span>
+            <span className="sm:hidden">Toutes</span>
+            {allDestinations.length > 0 && <span className="ml-1.5 sm:ml-2 text-[9px] opacity-70">({allDestinations.length})</span>}
+          </button>
+          <button onClick={() => handleTabChange('recommendations')}
+            className={`px-4 py-2 sm:px-5 sm:py-2.5 rounded-full font-bold text-[10px] sm:text-[11px] uppercase tracking-widest transition-all whitespace-nowrap min-h-[40px] focus-ring no-select active:scale-95 ${activeTab === 'recommendations' ? 'bg-[#2d7a5a] text-white border border-[#2d7a5a]' : 'bg-transparent border border-stone-200 dark:border-dark-border text-stone-500 hover:border-[#2d7a5a] hover:text-[#2d7a5a]'}`}>
+            <span className="hidden sm:inline">Recommandations</span>
+            <span className="sm:hidden">Recommandé</span>
+            {recommendations.length > 0 && <span className="ml-1.5 sm:ml-2 text-[9px] opacity-70">({recommendations.length})</span>}
+          </button>
+        </div>
+
+        <div className="mb-6 sm:mb-8">
+          <div className="relative max-w-full sm:max-w-md">
+            <div className="absolute inset-y-0 left-0 pl-3 sm:pl-4 flex items-center pointer-events-none">
+              <Search className="w-4 h-4 sm:w-5 sm:h-5 text-stone-400" />
+            </div>
+            <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={isMobile ? 'Rechercher...' : (t('dashboard.searchDestinations') || 'Rechercher une destination...')}
+              className="w-full pl-9 sm:pl-12 pr-10 py-2.5 sm:py-3 bg-white dark:bg-dark-surface border border-stone-200 dark:border-dark-border rounded-2xl sm:rounded-3xl text-sm sm:text-base text-[#1a4a36] dark:text-dark-text placeholder-stone-400 focus:outline-none focus:border-[#2d7a5a] focus:ring-2 focus:ring-[#2d7a5a]/20 transition-all shadow-sm min-h-[44px]" />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery('')}
+                className="absolute inset-y-0 right-0 pr-3 sm:pr-4 flex items-center text-stone-400 hover:text-[#1a4a36] transition-colors focus-ring rounded"
+                aria-label="Effacer">
+                <X className="w-4 h-4 sm:w-5 sm:h-5" />
+              </button>
+            )}
+          </div>
+          {searchQuery && <p className="mt-2 sm:mt-3 text-xs sm:text-sm text-stone-500">{filteredItems.length} résultat{filteredItems.length !== 1 ? 's' : ''} pour "{searchQuery}"</p>}
+        </div>
+
+        {loadingAll && activeTab === 'all' ? (
+          <div className="py-16 sm:py-20 text-center text-stone-500 animate-pulse px-4">
+            <Star size={40} className="mx-auto mb-4 text-[#2d7a5a] opacity-20 sm:size-12" />
+            <p className="text-sm sm:text-base">Chargement...</p>
+          </div>
+        ) : filteredItems.length === 0 ? (
+          <div className="py-12 sm:py-20 text-center px-4 animate-slide-up">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-stone-100 dark:bg-dark-surface rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
+              {searchQuery ? <Search size={28} className="text-[#2d7a5a] sm:size-8" /> : <Star size={28} className="text-[#2d7a5a] sm:size-8" />}
+            </div>
+            <h3 className="text-lg sm:text-xl font-bold mb-2 dark:text-dark-text">{searchQuery ? t('dashboard.noResultsFound') : t('dashboard.noRecommendationsAvailable')}</h3>
+            <p className="text-stone-500 max-w-md mx-auto mb-4 sm:mb-6 text-sm sm:text-base">{searchQuery ? `Aucune destination ne correspond à "${searchQuery}"` : t('dashboard.noRecommendationsDescription')}</p>
+            {searchQuery ? (
+              <button onClick={() => setSearchQuery('')} className="bg-[#2d7a5a] text-white px-5 py-2.5 sm:px-6 sm:py-3 rounded-full font-bold hover:bg-[#1a4a36] transition text-sm sm:text-base min-h-[44px] focus-ring no-select active:scale-95">{t('dashboard.clearSearch')}</button>
+            ) : (
+              <button onClick={() => window.dispatchEvent(new CustomEvent('nav-explorer'))} className="bg-[#2d7a5a] text-white px-5 py-2.5 sm:px-6 sm:py-3 rounded-full font-bold hover:bg-[#1a4a36] transition text-sm sm:text-base min-h-[44px] focus-ring no-select active:scale-95">{t('dashboard.exploreDestinations')}</button>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 lg:gap-8">
+            {filteredItems.map((dest, index) => (
+              <RecommendationCard key={dest.id} destination={dest} index={index} onViewDetails={() => setSelectedItem(dest)} openAuthModal={openAuthModal} t={t} />
+            ))}
+          </div>
         )}
       </div>
-
-      {/* CONTENU */}
-      {loadingAll && activeTab === 'all' ? (
-        <div className="py-16 sm:py-20 text-center text-stone-500 animate-pulse px-4">
-          <Star size={40} className="mx-auto mb-4 text-[#2d7a5a] opacity-20 sm:size-12" />
-          <p className="text-sm sm:text-base">Chargement de toutes les destinations...</p>
-        </div>
-
-      ) : filteredItems.length === 0 ? (
-        <div className="py-12 sm:py-20 text-center px-4">
-          <div className="w-16 h-16 sm:w-20 sm:h-20 bg-stone-100 dark:bg-dark-surface rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
-            {searchQuery
-              ? <Search size={28} className="text-[#2d7a5a] sm:size-8" />
-              : <Star size={28} className="text-[#2d7a5a] sm:size-8" />
-            }
-          </div>
-          <h3 className="text-lg sm:text-xl font-bold mb-2 dark:text-dark-text">
-            {searchQuery
-              ? t('dashboard.noResultsFound')
-              : t('dashboard.noRecommendationsAvailable')}
-          </h3>
-          <p className="text-stone-500 max-w-md mx-auto mb-4 sm:mb-6 text-sm sm:text-base">
-            {searchQuery
-              ? `Aucune destination ne correspond à "${searchQuery}"`
-              : t('dashboard.noRecommendationsDescription')}
-          </p>
-          {searchQuery ? (
-            <button
-              onClick={() => setSearchQuery('')}
-              className="bg-[#2d7a5a] text-white px-5 py-2.5 sm:px-6 sm:py-3 rounded-full font-bold hover:bg-[#1a4a36] transition text-sm sm:text-base min-h-[44px]"
-            >
-              {t('dashboard.clearSearch')}
-            </button>
-          ) : (
-            <button
-              onClick={() => window.dispatchEvent(new CustomEvent('nav-explorer'))}
-              className="bg-[#2d7a5a] text-white px-5 py-2.5 sm:px-6 sm:py-3 rounded-full font-bold hover:bg-[#1a4a36] transition text-sm sm:text-base min-h-[44px]"
-            >
-              {t('dashboard.exploreDestinations')}
-            </button>
-          )}
-        </div>
-
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-          {filteredItems.map((dest, index) => (
-            <RecommendationCard
-              key={dest.id}
-              destination={dest}
-              index={index}
-              onViewDetails={() => setSelectedItem(dest)}
-              openAuthModal={openAuthModal}
-              t={t}
-            />
-          ))}
-        </div>
-      )}
-    </div>
+    </>
   );
 };
 
