@@ -1,301 +1,837 @@
-import React, { useState, useEffect } from 'react';
-import { X, Download, FileText, Calendar, CreditCard, Euro, CheckCircle, MapPin, Plane, Users, Clock } from 'lucide-react';
-import { generateAndDownloadInvoice } from '../../../utils/generateFacture';
-import { generateAndDownloadBonReservation } from '../../../utils/generateBonReservation';
-import axios from 'axios';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
+import { 
+  Star, MapPin, ChevronRight, Heart, Search, 
+  Sparkles, Users, TrendingUp, UserCheck, Info, X,
+  Brain, Compass, ThumbsUp, BarChart3, Filter, SlidersHorizontal,
+  ArrowRight
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '../../../contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
+import DestinationDetailPage from './DestinationDetailPage';
+import { useTheme } from '../../../contexts/ThemeContext';
 
-const InvoiceModal = ({ isOpen, reservationId, onClose }) => {
-  const [invoice, setInvoice] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+/* ============================================
+   STYLES GLOBAUX INLINE - RESPONSIVE UTILITIES
+   ============================================ */
+const GlobalStyles = () => (
+  <style>{`
+    /* Cache scrollbar mais garde fonctionnalité */
+    .scrollbar-hide {
+      -ms-overflow-style: none !important;
+      scrollbar-width: none !important;
+    }
+    .scrollbar-hide::-webkit-scrollbar {
+      display: none !important;
+      width: 0 !important;
+      height: 0 !important;
+    }
+    
+    /* Empêche zoom input sur iOS */
+    @supports (-webkit-touch-callout: none) {
+      .ios-no-zoom input,
+      .ios-no-zoom textarea,
+      .ios-no-zoom select {
+        font-size: 16px !important;
+      }
+    }
+    
+    /* Safe area pour mobiles modernes */
+    .safe-bottom {
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    
+    /* Touch action optimisation */
+    .touch-pan-y {
+      touch-action: pan-y;
+    }
+    
+    /* Prevent text selection on interactive elements */
+    .no-select {
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    
+    /* Smooth scroll */
+    .scroll-smooth {
+      scroll-behavior: smooth;
+      -webkit-overflow-scrolling: touch;
+    }
+    
+    /* Line clamp utilities */
+    .line-clamp-1 {
+      display: -webkit-box;
+      -webkit-line-clamp: 1;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .line-clamp-2 {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    
+    /* Animation utilities */
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes slideUp {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .animate-fade-in {
+      animation: fadeIn 0.3s ease-out;
+    }
+    .animate-slide-up {
+      animation: slideUp 0.4s ease-out;
+    }
+    
+    /* Focus visible for accessibility */
+    .focus-ring:focus-visible {
+      outline: 2px solid #2d7a5a;
+      outline-offset: 2px;
+    }
+    
+    /* Card hover effect */
+    .card-hover-lift {
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .card-hover-lift:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+    }
+    
+    /* Reduce motion preference */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  `}</style>
+);
+
+/* ============================================
+   HOOK PERSONNALISÉ POUR DÉTECTER MOBILE
+   ============================================ */
+const useMediaQuery = (query) => {
+  const [matches, setMatches] = useState(false);
 
   useEffect(() => {
-    if (isOpen && reservationId) {
-      fetchInvoice();
-    }
-  }, [isOpen, reservationId]);
+    const media = window.matchMedia(query);
+    if (media.matches !== matches) setMatches(media.matches);
+    const listener = () => setMatches(media.matches);
+    media.addEventListener('change', listener);
+    return () => media.removeEventListener('change', listener);
+  }, [matches, query]);
 
-  const fetchInvoice = async () => {
+  return matches;
+};
+
+// ============================================================================
+// MAPPING TECHNIQUE → LABEL AFFICHÉ SUR LA CARTE
+// ============================================================================
+
+const TECHNIQUE_DISPLAY = {
+  'cold-start': {
+    shortLabel: 'Vos préférences',
+    fullLabel: 'Basé sur vos préférences d\'inscription',
+    color: '#3b82f6',
+    icon: UserCheck
+  },
+  'content': {
+    shortLabel: 'Vos goûts',
+    fullLabel: 'Correspond à vos goûts analysés',
+    color: '#10b981',
+    icon: Brain
+  },
+  'collaborative': {
+    shortLabel: 'Similaires',
+    fullLabel: 'Apprécié par voyageurs similaires',
+    color: '#8b5cf6',
+    icon: Users
+  },
+  'popular': {
+    shortLabel: 'Populaire',
+    fullLabel: 'Destination populaire',
+    color: '#f59e0b',
+    icon: ThumbsUp
+  },
+  'hybrid-behavioral': {
+    shortLabel: 'Hybride',
+    fullLabel: 'Recommandation hybride intelligente',
+    color: '#2d7a5a',
+    icon: Compass
+  }
+};
+
+// ============================================================================
+// BADGE DE TECHNIQUE - RESPONSIVE
+// ============================================================================
+
+const TechniqueBadge = ({ algorithmUsed, displayCause }) => {
+  if (!algorithmUsed) return null;
+
+  const tech = TECHNIQUE_DISPLAY[algorithmUsed] || TECHNIQUE_DISPLAY['popular'];
+  const Icon = tech.icon;
+  const [showTooltip, setShowTooltip] = useState(false);
+  const badgeRef = useRef(null);
+  const [tooltipPos, setTooltipPos] = useState({ top: 0, left: 0 });
+  const isMobile = useMediaQuery('(max-width: 640px)');
+
+  const handleMouseEnter = () => {
+    if (isMobile || !badgeRef.current) return;
+    const rect = badgeRef.current.getBoundingClientRect();
+    const tooltipWidth = isMobile ? 280 : 320;
+    setTooltipPos({
+      top: rect.bottom + window.scrollY + 8,
+      left: Math.min(rect.left + window.scrollX, window.innerWidth - tooltipWidth - 16)
+    });
+    setShowTooltip(true);
+  };
+
+  return (
+    <>
+      <div 
+        ref={badgeRef}
+        className="inline-flex items-center gap-1 px-2 py-1 sm:px-3 sm:py-1.5 rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-wider backdrop-blur-md border border-white/20 cursor-help no-select touch-pan-y"
+        style={{ 
+          backgroundColor: `${tech.color}40`,
+          color: '#ffffff',
+          textShadow: '0 1px 2px rgba(0,0,0,0.3)'
+        }}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={() => setShowTooltip(false)}
+        onClick={(e) => isMobile && e.stopPropagation()}
+      >
+        <Icon className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+        <span className="hidden sm:inline">{tech.shortLabel}</span>
+        <span className="sm:hidden">{tech.shortLabel.slice(0, 8)}</span>
+      </div>
+
+      {showTooltip && !isMobile && createPortal(
+        <div 
+          className="fixed w-[280px] sm:w-[320px] p-3 sm:p-4 rounded-xl bg-black/95 backdrop-blur-xl border border-white/10 shadow-2xl z-[9999] animate-fade-in"
+          style={{ 
+            top: `${tooltipPos.top}px`, 
+            left: `${tooltipPos.left}px` 
+          }}
+        >
+          <div className="flex items-center gap-2 mb-2 pb-2 border-b border-white/10">
+            <div 
+              className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center"
+              style={{ backgroundColor: `${tech.color}30` }}
+            >
+              <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" style={{ color: tech.color }} />
+            </div>
+            <div>
+              <p className="text-white font-bold text-xs sm:text-sm">{tech.fullLabel}</p>
+              <p className="text-[9px] sm:text-[10px] text-white/50">Technique : {algorithmUsed}</p>
+            </div>
+          </div>
+
+          {displayCause?.causeDetails && (
+            <ul className="space-y-1 mt-2">
+              {displayCause.causeDetails.map((detail, i) => (
+                <li key={i} className="text-white/70 text-[10px] sm:text-[11px] flex items-start gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#2d7a5a] mt-1 shrink-0" />
+                  <span>{detail}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {displayCause?.featureMatches && displayCause.featureMatches.length > 0 && (
+            <div className="mt-2 pt-2 border-t border-white/10">
+              <p className="text-[9px] sm:text-[10px] text-white/50 uppercase mb-1.5">Features qui matchent</p>
+              <div className="flex flex-wrap gap-1">
+                {displayCause.featureMatches.map((m, i) => (
+                  <span 
+                    key={i}
+                    className="px-1.5 py-0.5 sm:px-2 sm:py-0.5 rounded bg-[#2d7a5a]/20 text-[#2d7a5a] text-[9px] sm:text-[10px] font-medium"
+                  >
+                    {m.label} {m.compat}%
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="absolute -top-2 left-6 w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-b-[10px] border-b-black/95" />
+        </div>,
+        document.body
+      )}
+    </>
+  );
+};
+
+// ============================================================================
+// PANNEAU DEBUG - RESPONSIVE
+// ============================================================================
+
+const DebugPanel = ({ destination, onClose }) => {
+  if (!destination) return null;
+  const isMobile = useMediaQuery('(max-width: 640px)');
+
+  const tech = TECHNIQUE_DISPLAY[destination.algorithmUsed] || TECHNIQUE_DISPLAY['popular'];
+  const TechIcon = tech.icon;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      className={`absolute inset-2 sm:inset-3 rounded-2xl bg-black/95 backdrop-blur-xl border border-[#2d7a5a]/30 p-3 sm:p-4 overflow-y-auto z-50 scroll-smooth ${isMobile ? 'text-xs' : ''}`}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="flex justify-between items-center mb-3">
+        <div className="flex items-center gap-2">
+          <Info className="w-4 h-4 sm:w-5 sm:h-5 text-[#2d7a5a]" />
+          <h4 className="text-[#2d7a5a] font-bold text-xs sm:text-sm">Pourquoi cette destination ?</h4>
+        </div>
+        <button onClick={onClose} className="text-white/50 hover:text-white p-1 focus-ring rounded">
+          <X className="w-4 h-4 sm:w-5 sm:h-5" />
+        </button>
+      </div>
+
+      <div className="p-2.5 sm:p-3 rounded-lg mb-3" style={{ backgroundColor: `${tech.color}15`, border: `1px solid ${tech.color}30` }}>
+        <div className="flex items-center gap-2 mb-2">
+          <TechIcon className="w-4 h-4 sm:w-5 sm:h-5" style={{ color: tech.color }} />
+          <span className="text-white font-bold text-xs sm:text-sm">{tech.fullLabel}</span>
+        </div>
+        <p className="text-white/60 text-[10px] sm:text-[11px]">
+          {destination.displayCause?.mainCause || 'Recommandation basée sur votre profil'}
+        </p>
+      </div>
+
+      {destination.algorithmScores && (
+        <div className="p-2.5 sm:p-3 rounded-lg bg-white/5 border border-white/10 mb-3">
+          <p className="text-white/50 text-[9px] sm:text-[10px] uppercase mb-2">Contribution de chaque technique</p>
+          {Object.entries(destination.algorithmScores).map(([algo, score]) => {
+            const algoTech = TECHNIQUE_DISPLAY[algo] || TECHNIQUE_DISPLAY['popular'];
+            const AlgoIcon = algoTech.icon;
+            return (
+              <div key={algo} className="flex items-center justify-between mt-1.5">
+                <div className="flex items-center gap-1.5">
+                  <AlgoIcon className="w-3 h-3" style={{ color: algoTech.color }} />
+                  <span className="text-white/60 text-[10px] sm:text-[11px] capitalize">{algo}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-12 sm:w-16 h-1 rounded-full bg-white/10">
+                    <div className="h-full rounded-full" style={{ width: `${score * 100}%`, backgroundColor: algoTech.color }} />
+                  </div>
+                  <span className="text-[9px] sm:text-[10px] text-white/50 w-8 text-right">{(score * 100).toFixed(1)}%</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <div className="p-2.5 sm:p-3 rounded-lg bg-[#2d7a5a]/20 border border-[#2d7a5a]/30">
+        <div className="flex justify-between">
+          <span className="text-white/70 text-[10px] sm:text-[11px]">Score final</span>
+          <span className="text-[#2d7a5a] font-bold text-sm">{(destination.finalScore * 100).toFixed(1)}%</span>
+        </div>
+      </div>
+
+      <div className="p-2.5 sm:p-3 rounded-lg bg-white/5 border border-white/10 mt-2">
+        <div className="flex justify-between">
+          <span className="text-white/70 text-[10px] sm:text-[11px]">Match préférences</span>
+          <span className="text-white font-bold text-sm">{destination.matchPercentage}%</span>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+// ============================================================================
+// CARD - STYLE CAPTURE D'ÉCRAN (AFALOU TOURS)
+// ============================================================================
+
+const RecommendationCard = ({ destination, index, onViewDetails, openAuthModal, t }) => {
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [favoriteLoading, setFavoriteLoading] = useState(false);
+  const [avgRating, setAvgRating] = useState(null);
+  const [showDebug, setShowDebug] = useState(false);
+  const { isAuthenticated } = useAuth();
+  const isMobile = useMediaQuery('(max-width: 640px)');
+
+  useEffect(() => { checkFavoriteStatus(); }, [destination.id]);
+
+  useEffect(() => {
+    const fetchAvgRating = async () => {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/reviews/destination/${destination.id}`);
+        const data = await res.json();
+        const reviews = data.reviews || [];
+        if (reviews.length > 0) {
+          const avg = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
+          setAvgRating(avg.toFixed(1));
+        }
+      } catch (err) { /* silencieux */ }
+    };
+    fetchAvgRating();
+  }, [destination.id]);
+
+  const checkFavoriteStatus = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
     try {
-      setLoading(true);
-      const token = localStorage.getItem('token');
-      console.log('Fetching invoice for reservation:', reservationId);
-      
-      const response = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/payment/invoice-by-reservation/${reservationId}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      
-      console.log('Invoice response:', response.data);
-      
-      if (response.data.success && response.data.invoice) {
-        setInvoice(response.data.invoice);
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/favorites/check/destination/${destination.id}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const data = await res.json();
+      setIsFavorite(data.isFavorite);
+    } catch (err) { /* silencieux */ }
+  };
+
+  const toggleFavorite = useCallback(async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isAuthenticated) { openAuthModal('login'); return; }
+    setFavoriteLoading(true);
+    const token = localStorage.getItem('token');
+    try {
+      if (isFavorite) {
+        const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/favorites`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await res.json();
+        const fav = data.favorites?.find(
+          f => f.targetId === destination.id && f.targetType === 'destination'
+        );
+        if (fav) {
+          await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/favorites/${fav.id}`, {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${token}` }
+          });
+        }
+        setIsFavorite(false);
       } else {
-        setError('Facture non trouvée');
+        await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/favorites`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ targetType: 'destination', targetId: destination.id })
+        });
+        setIsFavorite(true);
       }
+    } catch (err) { /* silencieux */ } finally { setFavoriteLoading(false); }
+  }, [isFavorite, isAuthenticated, destination.id, openAuthModal]);
+
+  const imageUrl = destination.image_url ||
+    'https://images.unsplash.com/photo-1567874790230-3acbb51e61dd?auto=format&fit=crop&w=1200&q=80';
+
+  const matchPercentage = destination.matchPercentage ||
+    Math.round((destination.affinityScore || 0) * 100);
+
+  const algorithmUsed = destination.algorithmUsed || 'popular';
+
+  // Pays/location pour le badge comme sur la capture
+  const locationBadge = destination.country || destination.location || 'ALGÉRIE';
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.1, duration: 0.5 }}
+      className="w-full h-full"
+    >
+      <div
+        className="relative w-full rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer border border-stone-200/50 dark:border-dark-border/50 hover:border-[#2d7a5a]/50 transition-all duration-500 group card-hover-lift bg-white dark:bg-dark-surface touch-pan-y"
+        onClick={onViewDetails}
+      >
+        {/* Image container - aspect ratio comme la capture */}
+        <div className="relative aspect-[4/3] sm:aspect-[16/10] overflow-hidden">
+          <img
+            src={imageUrl}
+            alt={destination.name}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+            loading="lazy"
+          />
+          
+          {/* Overlay subtil */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+          {/* Badge ALGÉRIE en haut à gauche - comme la capture */}
+          <div className="absolute top-3 left-3 sm:top-4 sm:left-4">
+            <div className="flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 bg-black/50 backdrop-blur-md rounded-md text-white text-[10px] sm:text-xs font-medium uppercase tracking-wider">
+              <MapPin className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+              {locationBadge}
+            </div>
+          </div>
+
+          {/* Badge Match % en haut à droite */}
+          {matchPercentage > 0 && (
+            <div className="absolute top-3 right-3 sm:top-4 sm:right-4">
+              <div className={`px-2 py-1 sm:px-3 sm:py-1.5 rounded-md font-bold text-[9px] sm:text-[10px] uppercase tracking-wider ${
+                matchPercentage >= 70 ? 'bg-[#2d7a5a] text-white' :
+                matchPercentage >= 50 ? 'bg-orange-500 text-white' :
+                'bg-white/90 text-black'
+              }`}>
+                {matchPercentage}% Match
+              </div>
+            </div>
+          )}
+
+          {/* Bouton favori - positionné discrètement */}
+          <button
+            onClick={toggleFavorite}
+            disabled={favoriteLoading}
+            className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 w-8 h-8 sm:w-9 sm:h-9 min-w-[32px] min-h-[32px] rounded-full bg-black/40 backdrop-blur-md border border-white/20 flex items-center justify-center hover:bg-[#2d7a5a] hover:border-[#2d7a5a] transition-all group/btn active:scale-95 focus-ring no-select opacity-0 group-hover:opacity-100"
+            aria-label={isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}
+          >
+            <Heart className={`w-4 h-4 sm:w-4.5 sm:h-4.5 transition-colors ${
+              isFavorite
+                ? 'fill-[#2d7a5a] text-[#2d7a5a]'
+                : 'text-white group-hover/btn:text-white'
+            }`} />
+          </button>
+        </div>
+
+        {/* Contenu sous l'image - comme la capture */}
+        <div className="p-4 sm:p-5">
+          {/* Titre */}
+          <h3 className="text-lg sm:text-xl md:text-2xl font-serif font-bold text-[#1a4a36] dark:text-dark-text mb-2 sm:mb-3 line-clamp-1">
+            {destination.name}
+          </h3>
+
+          {/* Rating et location */}
+          <div className="flex items-center gap-3 mb-3 sm:mb-4 text-stone-500 dark:text-dark-text-muted text-xs sm:text-sm">
+            <div className="flex items-center gap-1">
+              <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 fill-amber-500" />
+              <span className="font-medium">{avgRating || destination.rating || '4.5'}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-stone-400" />
+              <span className="truncate">{destination.location || destination.country}</span>
+            </div>
+          </div>
+
+          {/* Lien DÉCOUVRIR › - comme la capture */}
+          <div className="flex items-center justify-between">
+            <button
+              onClick={(e) => { e.stopPropagation(); onViewDetails(); }}
+              className="inline-flex items-center gap-1.5 sm:gap-2 text-[#2d7a5a] hover:text-[#1a4a36] font-medium text-xs sm:text-sm uppercase tracking-wider transition-colors group/link focus-ring no-select"
+            >
+              {t('dashboard.viewDetails') || 'Découvrir'}
+              <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover/link:translate-x-1 transition-transform" />
+            </button>
+
+            {/* Technique badge discret */}
+            <TechniqueBadge 
+              algorithmUsed={algorithmUsed}
+              displayCause={destination.displayCause}
+            />
+          </div>
+        </div>
+
+        {/* Bouton info debug - visible au hover */}
+        <div className="absolute top-1/2 right-3 sm:right-4 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          <button
+            onClick={(e) => { e.stopPropagation(); setShowDebug(!showDebug); }}
+            className="w-7 h-7 sm:w-8 sm:h-8 min-w-[28px] min-h-[28px] rounded-full bg-black/50 backdrop-blur-md border border-white/20 flex items-center justify-center hover:bg-[#2d7a5a] transition-colors focus-ring"
+            title="Voir les détails de la recommandation"
+            aria-label="Détails recommandation"
+          >
+            <Info className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+          </button>
+        </div>
+
+        {/* Panneau debug */}
+        <AnimatePresence>
+          {showDebug && (
+            <DebugPanel 
+              destination={destination} 
+              onClose={() => setShowDebug(false)} 
+            />
+          )}
+        </AnimatePresence>
+      </div>
+    </motion.div>
+  );
+};
+
+// ============================================================================
+// RECOMMENDATIONS CONTENT - FULLY RESPONSIVE
+// ============================================================================
+
+const RecommendationsContent = ({ openAuthModal, t }) => {
+  const { user } = useAuth();
+  const { isDark } = useTheme();
+  const isMobile = useMediaQuery('(max-width: 640px)');
+
+  const [recommendations, setRecommendations] = useState([]);
+  const [allDestinations, setAllDestinations] = useState([]);
+  const [filteredItems, setFilteredItems] = useState([]);
+  const [activeTab, setActiveTab] = useState('recommendations');
+  const [loading, setLoading] = useState(true);
+  const [loadingAll, setLoadingAll] = useState(false);
+  const [error, setError] = useState(null);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  useEffect(() => {
+    fetchRecommendations();
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'all' && allDestinations.length === 0) {
+      fetchAllDestinations();
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    const source = activeTab === 'recommendations' ? recommendations : allDestinations;
+    if (!searchQuery.trim()) {
+      setFilteredItems(source);
+    } else {
+      const q = searchQuery.toLowerCase();
+      setFilteredItems(
+        source.filter(dest =>
+          (dest.name || '').toLowerCase().includes(q) ||
+          (dest.location || '').toLowerCase().includes(q) ||
+          (dest.country || '').toLowerCase().includes(q) ||
+          (dest.city || '').toLowerCase().includes(q)
+        )
+      );
+    }
+  }, [searchQuery, recommendations, allDestinations, activeTab]);
+
+  const fetchRecommendations = async () => {
+    setLoading(true);
+    setError(null);
+    const token = localStorage.getItem('token');
+
+    if (!token) {
+      await fetchPopular();
+      return;
+    }
+
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/recommendations/hybrid?limit=15`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!res.ok) {
+        console.warn('Hybrid API error, fallback to popular');
+        await fetchPopular();
+        return;
+      }
+
+      const data = await res.json();
+      const recs = data.recommendations || [];
+      setRecommendations(recs);
+      setFilteredItems(recs);
     } catch (err) {
-      console.error('Error fetching invoice:', err);
-      console.error('Error response:', err.response?.data);
-      setError(err.response?.data?.message || 'Erreur lors du chargement de la facture');
+      console.error('fetchRecommendations error:', err);
+      setError(err.message);
+      await fetchPopular();
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDownloadInvoice = () => {
+  const fetchAllDestinations = async () => {
+    setLoadingAll(true);
     try {
-      if (!invoice || !invoice.reservation) return;
-      
-      const reservation = invoice.reservation;
-      const invoiceData = {
-        invoice_number: invoice.invoice_number,
-        reservation_id: invoice.reservation_id,
-        amount: invoice.amount,
-        currency: invoice.currency,
-        payment_method: invoice.payment_method,
-        payment_status: invoice.payment_status,
-        customer_name: invoice.customer_name,
-        customer_email: invoice.customer_email,
-        customer_phone: invoice.customer_phone,
-        invoice_details: invoice.invoice_details,
-        invoice_date: invoice.invoice_date
-      };
-
-      const isPayOnArrival = invoice.payment_method === 'on_arrival';
-      if (isPayOnArrival) {
-        generateAndDownloadBonReservation(reservation, invoiceData);
-      } else {
-        generateAndDownloadInvoice(reservation, invoiceData);
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/recommendations/all-destinations`);
+      if (res.ok) {
+        const data = await res.json();
+        setAllDestinations(data.destinations || []);
       }
     } catch (err) {
-      console.error('Error downloading invoice:', err);
-      alert('Erreur lors du téléchargement de la facture');
+      console.error('fetchAllDestinations error:', err);
+    } finally {
+      setLoadingAll(false);
     }
   };
 
-  const getPaymentMethodText = (method) => {
-    switch (method) {
-      case 'chargily':
-        return 'Chargily (Edahabia/CIB)';
-      case 'stripe':
-        return 'Carte Bancaire (Stripe)';
-      case 'on_arrival':
-        return 'Paiement à l\'arrivée';
-      default:
-        return method;
+  const fetchPopular = async () => {
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/recommendations/popular?limit=15`);
+      if (res.ok) {
+        const data = await res.json();
+        const recs = data.recommendations || [];
+        setRecommendations(recs);
+        setFilteredItems(recs);
+      }
+    } catch (err) {
+      console.error('fetchPopular error:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Don't render if modal is not open
-  if (!isOpen) return null;
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    setSearchQuery('');
+  };
+
+  if (selectedItem) {
+    return (
+      <DestinationDetailPage
+        item={selectedItem}
+        onBack={() => setSelectedItem(null)}
+        openAuthModal={openAuthModal}
+      />
+    );
+  }
 
   if (loading) {
     return (
-      <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div className="bg-[#f7f5f0] border border-[#e0dcd4] rounded-3xl p-8 max-w-md w-full text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#2d7a5a] mx-auto mb-4"></div>
-          <p className="text-[#1a4a36] text-lg">Chargement de votre facture...</p>
-        </div>
+      <div className="py-16 sm:py-20 text-center text-stone-500 animate-pulse px-4">
+        <Star size={40} className="mx-auto mb-4 text-[#2d7a5a] opacity-20 sm:size-12" />
+        <p className="text-sm sm:text-base">{t('dashboard.analyzingPreferences')}</p>
+        <p className="text-xs sm:text-sm mt-2 opacity-60">{t('dashboard.basedOnTastes')}</p>
       </div>
     );
   }
-
-  if (error || !invoice) {
-    return (
-      <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div className="bg-[#f7f5f0] border border-[#e0dcd4] rounded-3xl p-8 max-w-md w-full">
-          <div className="text-center">
-            <div className="w-16 h-16 bg-[#fef2f2] rounded-full flex items-center justify-center mx-auto mb-4">
-              <X className="w-8 h-8 text-[#dc2626]" />
-            </div>
-            <h3 className="text-xl font-bold text-[#1a4a36] mb-2">Erreur</h3>
-            <p className="text-[#6b8f7b] mb-6">{error || 'Facture non trouvée'}</p>
-            <button
-              onClick={onClose}
-              className="bg-[#2d7a5a] text-black px-6 py-2 rounded-full font-medium hover:bg-[#1a4a36] transition"
-            >
-              Fermer
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  const isPayOnArrival = invoice.payment_method === 'on_arrival';
-  const documentType = isPayOnArrival ? 'Bon de Réservation' : 'Facture';
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-[#f7f5f0] border border-[#e0dcd4] rounded-3xl max-w-3xl w-full my-8 shadow-2xl">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-[#e0dcd4]">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-[#2d7a5a]/20 rounded-full flex items-center justify-center">
-              <FileText className="w-6 h-6 text-[#2d7a5a]" />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-[#1a4a36]">{documentType}</h2>
-              <p className="text-[#6b8f7b] text-sm">{invoice.invoice_number}</p>
-            </div>
-          </div>
+    <>
+      <GlobalStyles />
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 pb-20 sm:pb-0 safe-bottom ios-no-zoom">
+
+        {/* HEADER RESPONSIVE */}
+        <header className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-serif font-bold mb-1 sm:mb-2 dark:text-dark-text">
+            {t('dashboard.personalizedRecommendations') || 'Recommandations'}
+          </h1>
+          <p className="text-sm sm:text-base text-stone-500 dark:text-dark-text-muted">
+            {t('dashboard.premiumSelection') || 'Sélection personnalisée pour vous'}
+          </p>
+        </header>
+
+        {/* ONGLETS - scrollable sur mobile */}
+        <div className="flex gap-2 sm:gap-3 mb-6 sm:mb-8 overflow-x-auto pb-1 -mx-3 px-3 sm:mx-0 sm:px-0 scrollbar-hide scroll-smooth">
           <button
-            onClick={onClose}
-            className="p-2 text-[#6b8f7b] hover:text-[#1a4a36] hover:bg-[#e8e4de] rounded-full transition"
+            onClick={() => handleTabChange('all')}
+            className={`px-4 py-2 sm:px-5 sm:py-2.5 rounded-full font-bold text-[10px] sm:text-[11px] uppercase tracking-widest transition-all duration-300 whitespace-nowrap min-h-[40px] focus-ring no-select active:scale-95 ${
+              activeTab === 'all'
+                ? 'bg-[#2d7a5a] text-white border border-[#2d7a5a]'
+                : 'bg-transparent border border-stone-200 dark:border-dark-border text-stone-500 hover:border-[#2d7a5a] hover:text-[#2d7a5a]'
+            }`}
           >
-            <X className="w-6 h-6" />
+            <span className="hidden sm:inline">Toutes les destinations</span>
+            <span className="sm:hidden">Toutes</span>
+            {allDestinations.length > 0 && (
+              <span className="ml-1.5 sm:ml-2 text-[9px] opacity-70">({allDestinations.length})</span>
+            )}
+          </button>
+          <button
+            onClick={() => handleTabChange('recommendations')}
+            className={`px-4 py-2 sm:px-5 sm:py-2.5 rounded-full font-bold text-[10px] sm:text-[11px] uppercase tracking-widest transition-all duration-300 whitespace-nowrap min-h-[40px] focus-ring no-select active:scale-95 ${
+              activeTab === 'recommendations'
+                ? 'bg-[#2d7a5a] text-white border border-[#2d7a5a]'
+                : 'bg-transparent border border-stone-200 dark:border-dark-border text-stone-500 hover:border-[#2d7a5a] hover:text-[#2d7a5a]'
+            }`}
+          >
+            <span className="hidden sm:inline">Recommandations</span>
+            <span className="sm:hidden">Recommandé</span>
+            {recommendations.length > 0 && (
+              <span className="ml-1.5 sm:ml-2 text-[9px] opacity-70">({recommendations.length})</span>
+            )}
           </button>
         </div>
 
-        {/* Content */}
-        <div className="p-6 space-y-6">
-          {/* Status Banner */}
-          <div className={`p-4 rounded-full border ${
-            invoice.payment_status === 'paid' 
-              ? 'bg-[#dcfce7] border-[#86efac]' 
-              : 'bg-orange-100 border-orange-300'
-          }`}>
-            <div className="flex items-center gap-3">
-              {invoice.payment_status === 'paid' ? (
-                <CheckCircle className="w-6 h-6 text-[#16a34a]" />
-              ) : (
-                <Clock className="w-6 h-6 text-[#c9a844]" />
-              )}
-              <div>
-                <p className="font-bold text-[#1a4a36]">
-                  {invoice.payment_status === 'paid' ? 'Paiement Confirmé' : 'Paiement en Attente'}
-                </p>
-                <p className="text-sm text-[#6b8f7b]">
-                  {isPayOnArrival 
-                    ? 'Vous paierez à votre arrivée' 
-                    : 'Votre paiement a été traité avec succès'}
-                </p>
-              </div>
+        {/* BARRE DE RECHERCHE - responsive */}
+        <div className="mb-6 sm:mb-8">
+          <div className="relative max-w-full sm:max-w-md">
+            <div className="absolute inset-y-0 left-0 pl-3 sm:pl-4 flex items-center pointer-events-none">
+              <Search className="w-4 h-4 sm:w-5 sm:h-5 text-stone-400" />
             </div>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={isMobile ? 'Rechercher...' : (t('dashboard.searchDestinations') || 'Rechercher une destination...')}
+              className="w-full pl-9 sm:pl-12 pr-10 py-2.5 sm:py-3 bg-white dark:bg-dark-surface border border-stone-200 dark:border-dark-border rounded-2xl sm:rounded-3xl text-sm sm:text-base text-[#1a4a36] dark:text-dark-text placeholder-stone-400 focus:outline-none focus:border-[#2d7a5a] focus:ring-2 focus:ring-[#2d7a5a]/20 transition-all shadow-sm min-h-[44px]"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute inset-y-0 right-0 pr-3 sm:pr-4 flex items-center text-stone-400 hover:text-[#1a4a36] transition-colors focus-ring rounded"
+                aria-label="Effacer la recherche"
+              >
+                <X className="w-4 h-4 sm:w-5 sm:h-5" />
+              </button>
+            )}
           </div>
-
-          {/* Invoice Details */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-[#f7f5f0] border border-[#e0dcd4] rounded-full p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Calendar className="w-4 h-4 text-[#2d7a5a]" />
-                <span className="text-[#6b8f7b] text-sm">Date d'émission</span>
-              </div>
-              <p className="text-[#1a4a36] font-medium">
-                {new Date(invoice.invoice_date).toLocaleDateString('fr-FR', {
-                  day: 'numeric',
-                  month: 'long',
-                  year: 'numeric'
-                })}
-              </p>
-            </div>
-            <div className="bg-[#f7f5f0] border border-[#e0dcd4] rounded-full p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Euro className="w-4 h-4 text-[#2d7a5a]" />
-                <span className="text-[#6b8f7b] text-sm">Montant total</span>
-              </div>
-              <p className="text-[#2d7a5a] font-bold text-2xl">{parseFloat(invoice.amount).toFixed(2)} DA</p>
-            </div>
-            <div className="bg-[#f7f5f0] border border-[#e0dcd4] rounded-full p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <CreditCard className="w-4 h-4 text-[#2d7a5a]" />
-                <span className="text-[#6b8f7b] text-sm">Méthode de paiement</span>
-              </div>
-              <p className="text-[#1a4a36] font-medium">{getPaymentMethodText(invoice.payment_method)}</p>
-            </div>
-            <div className="bg-[#f7f5f0] border border-[#e0dcd4] rounded-full p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <FileText className="w-4 h-4 text-[#2d7a5a]" />
-                <span className="text-[#6b8f7b] text-sm">Statut</span>
-              </div>
-              <p className={`font-medium ${
-                invoice.payment_status === 'paid' ? 'text-[#16a34a]' : 'text-[#c9a844]'
-              }`}>
-                {invoice.payment_status === 'paid' ? 'Payé' : 'En attente'}
-              </p>
-            </div>
-          </div>
-
-          {/* Customer Info */}
-          <div className="bg-[#f7f5f0] border border-[#e0dcd4] rounded-full p-4">
-            <h3 className="text-[#1a4a36] font-bold mb-3">Informations Client</h3>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-[#6b8f7b]">Nom:</span>
-                <span className="text-[#1a4a36]">{invoice.customer_name}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-[#6b8f7b]">Email:</span>
-                <span className="text-[#1a4a36]">{invoice.customer_email}</span>
-              </div>
-              {invoice.customer_phone && (
-                <div className="flex justify-between">
-                  <span className="text-[#6b8f7b]">Téléphone:</span>
-                  <span className="text-[#1a4a36]">{invoice.customer_phone}</span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Reservation Details */}
-          {invoice.invoice_details && (
-            <div className="bg-[#f7f5f0] border border-[#e0dcd4] rounded-full p-4">
-              <h3 className="text-[#1a4a36] font-bold mb-3">Détails de la Réservation</h3>
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-[#2d7a5a]" />
-                  <span className="text-[#6b8f7b] text-sm">Destination:</span>
-                  <span className="text-[#1a4a36] font-medium">{invoice.invoice_details.destination}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Plane className="w-4 h-4 text-[#2d7a5a]" />
-                  <span className="text-[#6b8f7b] text-sm">Transport:</span>
-                  <span className="text-[#1a4a36] font-medium">{invoice.invoice_details.transportName}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-[#2d7a5a]" />
-                  <span className="text-[#6b8f7b] text-sm">Départ:</span>
-                  <span className="text-[#1a4a36] font-medium">
-                    {new Date(invoice.invoice_details.departureDate).toLocaleDateString('fr-FR', {
-                      day: 'numeric',
-                      month: 'long',
-                      year: 'numeric'
-                    })}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Users className="w-4 h-4 text-[#2d7a5a]" />
-                  <span className="text-[#6b8f7b] text-sm">Voyageurs:</span>
-                  <span className="text-[#1a4a36] font-medium">
-                    {invoice.invoice_details.adults + (invoice.invoice_details.children || 0) + (invoice.invoice_details.infants || 0)} 
-                    ({invoice.invoice_details.adults} adultes{invoice.invoice_details.children ? `, ${invoice.invoice_details.children} enfants` : ''}{invoice.invoice_details.infants ? `, ${invoice.invoice_details.infants} bébés` : ''})
-                  </span>
-                </div>
-              </div>
-            </div>
+          {searchQuery && (
+            <p className="mt-2 sm:mt-3 text-xs sm:text-sm text-stone-500">
+              {filteredItems.length} résultat{filteredItems.length !== 1 ? 's' : ''} pour "{searchQuery}"
+            </p>
           )}
         </div>
 
-        {/* Footer Actions */}
-        <div className="p-6 border-t border-[#e0dcd4] flex flex-col sm:flex-row gap-3">
-          <button
-            onClick={onClose}
-            className="flex-1 bg-[#e8e4de] text-[#1a4a36] px-6 py-3 rounded-full font-medium hover:bg-[#d0ccc4] transition"
-          >
-            Accéder au Dashboard
-          </button>
-          <button
-            onClick={handleDownloadInvoice}
-            className="flex-1 bg-[#2d7a5a] text-black px-6 py-3 rounded-full font-medium hover:bg-[#1a4a36] transition flex items-center justify-center gap-2"
-          >
-            <Download className="w-5 h-5" />
-            Télécharger {documentType}
-          </button>
-        </div>
+        {/* CONTENU */}
+        {loadingAll && activeTab === 'all' ? (
+          <div className="py-16 sm:py-20 text-center text-stone-500 animate-pulse px-4">
+            <Star size={40} className="mx-auto mb-4 text-[#2d7a5a] opacity-20 sm:size-12" />
+            <p className="text-sm sm:text-base">Chargement de toutes les destinations...</p>
+          </div>
+
+        ) : filteredItems.length === 0 ? (
+          <div className="py-12 sm:py-20 text-center px-4 animate-slide-up">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-stone-100 dark:bg-dark-surface rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
+              {searchQuery
+                ? <Search size={28} className="text-[#2d7a5a] sm:size-8" />
+                : <Star size={28} className="text-[#2d7a5a] sm:size-8" />
+              }
+            </div>
+            <h3 className="text-lg sm:text-xl font-bold mb-2 dark:text-dark-text">
+              {searchQuery
+                ? t('dashboard.noResultsFound')
+                : t('dashboard.noRecommendationsAvailable')}
+            </h3>
+            <p className="text-stone-500 max-w-md mx-auto mb-4 sm:mb-6 text-sm sm:text-base">
+              {searchQuery
+                ? `Aucune destination ne correspond à "${searchQuery}"`
+                : t('dashboard.noRecommendationsDescription')}
+            </p>
+            {searchQuery ? (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="bg-[#2d7a5a] text-white px-5 py-2.5 sm:px-6 sm:py-3 rounded-full font-bold hover:bg-[#1a4a36] transition text-sm sm:text-base min-h-[44px] focus-ring no-select active:scale-95"
+              >
+                {t('dashboard.clearSearch')}
+              </button>
+            ) : (
+              <button
+                onClick={() => window.dispatchEvent(new CustomEvent('nav-explorer'))}
+                className="bg-[#2d7a5a] text-white px-5 py-2.5 sm:px-6 sm:py-3 rounded-full font-bold hover:bg-[#1a4a36] transition text-sm sm:text-base min-h-[44px] focus-ring no-select active:scale-95"
+              >
+                {t('dashboard.exploreDestinations')}
+              </button>
+            )}
+          </div>
+
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 lg:gap-8">
+            {filteredItems.map((dest, index) => (
+              <RecommendationCard
+                key={dest.id}
+                destination={dest}
+                index={index}
+                onViewDetails={() => setSelectedItem(dest)}
+                openAuthModal={openAuthModal}
+                t={t}
+              />
+            ))}
+          </div>
+        )}
       </div>
-    </div>
+    </>
   );
 };
 
-export default InvoiceModal;
-
-
+export default RecommendationsContent;
