@@ -1,448 +1,511 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  Star, MapPin, Heart, Search, X, ArrowRight
-} from 'lucide-react';
-import { motion } from 'framer-motion';
-import { useAuth } from '../../../contexts/AuthContext';
+import React, { useState, useEffect } from 'react';
+import { Heart, MapPin, User, TrendingUp, Award, ChevronRight, Edit3, Cpu, FileText, CheckCircle, Clock, AlertCircle, Receipt, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import DestinationDetailPage from './DestinationDetailPage';
+import { motion } from 'framer-motion';
 import { useTheme } from '../../../contexts/ThemeContext';
+import axios from 'axios';
 
-/* ============================================
-   STYLES GLOBAUX
-   ============================================ */
-const GlobalStyles = () => (
-  <style>{`
-    .scrollbar-hide { -ms-overflow-style: none !important; scrollbar-width: none !important; }
-    .scrollbar-hide::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
-    @supports (-webkit-touch-callout: none) {
-      .ios-no-zoom input, .ios-no-zoom textarea, .ios-no-zoom select { font-size: 16px !important; }
-    }
-    .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
-    .touch-pan-y { touch-action: pan-y; }
-    .no-select { -webkit-user-select: none; user-select: none; }
-    .scroll-smooth { scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
-    .line-clamp-1 { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
-    .card-hover-lift { transition: transform 0.3s ease, box-shadow 0.3s ease; }
-    .card-hover-lift:hover { transform: translateY(-4px); box-shadow: 0 12px 24px rgba(0,0,0,0.15); }
-    .focus-ring:focus-visible { outline: 2px solid #2d7a5a; outline-offset: 2px; }
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-    .animate-fade-in { animation: fadeIn 0.3s ease-out; }
-    .animate-slide-up { animation: slideUp 0.4s ease-out; }
-    @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
-    }
-  `}</style>
-);
+/* ── Palette ── */
+const getColors = (isDark) => ({
+  bg:     isDark ? '#0f1412' : '#f7f5f0',
+  card:   isDark ? '#1a2320' : '#ffffff',
+  border: isDark ? '#2d3a36' : '#e0dcd4',
+  text:   isDark ? '#e8ece9' : '#1a4a36',
+  text2:  isDark ? '#b5e4ca' : '#2d7a5a',
+  text3:  isDark ? '#9db8aa' : '#6b8f7b',
+  accent: '#2d7a5a',
+  dark:   isDark ? '#0f1f17' : '#1a4a36',
+  gold:   '#c9a844',
+  serif:  "'Playfair Display', Georgia, serif",
+  sans:   "'DM Sans', sans-serif",
+});
 
-/* ============================================
-   HOOK MEDIA QUERY
-   ============================================ */
-const useMediaQuery = (query) => {
-  const [matches, setMatches] = useState(false);
-  useEffect(() => {
-    const media = window.matchMedia(query);
-    if (media.matches !== matches) setMatches(media.matches);
-    const listener = () => setMatches(media.matches);
-    media.addEventListener('change', listener);
-    return () => media.removeEventListener('change', listener);
-  }, [matches, query]);
-  return matches;
-};
-
-// ============================================================================
-// CARD — INFOS DESTINATION UNIQUEMENT (sans Match%, badge algo, debug)
-// ============================================================================
-const RecommendationCard = ({ destination, index, onViewDetails, openAuthModal }) => {
-  const { t } = useTranslation();
-  const [isFavorite, setIsFavorite] = useState(false);
-  const [favoriteLoading, setFavoriteLoading] = useState(false);
-  const [avgRating, setAvgRating] = useState(null);
-  const { isAuthenticated } = useAuth();
-
-  useEffect(() => { checkFavoriteStatus(); }, [destination.id]);
-
-  useEffect(() => {
-    const fetchAvgRating = async () => {
-      try {
-        const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/reviews/destination/${destination.id}`);
-        const data = await res.json();
-        const reviews = data.reviews || [];
-        if (reviews.length > 0) {
-          const avg = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
-          setAvgRating(avg.toFixed(1));
-        }
-      } catch (err) { /* silencieux */ }
-    };
-    fetchAvgRating();
-  }, [destination.id]);
-
-  const checkFavoriteStatus = async () => {
-    const token = localStorage.getItem('token');
-    if (!token) return;
-    try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/favorites/check/destination/${destination.id}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      const data = await res.json();
-      setIsFavorite(data.isFavorite);
-    } catch (err) { /* silencieux */ }
-  };
-
-  const toggleFavorite = useCallback(async (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!isAuthenticated) { openAuthModal('login'); return; }
-    setFavoriteLoading(true);
-    const token = localStorage.getItem('token');
-    try {
-      if (isFavorite) {
-        const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/favorites`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const data = await res.json();
-        const fav = data.favorites?.find(f => f.targetId === destination.id && f.targetType === 'destination');
-        if (fav) {
-          await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/favorites/${fav.id}`, {
-            method: 'DELETE',
-            headers: { Authorization: `Bearer ${token}` }
-          });
-        }
-        setIsFavorite(false);
-      } else {
-        await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/favorites`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ targetType: 'destination', targetId: destination.id })
-        });
-        setIsFavorite(true);
-      }
-    } catch (err) { /* silencieux */ } finally { setFavoriteLoading(false); }
-  }, [isFavorite, isAuthenticated, destination.id, openAuthModal]);
-
-  const imageUrl = destination.image_url ||
-    'https://images.unsplash.com/photo-1567874790230-3acbb51e61dd?auto=format&fit=crop&w=1200&q=80';
-
-  const locationBadge = destination.country || destination.location || 'ALGÉRIE';
-
+/* ── Stat Card ── */
+const StatCard = ({ icon, count, label, delay = 0, colors, isDark, isMobile, onClick }) => {
+  const [hov, setHov] = useState(false);
   return (
     <motion.div
-      initial={{ opacity: 0, y: 30 }}
+      initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.1, duration: 0.5 }}
-      className="w-full h-full"
+      transition={{ duration: 0.5, delay }}
+      onHoverStart={() => setHov(true)}
+      onHoverEnd={() => setHov(false)}
+      onClick={onClick}
+      style={{
+        background: hov ? (isDark ? '#242d2a' : colors.dark) : colors.card,
+        border: `1px solid ${hov ? 'transparent' : colors.border}`,
+        padding: isMobile ? '12px 8px' : '28px 24px',
+        display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 20,
+        transition: 'all 0.3s ease',
+        cursor: onClick ? 'pointer' : 'default',
+        boxShadow: hov ? '0 12px 40px rgba(0,0,0,0.2)' : '0 2px 8px rgba(0,0,0,0.04)',
+        minWidth: 0,
+      }}
     >
-      <div
-        className="relative w-full rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer border border-stone-200/50 dark:border-dark-border/50 hover:border-[#2d7a5a]/50 transition-all duration-500 group card-hover-lift bg-white dark:bg-dark-surface touch-pan-y"
-        onClick={onViewDetails}
-      >
-        {/* ── Image ── */}
-        <div className="relative aspect-[4/3] sm:aspect-[16/10] overflow-hidden">
-          <img
-            src={imageUrl}
-            alt={destination.name}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-            loading="lazy"
-          />
-
-          {/* Overlay au hover */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
-          {/* Badge localisation — haut gauche */}
-          <div className="absolute top-3 left-3 sm:top-4 sm:left-4">
-            <div className="flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 bg-black/50 backdrop-blur-md rounded-md text-white text-[10px] sm:text-xs font-medium uppercase tracking-wider">
-              <MapPin className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-              {locationBadge}
-            </div>
-          </div>
-
-          {/* Bouton favori — bas droit, visible au hover */}
-          <button
-            onClick={toggleFavorite}
-            disabled={favoriteLoading}
-            className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 w-8 h-8 sm:w-9 sm:h-9 min-w-[32px] min-h-[32px] rounded-full bg-black/40 backdrop-blur-md border border-white/20 flex items-center justify-center hover:bg-[#2d7a5a] hover:border-[#2d7a5a] transition-all group/btn active:scale-95 focus-ring no-select opacity-0 group-hover:opacity-100"
-            aria-label={isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}
-          >
-            <Heart className={`w-4 h-4 transition-colors ${
-              isFavorite ? 'fill-[#2d7a5a] text-[#2d7a5a]' : 'text-white group-hover/btn:text-white'
-            }`} />
-          </button>
-        </div>
-
-        {/* ── Contenu ── */}
-        <div className="p-4 sm:p-5">
-          {/* Nom */}
-          <h3 className="text-lg sm:text-xl md:text-2xl font-serif font-bold text-[#1a4a36] dark:text-dark-text mb-2 sm:mb-3 line-clamp-1">
-            {destination.name}
-          </h3>
-
-          {/* Rating + localisation */}
-          <div className="flex items-center gap-3 mb-3 sm:mb-4 text-stone-500 dark:text-dark-text-muted text-xs sm:text-sm">
-            <div className="flex items-center gap-1">
-              <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 fill-amber-500" />
-              <span className="font-medium">{avgRating || destination.rating || '4.5'}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-stone-400" />
-              <span className="truncate">{destination.location || destination.country}</span>
-            </div>
-          </div>
-
-          {/* Bouton Découvrir */}
-          <button
-            onClick={(e) => { e.stopPropagation(); onViewDetails(); }}
-            className="inline-flex items-center gap-1.5 sm:gap-2 text-[#2d7a5a] hover:text-[#1a4a36] font-medium text-xs sm:text-sm uppercase tracking-wider transition-colors group/link focus-ring no-select"
-          >
-            {t('dashboard.viewDetails') || 'Découvrir'}
-            <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover/link:translate-x-1 transition-transform" />
-          </button>
-        </div>
+      <div style={{
+        width: isMobile ? 32 : 52, height: isMobile ? 32 : 52,
+        background: hov ? 'rgba(201,168,68,0.2)' : colors.bg,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        color: hov ? colors.gold : colors.accent,
+        transition: 'all 0.3s', flexShrink: 0,
+        minWidth: isMobile ? 32 : 52,
+      }}>
+        {React.cloneElement(icon, { size: isMobile ? 14 : 20 })}
+      </div>
+      <div style={{ minWidth: 0, overflow: 'hidden' }}>
+        <div style={{
+          fontFamily: colors.serif, fontStyle: 'italic', fontWeight: 600,
+          fontSize: isMobile ? 18 : 32, lineHeight: 1,
+          color: hov ? '#fff' : colors.text, transition: 'color 0.3s',
+        }}>{count}</div>
+        <div style={{
+          fontFamily: colors.sans, fontSize: isMobile ? 7 : 10, fontWeight: 500,
+          letterSpacing: isMobile ? '0.08em' : '0.14em', textTransform: 'uppercase',
+          color: hov ? 'rgba(255,255,255,0.7)' : colors.text3,
+          marginTop: isMobile ? 2 : 4, transition: 'color 0.3s',
+          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+        }}>{label}</div>
       </div>
     </motion.div>
   );
 };
 
-// ============================================================================
-// RECOMMENDATIONS CONTENT
-// ============================================================================
-const RecommendationsContent = ({ openAuthModal }) => {
+/* ── Finance Row ── */
+const FinanceRow = ({ icon, label, value, valueColor, colors, isMobile }) => (
+  <div style={{
+    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+    padding: isMobile ? '10px 0' : '12px 0',
+    borderBottom: `1px solid ${colors.border}`,
+    gap: 8,
+  }}>
+    <span style={{
+      display: 'flex', alignItems: 'center', gap: 8,
+      fontFamily: colors.sans, fontSize: isMobile ? 12 : 13, fontWeight: 300, color: colors.text3,
+      flexShrink: 0,
+    }}>
+      <span style={{ color: colors.accent, flexShrink: 0 }}>{icon}</span>
+      <span style={{ whiteSpace: 'nowrap' }}>{label}</span>
+    </span>
+    <span style={{
+      fontFamily: colors.sans, fontSize: isMobile ? 12 : 13, fontWeight: 600,
+      color: valueColor || colors.text,
+      letterSpacing: '0.02em',
+      textAlign: 'right',
+    }}>
+      {value}
+    </span>
+  </div>
+);
+
+/* ── Action Button ── */
+const ActionBtn = ({ icon, label, onClick, accent = false, colors, isDark, isMobile }) => {
+  const [hov, setHov] = useState(false);
+  return (
+    <motion.button
+      onClick={onClick}
+      onHoverStart={() => setHov(true)}
+      onHoverEnd={() => setHov(false)}
+      whileHover={{ y: -3 }}
+      transition={{ duration: 0.2 }}
+      style={{
+        display: 'flex', alignItems: 'center', gap: isMobile ? 10 : 14,
+        padding: isMobile ? '14px 16px' : '20px 24px',
+        background: hov ? (accent ? colors.gold : (isDark ? '#242d2a' : colors.dark)) : colors.card,
+        border: `1px solid ${hov ? 'transparent' : colors.border}`,
+        cursor: 'pointer', width: '100%', textAlign: 'left',
+        boxShadow: hov ? '0 8px 28px rgba(0,0,0,0.2)' : '0 2px 8px rgba(0,0,0,0.04)',
+        transition: 'background 0.25s, box-shadow 0.25s, border 0.25s',
+        minWidth: 0,
+      }}
+    >
+      <div style={{
+        width: isMobile ? 32 : 40, height: isMobile ? 32 : 40,
+        background: hov ? 'rgba(255,255,255,0.12)' : colors.bg,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        color: hov ? '#fff' : colors.accent,
+        flexShrink: 0, transition: 'all 0.25s',
+        minWidth: isMobile ? 32 : 40,
+      }}>
+        {React.cloneElement(icon, { size: isMobile ? 14 : 16 })}
+      </div>
+      <span style={{
+        fontFamily: colors.sans, fontSize: isMobile ? 9 : 11, fontWeight: 500,
+        letterSpacing: '0.12em', textTransform: 'uppercase',
+        color: hov ? '#fff' : colors.text, transition: 'color 0.25s', flex: 1,
+        whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+      }}>{label}</span>
+      <ChevronRight size={isMobile ? 12 : 14} style={{ color: hov ? 'rgba(255,255,255,0.5)' : colors.text3, transition: 'color 0.25s', flexShrink: 0 }} />
+    </motion.button>
+  );
+};
+
+/* ══════════════════════
+   MAIN DASHBOARD
+══════════════════════ */
+const DashboardContent = ({ dashboardUser, setActiveTab }) => {
   const { t } = useTranslation();
-  const { user } = useAuth();
   const { isDark } = useTheme();
-  const isMobile = useMediaQuery('(max-width: 640px)');
-
-  const [recommendations, setRecommendations] = useState([]);
-  const [allDestinations, setAllDestinations] = useState([]);
-  const [filteredItems, setFilteredItems] = useState([]);
-  const [activeTab, setActiveTab] = useState('recommendations');
+  const colors = getColors(isDark);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 868);
   const [loading, setLoading] = useState(true);
-  const [loadingAll, setLoadingAll] = useState(false);
-  const [error, setError] = useState(null);
-  const [selectedItem, setSelectedItem] = useState(null);
-  const [searchQuery, setSearchQuery] = useState('');
-
-  useEffect(() => { fetchRecommendations(); }, []);
+  const [realStats, setRealStats] = useState({
+    favorites: 0,
+    visited: 0,
+    reviews: 0
+  });
+  const [financialStats, setFinancialStats] = useState({
+    totalDocs: 0,
+    totalPaid: 0,
+    paid: 0,
+    pending: 0,
+    failed: 0
+  });
 
   useEffect(() => {
-    if (activeTab === 'all' && allDestinations.length === 0) fetchAllDestinations();
-  }, [activeTab]);
+    const handleResize = () => setIsMobile(window.innerWidth <= 868);
+    window.addEventListener('resize', handleResize);
+    fetchRealData();
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
-  useEffect(() => {
-    const source = activeTab === 'recommendations' ? recommendations : allDestinations;
-    if (!searchQuery.trim()) {
-      setFilteredItems(source);
-    } else {
-      const q = searchQuery.toLowerCase();
-      setFilteredItems(source.filter(dest =>
-        (dest.name || '').toLowerCase().includes(q) ||
-        (dest.location || '').toLowerCase().includes(q) ||
-        (dest.country || '').toLowerCase().includes(q) ||
-        (dest.city || '').toLowerCase().includes(q)
-      ));
-    }
-  }, [searchQuery, recommendations, allDestinations, activeTab]);
-
-  const fetchRecommendations = async () => {
-    setLoading(true);
-    setError(null);
-    const token = localStorage.getItem('token');
-    if (!token) { await fetchPopular(); return; }
+  const fetchRealData = async () => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/recommendations/hybrid?limit=15`, {
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      const headers = { Authorization: `Bearer ${token}` };
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
+      const favRes = await axios.get(`${API_URL}/api/favorites`, { headers });
+      const favCount = favRes.data.count || 0;
+
+      const resRes = await axios.get(`${API_URL}/api/reservations`, { headers });
+      const reservations = resRes.data.reservations || [];
+      const visitedCount = reservations.filter(r => 
+        r.status === 'confirmed' && new Date(r.departure_date || r.check_in) < new Date()
+      ).length;
+
+      const revRes = await axios.get(`${API_URL}/api/reviews/my`, { headers });
+      const revCount = revRes.data.count || 0;
+
+      setRealStats({
+        favorites: favCount,
+        visited: visitedCount,
+        reviews: revCount
       });
-      if (!res.ok) { await fetchPopular(); return; }
-      const data = await res.json();
-      const recs = data.recommendations || [];
-      setRecommendations(recs);
-      setFilteredItems(recs);
+
+      const invRes = await axios.get(`${API_URL}/api/invoices`, { headers });
+      const invoices = invRes.data.invoices || [];
+
+      const fin = {
+        totalDocs: invoices.length,
+        totalPaid: invoices.filter(i => i.payment_status === 'paid').reduce((s, i) => s + parseFloat(i.amount || 0), 0),
+        paid: invoices.filter(i => i.payment_status === 'paid').length,
+        pending: invoices.filter(i => i.payment_status === 'pending').length,
+        failed: invoices.filter(i => i.payment_status === 'failed').length
+      };
+      setFinancialStats(fin);
+
     } catch (err) {
-      setError(err.message);
-      await fetchPopular();
-    } finally { setLoading(false); }
+      console.error('Error fetching dashboard real data:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const fetchAllDestinations = async () => {
-    setLoadingAll(true);
-    try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/recommendations/all-destinations`);
-      if (res.ok) {
-        const data = await res.json();
-        setAllDestinations(data.destinations || []);
-      }
-    } catch (err) { /* silencieux */ } finally { setLoadingAll(false); }
-  };
+  const displayName = dashboardUser?.firstName && dashboardUser?.lastName
+    ? `${dashboardUser.firstName} ${dashboardUser.lastName}`
+    : dashboardUser?.name || '—';
 
-  const fetchPopular = async () => {
-    try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/recommendations/popular?limit=15`);
-      if (res.ok) {
-        const data = await res.json();
-        const recs = data.recommendations || [];
-        setRecommendations(recs);
-        setFilteredItems(recs);
-      }
-    } catch (err) { /* silencieux */ } finally { setLoading(false); }
-  };
+  const firstName = dashboardUser?.firstName || (dashboardUser?.name ? dashboardUser.name.split(' ')[0] : '—');
+  const email     = dashboardUser?.email || '—';
+  const avatar    = dashboardUser?.profilePhoto || null;
 
-  const handleTabChange = (tab) => { setActiveTab(tab); setSearchQuery(''); };
+  const memberType = dashboardUser?.memberType || dashboardUser?.role || 'standard';
+  const isPremium  = memberType === 'premium' || dashboardUser?.isPremium;
 
-  if (selectedItem) {
-    return (
-      <DestinationDetailPage
-        item={selectedItem}
-        onBack={() => setSelectedItem(null)}
-        openAuthModal={openAuthModal}
-      />
-    );
-  }
+  const formatDA = (amount) =>
+    amount > 0
+      ? `${Number(amount).toLocaleString('fr-DZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} DA`
+      : '0.00 DA';
 
   if (loading) {
     return (
-      <div className="py-16 sm:py-20 text-center text-stone-500 animate-pulse px-4">
-        <Star size={40} className="mx-auto mb-4 text-[#2d7a5a] opacity-20 sm:size-12" />
-        <p className="text-sm sm:text-base">{t('dashboard.analyzingPreferences') || 'Chargement des destinations...'}</p>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '400px', padding: '0 16px' }}>
+        <Loader2 size={isMobile ? 32 : 40} className="animate-spin" style={{ color: colors.accent, marginBottom: 16 }} />
+        <p style={{ fontFamily: colors.sans, color: colors.text3, fontSize: isMobile ? 13 : 14, textAlign: 'center' }}>Chargement de vos informations...</p>
       </div>
     );
   }
 
   return (
-    <>
-      <GlobalStyles />
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 pb-20 sm:pb-0 safe-bottom ios-no-zoom">
+    <div style={{ maxWidth: 1100, margin: '0 auto', fontFamily: colors.sans, padding: isMobile ? '0 12px 24px' : '0 0 40px' }}>
 
-        {/* HEADER */}
-        <header className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-serif font-bold mb-1 sm:mb-2 dark:text-dark-text">
-            {t('dashboard.personalizedRecommendations') || 'Explorez l\'Algérie'}
-          </h1>
-          <p className="text-sm sm:text-base text-stone-500 dark:text-dark-text-muted">
-            {t('dashboard.premiumSelection') || 'Sélection personnalisée pour vous'}
-          </p>
-        </header>
+      {/* ── Header ── */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        style={{ marginBottom: isMobile ? 24 : 44 }}
+      >
+        <span style={{
+          display: 'inline-flex', alignItems: 'center', gap: 8,
+          fontFamily: colors.sans, fontSize: isMobile ? 9 : 10, fontWeight: 500,
+          letterSpacing: '0.22em', textTransform: 'uppercase', color: colors.text3,
+          marginBottom: 12,
+        }}>
+          <span style={{ width: isMobile ? 16 : 24, height: 1, background: colors.text3, display: 'inline-block' }} />
+          Espace personnel
+        </span>
+        <h1 style={{
+          fontFamily: colors.serif, fontStyle: 'italic', fontWeight: 600,
+          fontSize: isMobile ? '22px' : 'clamp(28px, 4vw, 44px)', color: colors.text,
+          lineHeight: 1.1, marginBottom: 10,
+        }}>
+          Bienvenue, <span style={{ color: colors.accent }}>{firstName}</span>
+        </h1>
+        <p style={{
+          fontFamily: colors.sans, fontSize: isMobile ? 13 : 14, color: colors.text3,
+          fontWeight: 300, lineHeight: 1.75,
+        }}>
+          {t('dashboard.profileDescription') || 'Explorez vos destinations favorites, gérez vos réservations et consultez vos documents.'}
+        </p>
+      </motion.div>
 
-        {/* ONGLETS */}
-        <div className="flex gap-2 sm:gap-3 mb-6 sm:mb-8 overflow-x-auto pb-1 -mx-3 px-3 sm:mx-0 sm:px-0 scrollbar-hide scroll-smooth">
-          <button
-            onClick={() => handleTabChange('all')}
-            className={`px-4 py-2 sm:px-5 sm:py-2.5 rounded-full font-bold text-[10px] sm:text-[11px] uppercase tracking-widest transition-all duration-300 whitespace-nowrap min-h-[40px] focus-ring no-select active:scale-95 ${
-              activeTab === 'all'
-                ? 'bg-[#2d7a5a] text-white border border-[#2d7a5a]'
-                : 'bg-transparent border border-stone-200 dark:border-dark-border text-stone-500 hover:border-[#2d7a5a] hover:text-[#2d7a5a]'
-            }`}
-          >
-            <span className="hidden sm:inline">Toutes les destinations</span>
-            <span className="sm:hidden">Toutes</span>
-            {allDestinations.length > 0 && (
-              <span className="ml-1.5 sm:ml-2 text-[9px] opacity-70">({allDestinations.length})</span>
-            )}
-          </button>
-          <button
-            onClick={() => handleTabChange('recommendations')}
-            className={`px-4 py-2 sm:px-5 sm:py-2.5 rounded-full font-bold text-[10px] sm:text-[11px] uppercase tracking-widest transition-all duration-300 whitespace-nowrap min-h-[40px] focus-ring no-select active:scale-95 ${
-              activeTab === 'recommendations'
-                ? 'bg-[#2d7a5a] text-white border border-[#2d7a5a]'
-                : 'bg-transparent border border-stone-200 dark:border-dark-border text-stone-500 hover:border-[#2d7a5a] hover:text-[#2d7a5a]'
-            }`}
-          >
-            <span className="hidden sm:inline">Recommandations</span>
-            <span className="sm:hidden">Recommandé</span>
-            {recommendations.length > 0 && (
-              <span className="ml-1.5 sm:ml-2 text-[9px] opacity-70">({recommendations.length})</span>
-            )}
-          </button>
-        </div>
+      {/* ── 3 Stats ── */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: isMobile ? 'repeat(3, 1fr)' : 'repeat(3, 1fr)',
+        gap: isMobile ? 6 : 12,
+        marginBottom: isMobile ? 16 : 32,
+      }}>
+        <StatCard icon={<Heart size={18} />}      count={realStats.favorites} label={t('dashboard.favorites') || 'Favoris'} delay={0}    colors={colors} isDark={isDark} isMobile={isMobile} onClick={() => setActiveTab('favorites')} />
+        <StatCard icon={<MapPin size={18} />}     count={realStats.visited}   label={t('dashboard.visitedDestinations') || 'Visités'} delay={0.08} colors={colors} isDark={isDark} isMobile={isMobile} />
+        <StatCard icon={<TrendingUp size={18} />} count={realStats.reviews}   label="Avis"                               delay={0.16} colors={colors} isDark={isDark} isMobile={isMobile} />
+      </div>
 
-        {/* RECHERCHE */}
-        <div className="mb-6 sm:mb-8">
-          <div className="relative max-w-full sm:max-w-md">
-            <div className="absolute inset-y-0 left-0 pl-3 sm:pl-4 flex items-center pointer-events-none">
-              <Search className="w-4 h-4 sm:w-5 sm:h-5 text-stone-400" />
-            </div>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={isMobile ? 'Rechercher...' : (t('dashboard.searchDestinations') || 'Rechercher une destination...')}
-              className="w-full pl-9 sm:pl-12 pr-10 py-2.5 sm:py-3 bg-white dark:bg-dark-surface border border-stone-200 dark:border-dark-border rounded-2xl sm:rounded-3xl text-sm sm:text-base text-[#1a4a36] dark:text-dark-text placeholder-stone-400 focus:outline-none focus:border-[#2d7a5a] focus:ring-2 focus:ring-[#2d7a5a]/20 transition-all shadow-sm min-h-[44px]"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute inset-y-0 right-0 pr-3 sm:pr-4 flex items-center text-stone-400 hover:text-[#1a4a36] transition-colors focus-ring rounded"
-                aria-label="Effacer la recherche"
-              >
-                <X className="w-4 h-4 sm:w-5 sm:h-5" />
-              </button>
-            )}
-          </div>
-          {searchQuery && (
-            <p className="mt-2 sm:mt-3 text-xs sm:text-sm text-stone-500">
-              {filteredItems.length} résultat{filteredItems.length !== 1 ? 's' : ''} pour "{searchQuery}"
-            </p>
-          )}
-        </div>
+      {/* ── Profil + Résumé Financier ── */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
+        gap: isMobile ? 10 : 12,
+        marginBottom: isMobile ? 16 : 24,
+      }}>
 
-        {/* GRILLE */}
-        {loadingAll && activeTab === 'all' ? (
-          <div className="py-16 sm:py-20 text-center text-stone-500 animate-pulse px-4">
-            <Star size={40} className="mx-auto mb-4 text-[#2d7a5a] opacity-20" />
-            <p className="text-sm sm:text-base">Chargement de toutes les destinations...</p>
+        {/* ── Card Profil ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          style={{
+            background: colors.card, border: `1px solid ${colors.border}`,
+            padding: isMobile ? '20px 16px' : '32px 32px 28px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+          }}
+        >
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            fontFamily: colors.sans, fontSize: isMobile ? 9 : 10, fontWeight: 500,
+            letterSpacing: '0.22em', textTransform: 'uppercase',
+            color: colors.text3, marginBottom: isMobile ? 20 : 28,
+          }}>
+            <span style={{ width: isMobile ? 16 : 20, height: 1, background: colors.text3, display: 'inline-block' }} />
+            {t('dashboard.profileInfo') || 'Informations du profil'}
           </div>
 
-        ) : filteredItems.length === 0 ? (
-          <div className="py-12 sm:py-20 text-center px-4 animate-slide-up">
-            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-stone-100 dark:bg-dark-surface rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
-              {searchQuery
-                ? <Search size={28} className="text-[#2d7a5a] sm:size-8" />
-                : <Star size={28} className="text-[#2d7a5a] sm:size-8" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 12 : 16, marginBottom: isMobile ? 20 : 28 }}>
+            <div style={{
+              width: isMobile ? 48 : 72, height: isMobile ? 48 : 72,
+              background: colors.dark,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: 'rgba(181,228,202,0.7)', flexShrink: 0, overflow: 'hidden',
+              minWidth: isMobile ? 48 : 72,
+            }}>
+              {avatar
+                ? <img src={avatar.startsWith('http') ? avatar : `http://localhost:3000${avatar}`} alt={displayName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                : <User size={isMobile ? 20 : 32} />
               }
             </div>
-            <h3 className="text-lg sm:text-xl font-bold mb-2 dark:text-dark-text">
-              {searchQuery
-                ? (t('dashboard.noResultsFound') || 'Aucun résultat trouvé')
-                : (t('dashboard.noRecommendationsAvailable') || 'Aucune recommandation disponible')}
-            </h3>
-            <p className="text-stone-500 max-w-md mx-auto mb-4 sm:mb-6 text-sm sm:text-base">
-              {searchQuery
-                ? `Aucune destination ne correspond à "${searchQuery}"`
-                : (t('dashboard.noRecommendationsDescription') || 'Nous n\'avons pas encore assez de données.')}
-            </p>
-            {searchQuery ? (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="bg-[#2d7a5a] text-white px-5 py-2.5 sm:px-6 sm:py-3 rounded-full font-bold hover:bg-[#1a4a36] transition text-sm sm:text-base min-h-[44px] focus-ring no-select active:scale-95"
-              >
-                {t('dashboard.clearSearch') || 'Effacer la recherche'}
-              </button>
-            ) : (
-              <button
-                onClick={() => window.dispatchEvent(new CustomEvent('nav-explorer'))}
-                className="bg-[#2d7a5a] text-white px-5 py-2.5 sm:px-6 sm:py-3 rounded-full font-bold hover:bg-[#1a4a36] transition text-sm sm:text-base min-h-[44px] focus-ring no-select active:scale-95"
-              >
-                {t('dashboard.exploreDestinations') || 'Explorer les destinations'}
-              </button>
-            )}
+            <div style={{ minWidth: 0, overflow: 'hidden' }}>
+              <h3 style={{
+                fontFamily: colors.serif, fontStyle: 'italic', fontWeight: 600,
+                fontSize: isMobile ? 16 : 20, color: colors.text, marginBottom: 4, lineHeight: 1.2,
+                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+              }}>{displayName}</h3>
+              <p style={{
+                fontFamily: colors.sans, fontSize: isMobile ? 11 : 12, color: colors.text3,
+                fontWeight: 300, marginBottom: isMobile ? 8 : 10,
+                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+              }}>{email}</p>
+              {isPremium && (
+                <div style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 5,
+                  background: 'rgba(201,168,68,0.1)', border: '1px solid rgba(201,168,68,0.3)',
+                  padding: '3px 8px',
+                  fontFamily: colors.sans, fontSize: isMobile ? 8 : 9, fontWeight: 600,
+                  letterSpacing: '0.1em', textTransform: 'uppercase', color: colors.gold,
+                }}>
+                  <Award size={isMobile ? 8 : 10} /> {t('dashboard.premiumMember') || 'Membre Premium'}
+                </div>
+              )}
+            </div>
           </div>
 
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 lg:gap-8">
-            {filteredItems.map((dest, index) => (
-              <RecommendationCard
-                key={dest.id}
-                destination={dest}
-                index={index}
-                onViewDetails={() => setSelectedItem(dest)}
-                openAuthModal={openAuthModal}
-              />
-            ))}
+          <div style={{ height: 1, background: colors.border, marginBottom: isMobile ? 16 : 20 }} />
+
+          <button
+            onClick={() => setActiveTab('settings')}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              padding: isMobile ? '8px 16px' : '10px 20px',
+              background: 'transparent', border: `1px solid ${colors.border}`,
+              fontFamily: colors.sans, fontSize: isMobile ? 10 : 11, fontWeight: 500,
+              letterSpacing: '0.1em', textTransform: 'uppercase',
+              color: colors.text, cursor: 'pointer', transition: 'all 0.2s',
+              width: '100%', justifyContent: 'center',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = colors.dark; e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = colors.dark; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = colors.text; e.currentTarget.style.borderColor = colors.border; }}
+          >
+            <Edit3 size={isMobile ? 10 : 12} /> {t('dashboard.editProfile') || 'Modifier le profil'}
+          </button>
+        </motion.div>
+
+        {/* ── Card Résumé Financier ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.28 }}
+          style={{
+            background: colors.card, border: `1px solid ${colors.border}`,
+            padding: isMobile ? '20px 16px' : '32px 32px 28px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+          }}
+        >
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            marginBottom: isMobile ? 20 : 28,
+            gap: 8,
+          }}>
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              fontFamily: colors.sans, fontSize: isMobile ? 9 : 10, fontWeight: 500,
+              letterSpacing: '0.22em', textTransform: 'uppercase', color: colors.text3,
+              flexShrink: 0,
+            }}>
+              <span style={{ width: isMobile ? 16 : 20, height: 1, background: colors.text3, display: 'inline-block' }} />
+              Résumé Financier
+            </div>
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: 5,
+              background: colors.bg, border: `1px solid ${colors.border}`,
+              padding: '3px 8px',
+              fontFamily: colors.sans, fontSize: isMobile ? 8 : 9, fontWeight: 600,
+              letterSpacing: '0.1em', textTransform: 'uppercase', color: colors.text3,
+              flexShrink: 0,
+            }}>
+              <FileText size={isMobile ? 8 : 9} /> {financialStats.totalDocs} docs
+            </div>
           </div>
-        )}
+
+          <div style={{
+            background: isDark ? '#0f1f17' : '#f0f7f3',
+            border: `1px solid ${isDark ? '#1e3d2a' : '#c3ddd0'}`,
+            padding: isMobile ? '12px 14px' : '16px 20px',
+            marginBottom: isMobile ? 12 : 16,
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            gap: 8,
+          }}>
+            <span style={{
+              fontFamily: colors.sans, fontSize: isMobile ? 10 : 11, fontWeight: 500,
+              letterSpacing: '0.1em', textTransform: 'uppercase', color: colors.text3,
+              flexShrink: 0,
+            }}>
+              Total payé
+            </span>
+            <span style={{
+              fontFamily: colors.serif, fontStyle: 'italic', fontWeight: 700,
+              fontSize: isMobile ? 16 : 22, color: colors.gold,
+              textAlign: 'right',
+            }}>
+              {formatDA(financialStats.totalPaid)}
+            </span>
+          </div>
+
+          <div>
+            <FinanceRow
+              icon={<CheckCircle size={isMobile ? 12 : 13} />}
+              label="Payées"
+              value={financialStats.paid}
+              valueColor="#4caf82"
+              colors={colors}
+              isMobile={isMobile}
+            />
+            <FinanceRow
+              icon={<Clock size={isMobile ? 12 : 13} />}
+              label="En attente"
+              value={financialStats.pending}
+              valueColor={colors.gold}
+              colors={colors}
+              isMobile={isMobile}
+            />
+            <FinanceRow
+              icon={<AlertCircle size={isMobile ? 12 : 13} />}
+              label="Échouées"
+              value={financialStats.failed}
+              valueColor={financialStats.failed > 0 ? '#e05a5a' : colors.text3}
+              colors={colors}
+              isMobile={isMobile}
+            />
+          </div>
+
+          <button
+            onClick={() => setActiveTab('invoices')}
+            style={{
+              marginTop: isMobile ? 16 : 24,
+              fontFamily: colors.sans, fontSize: isMobile ? 10 : 11, fontWeight: 500,
+              letterSpacing: '0.1em', textTransform: 'uppercase',
+              color: colors.accent, background: 'none', border: 'none',
+              cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
+              padding: 0, width: '100%',
+              justifyContent: 'center',
+            }}
+            onMouseEnter={e => e.currentTarget.style.color = colors.dark}
+            onMouseLeave={e => e.currentTarget.style.color = colors.accent}
+          >
+            Voir toutes mes factures <ChevronRight size={isMobile ? 10 : 12} />
+          </button>
+        </motion.div>
       </div>
-    </>
+
+      {/* ── Quick Actions ── */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.36 }}
+      >
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 8,
+          fontFamily: colors.sans, fontSize: isMobile ? 9 : 10, fontWeight: 500,
+          letterSpacing: '0.22em', textTransform: 'uppercase',
+          color: colors.text3, marginBottom: isMobile ? 12 : 14,
+        }}>
+          <span style={{ width: isMobile ? 16 : 20, height: 1, background: colors.text3, display: 'inline-block' }} />
+          {t('dashboard.quickActions') || 'Actions rapides'}
+        </div>
+
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(240px, 1fr))',
+          gap: isMobile ? 8 : 10,
+        }}>
+          <ActionBtn icon={<Heart size={16} />}   label={t('dashboard.viewFavorites') || 'Mes favoris'}      onClick={() => setActiveTab('favorites')}       colors={colors} isDark={isDark} isMobile={isMobile} />
+          <ActionBtn icon={<Receipt size={16} />} label="Mes Factures"                      onClick={() => setActiveTab('invoices')}        colors={colors} isDark={isDark} isMobile={isMobile} />
+          <ActionBtn icon={<Cpu size={16} />}     label={t('dashboard.myRecommendations') || 'Recommandations'}  onClick={() => setActiveTab('recommendations')} accent colors={colors} isDark={isDark} isMobile={isMobile} />
+        </div>
+      </motion.div>
+
+    </div>
   );
 };
 
-export default RecommendationsContent;
+export default DashboardContent;
