@@ -413,7 +413,7 @@ const DestinationDetailPage = ({ item, onBack, openAuthModal }) => {
         onMouseLeave={e => e.currentTarget.style.color = C.textMuted}
       >
         <ChevronRight size={16} style={{ transform: 'rotate(180deg)' }} />
-        Retour aux recommandations
+        Retour à l'exploration
       </button>
 
       {/* ════════════════════════════════════════
@@ -972,7 +972,7 @@ const DestinationDetailPage = ({ item, onBack, openAuthModal }) => {
         onMouseLeave={e => e.currentTarget.style.color = C.textMuted}
       >
         <ChevronRight size={16} style={{ transform: 'rotate(180deg)' }} />
-        Retour aux recommandations
+        Retour à l'exploration
       </button>
 
       {/* ── Modals ── */}

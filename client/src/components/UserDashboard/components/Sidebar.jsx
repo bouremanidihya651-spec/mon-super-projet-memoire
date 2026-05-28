@@ -77,10 +77,9 @@ const Sidebar = ({
             onClick={() => { setActiveTab('favorites'); setSidebarOpen(false); }}
           />
 
-          {/* ── Destinations (anciennement Mes Recommandations) ── */}
           <SidebarItem
             icon={<MapPin size={18} />}
-            label="Explorez l'Algérie"
+            label={t('dashboard.myRecommendations')}
             active={activeTab === 'recommendations'}
             onClick={() => { setActiveTab('recommendations'); setSidebarOpen(false); }}
           />

@@ -186,8 +186,8 @@
     "missionP3": "Notre équipe d'experts, passionnés par les voyages et le service, est dédiée à créer des itinéraires sur mesure qui répondent à vos attentes les plus élevées.",
     "algeriaTourismAlt": "Tourisme en Algérie",
     "engagementsTitle": "Nos engagements",
-    "engagementsSubtitle": "Chaque recommandation, chaque voyage organisé reflète nos valeurs fondamentales.",
-    "value1Title": "Recommandations personnalisées",
+    "engagementsSubtitle": "Chaque voyage organisé reflète nos valeurs fondamentales et notre passion pour l'Algérie.",
+    "value1Title": "Exploration personnalisée",
     "value1Desc": "Notre système analyse vos préférences pour vous suggérer les destinations algériennes qui vous correspondent le mieux, qu'il s'agisse de sites naturels, culturels ou balnéaires.",
     "value2Title": "Service complet clé en main",
     "value2Desc": "De la réservation de billets d'avion au traitement de visas, en passant par les transferts VIP et l'hébergement, nous gérons chaque détail de votre voyage.",
@@ -231,7 +231,7 @@
     "loginToAccess": "Veuillez vous connecter pour accéder à votre tableau de bord",
     "login": "Se connecter",
     "welcome": "Bienvenue",
-    "profileDescription": "Gérez votre profil et découvrez vos recommandations personnalisées.",
+    "profileDescription": "Gérez votre profil et parcourez nos destinations à travers l'Algérie.",
     "favorites": "Favoris",
     "visitedDestinations": "Destinations visitées",
     "plannedTrips": "Voyages planifiés",
@@ -245,18 +245,18 @@
     "modifyPreferences": "Modifier les préférences",
     "quickActions": "Actions Rapides",
     "viewFavorites": "Voir mes favoris",
-    "myRecommendations": "Mes recommandations",
+    "myRecommendations": "Explorez l'Algérie",
     "myProfile": "Mon Profil",
     "settings": "Paramètres",
-    "analyzingPreferences": "Analyse de vos préférences et calcul des recommandations...",
+    "analyzingPreferences": "Analyse de vos préférences pour explorer l'Algérie...",
     "basedOnTastes": "Basé sur vos goûts : luxe, nature, aventure, culture, plage, gastronomie",
-    "noRecommendationsAvailable": "Aucune recommandation disponible",
-    "noRecommendationsDescription": "Commencez par ajouter des destinations à vos favoris pour recevoir des recommandations personnalisées. Le système analysera vos goûts (montagne, plage, ville, aventure, etc.) pour vous proposer des destinations similaires.",
+    "noRecommendationsAvailable": "Aucune suggestion disponible",
+    "noRecommendationsDescription": "Commencez par ajouter des destinations à vos favoris pour que nous puissions vous aider à explorer l'Algérie selon vos goûts.",
     "exploreDestinations": "Explorer les destinations",
     "noMatchesFound": "Aucune correspondance trouvée",
-    "noMatchesDescription": "Vos favoris n'ont pas encore de correspondances avec les destinations disponibles. Essayez d'ajouter plus de destinations variées à vos favoris.",
+    "noMatchesDescription": "Vos favoris n'ont pas encore de correspondances avec les destinations disponibles. Essayez d'ajouter plus de destinations variées.",
     "discoverMore": "Découvrir plus de destinations",
-    "personalizedRecommendations": "Recommandations Personnalisées",
+    "personalizedRecommendations": "Explorez l'Algérie",
     "premiumSelection": "Sélection premium basée sur vos goûts et préférences",
     "searchDestinations": "Rechercher une destination...",
     "resultFound": "résultat trouvé",
@@ -321,11 +321,11 @@
     "loading": "Chargement de vos favoris..."
   },
   "recommendations": {
-    "title": "Recommandations pour vous",
+    "title": "Explorez l'Algérie",
     "description": "Découvrez des destinations sélectionnées spécialement pour vous en fonction de vos préférences",
-    "loading": "Chargement des recommandations...",
-    "noRecommendations": "Aucune recommandation disponible",
-    "noRecommendationsDescription": "Commencez par ajouter des favoris pour recevoir des recommandations personnalisées"
+    "loading": "Préparation de vos découvertes...",
+    "noRecommendations": "Aucune suggestion disponible",
+    "noRecommendationsDescription": "Commencez par ajouter des favoris pour que nous puissions vous aider à explorer l'Algérie."
   },
   "common": {
     "reviews": "avis",
@@ -482,7 +482,7 @@
     "login": "Se connecter",
     "heroSubtitle": "REJOIGNEZ-NOUS",
     "heroTitle": "Découvrez un Monde d'Expériences Exclusives",
-    "heroDescription": "Créez votre compte et accédez à des recommandations personnalisées pour des voyages inoubliables.",
+    "heroDescription": "Créez votre compte et accédez à des découvertes exclusives pour des voyages inoubliables.",
     "heroTitleMobile": "Découvrez un Monde d'Expériences"
   },
   "aboutSection": {
@@ -536,3 +536,6 @@
     "selectLanguage": "Langue"
   }
 }
+
+
+

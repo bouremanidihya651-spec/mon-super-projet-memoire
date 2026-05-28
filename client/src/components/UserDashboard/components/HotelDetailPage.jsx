@@ -482,7 +482,7 @@ const HotelDetailPage = ({ hotel, onBack, openAuthModal }) => {
         className="mt-6 flex items-center gap-2 text-[#2d7a5a] hover:text-yellow-400 transition-colors group"
       >
         <ChevronRight className="w-5 h-5 rotate-180 group-hover:-translate-x-1 transition-transform" />
-        <span className="font-medium">Retour aux recommandations</span>
+        <span className="font-medium">Retour à l'exploration</span>
       </button>
 
       <HotelReservationModal
