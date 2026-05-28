@@ -5,7 +5,7 @@ import {
   ArrowRight, Mail, Send, Car, Hotel,
   Compass, Ticket
 } from 'lucide-react';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../contexts/ThemeContext';
 import Footer from '../components/Footer';
@@ -141,7 +141,7 @@ const HeroSection = ({ openAuthModal, t }) => {
               {t('hero.exploreButton')}
             </motion.button>
           </Link>
-       
+
         </motion.div>
       </motion.div>
     </section>
@@ -201,6 +201,115 @@ const ServiceItem = ({ icon, title, desc, colors, isDark }) => {
   );
 };
 
+/* ── ANIMATED PHOTO MOSAIC ── */
+const AnimatedMosaic = ({ isMobile, colors }) => {
+  // 4 photos avec leurs labels
+  const allPhotos = [
+    { src: ALG.tassili,  alt: "Tassili n'Ajjer", label: 'Djurdura' },
+    { src: ALG.bejaia,   alt: 'Côte de Béjaïa',  label: 'Sahara' },
+    { src: ALG.dunes,    alt: 'Dunes du Sahara',  label: 'Casbah' },
+    { src: ALG.casbah,   alt: "Casbah d'Alger",  label: 'Alger' },
+  ];
+
+  // Indices actuels pour chaque position (0,1,2,3)
+  const [indices, setIndices] = useState([0, 1, 2, 3]);
+
+  // Rotation automatique toutes les 4 secondes
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIndices(prev => {
+        // Décalage circulaire : chaque photo passe à la position suivante
+        return [prev[3], prev[0], prev[1], prev[2]];
+      });
+    }, 4000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Positions dans la grille 2x2
+  const positions = [
+    { gridArea: '1 / 1 / 2 / 2' }, // top-left
+    { gridArea: '1 / 2 / 2 / 3' }, // top-right
+    { gridArea: '2 / 1 / 3 / 2' }, // bottom-left
+    { gridArea: '2 / 2 / 3 / 3' }, // bottom-right
+  ];
+
+  return (
+    <div style={{
+      display: 'grid',
+      gridTemplateColumns: '1fr 1fr',
+      gridTemplateRows: isMobile ? '180px 140px' : '240px 180px',
+      gap: 8,
+      position: 'relative',
+    }}>
+      <AnimatePresence mode="popLayout">
+        {indices.map((photoIndex, positionIndex) => {
+          const photo = allPhotos[photoIndex];
+          return (
+            <motion.div
+              key={photoIndex} // clé stable basée sur la photo, pas la position
+              layout
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              transition={{
+                layout: { duration: 0.8, ease: [0.22, 1, 0.36, 1] },
+                opacity: { duration: 0.4 },
+                scale: { duration: 0.5 },
+              }}
+              style={{
+                gridArea: positions[positionIndex].gridArea,
+                overflow: 'hidden',
+                borderRadius: 2,
+                position: 'relative',
+                cursor: 'pointer',
+              }}
+              whileHover={{ scale: 1.03 }}
+            >
+              <motion.img
+                src={photo.src}
+                alt={photo.alt}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  display: 'block',
+                }}
+                whileHover={{ scale: 1.1 }}
+                transition={{ duration: 0.6 }}
+              />
+              {/* Label en overlay */}
+              <motion.div
+                style={{
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  padding: '12px 14px',
+                  background: 'linear-gradient(transparent, rgba(26,74,54,0.7))',
+                }}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+              >
+                <span style={{
+                  fontFamily: colors.sans,
+                  fontSize: 11,
+                  fontWeight: 500,
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                  color: 'rgba(255,255,255,0.9)',
+                }}>
+                  {photo.label}
+                </span>
+              </motion.div>
+            </motion.div>
+          );
+        })}
+      </AnimatePresence>
+    </div>
+  );
+};
+
 /* ── ABOUT — AFALOU TOURS ══ */
 const AboutSection = ({ colors, isDark, t, isMobile }) => {
   const services = [
@@ -224,13 +333,6 @@ const AboutSection = ({ colors, isDark, t, isMobile }) => {
       title: "Réservation d'activités",
       desc: "Randonnées, excursions en mer, activités culturelles et sportives — réservez facilement vos expériences à travers toute l'Algérie.",
     },
-  ];
-
-  const mosaicPhotos = [
-    { src:ALG.tassili,  alt:"Tassili n'Ajjer", label:'Djurdura' },
-    { src:ALG.bejaia,   alt:'Côte de Béjaïa',  label:'Sahara' },
-    { src:ALG.dunes,    alt:'Dunes du Sahara',  label:'Casbah' },
-    { src:ALG.casbah,   alt:"Casbah d'Alger",  label:'Alger'  },
   ];
 
   return (
@@ -284,14 +386,15 @@ const AboutSection = ({ colors, isDark, t, isMobile }) => {
             </Link>
           </motion.div>
 
-          <motion.div initial={{ opacity:0, x: isMobile ? 0 : 40, y: isMobile ? 20 : 0 }} whileInView={{ opacity:1, x:0, y:0 }} viewport={{ once:true, amount:0.3 }} transition={{ duration:0.75, ease:[0.22,1,0.36,1], delay:0.15 }} style={{ position:'relative', order: isMobile ? -1 : 1 }}>
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
-              {mosaicPhotos.map((p,i) => (
-                <motion.div key={i} style={{ overflow:'hidden', borderRadius:2, height: isMobile ? (i < 2 ? 180 : 140) : (i < 2 ? 240 : 180), position:'relative' }} whileHover={{ scale:1.02 }} transition={{ duration:0.4 }}>
-                  <img src={p.src} alt={p.alt} style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }}/>
-                </motion.div>
-              ))}
-            </div>
+          {/* ✅ ANIMATED MOSAIC - remplace la grille statique */}
+          <motion.div
+            initial={{ opacity:0, x: isMobile ? 0 : 40, y: isMobile ? 20 : 0 }}
+            whileInView={{ opacity:1, x:0, y:0 }}
+            viewport={{ once:true, amount:0.3 }}
+            transition={{ duration:0.75, ease:[0.22,1,0.36,1], delay:0.15 }}
+            style={{ position:'relative', order: isMobile ? -1 : 1 }}
+          >
+            <AnimatedMosaic isMobile={isMobile} colors={colors} />
           </motion.div>
         </div>
 

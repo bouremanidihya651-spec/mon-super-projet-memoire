@@ -98,9 +98,11 @@ const UserDashboard = ({ isChatbotOpen, toggleChatbot }) => {
   }
 
   const dashboardUser = {
-    name: user?.firstName || user?.first_name || user?.email?.split('@')[0] || "Voyageur",
+    name: user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : (user?.firstName || user?.first_name || user?.email?.split('@')[0] || "Voyageur"),
+    firstName: user?.firstName || user?.first_name,
+    lastName: user?.lastName || user?.last_name,
     email: user?.email || "email@exemple.com",
-    isPremium: true,
+    isPremium: user?.role === 'admin',
     profilePhoto: user?.profilePhoto
   };
 
