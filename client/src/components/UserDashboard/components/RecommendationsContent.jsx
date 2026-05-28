@@ -279,7 +279,6 @@ const DashboardContent = ({ dashboardUser, setActiveTab }) => {
         marginBottom: isMobile ? 16 : 32,
       }}>
         <StatCard icon={<Heart size={18} />}      count={realStats.favorites} label={t('dashboard.favorites') || 'Favoris'} delay={0}    colors={colors} isDark={isDark} isMobile={isMobile} onClick={() => setActiveTab('favorites')} />
-        <StatCard icon={<MapPin size={18} />}     count={realStats.visited}   label={t('dashboard.visitedDestinations') || 'Visités'} delay={0.08} colors={colors} isDark={isDark} isMobile={isMobile} />
         <StatCard icon={<TrendingUp size={18} />} count={realStats.reviews}   label="Avis"                               delay={0.16} colors={colors} isDark={isDark} isMobile={isMobile} />
       </div>
 
