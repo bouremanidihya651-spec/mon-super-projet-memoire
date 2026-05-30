@@ -326,7 +326,7 @@ const AdminDashboard = () => {
       <main className="flex-1 lg:ml-64 min-w-0">
         <div className="lg:hidden sticky top-0 z-30 bg-white dark:bg-dark-surface border-b border-[#e0dcd4] dark:border-dark-border px-4 py-3 flex items-center justify-between">
           <button onClick={() => setSidebarOpen(true)} className="text-[#6b8f7b] hover:text-[#1a4a36] dark:hover:text-dark-text"><Menu className="w-6 h-6" /></button>
-          <span className="font-bold text-sm text-[#1a4a36] dark:text-dark-text">TravelLux Admin</span>
+          <span className="font-bold text-sm text-[#1a4a36] dark:text-dark-text">AFALOU Tours Admin</span>
           <button onClick={() => { setEditingId(null); setIsModalOpen(true); }} className="bg-[#c9a844] text-white px-4 py-1.5 rounded-full text-sm font-bold hover:bg-[#b08a30] transition">+ Créer</button>
         </div>
 
