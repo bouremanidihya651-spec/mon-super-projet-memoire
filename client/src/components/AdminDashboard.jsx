@@ -75,6 +75,11 @@ const AdminDashboard = () => {
 
   const [activeTab, setActiveTab] = useState("overview");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  const isMobile = windowWidth <= 868;
+  const isTablet = windowWidth <= 1024;
+  const isPhone = windowWidth <= 580;
+
   const [destinations, setDestinations] = useState([]);
   const [hotels, setHotels] = useState([]);
   const [activities, setActivities] = useState([]);
@@ -117,6 +122,9 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     fetchDestinations(); fetchHotels(); fetchActivities(); fetchUsers(); fetchAdminStats();
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   useEffect(() => {

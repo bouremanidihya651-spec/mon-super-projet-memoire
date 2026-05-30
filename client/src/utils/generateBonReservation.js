@@ -71,13 +71,13 @@ export const generateBonReservationPDF = (reservation, invoice) => {
 
   const details = invoice.invoice_details;
   const rows = [
-    ['Destination', details.destination || 'N/A'],
-    ['Vol / Transport', details.transportName || 'N/A'],
-    ['Trajet', details.route || 'N/A'],
-    ['Date de départ', details.departureDate || 'N/A'],
-    ['Type de voyage', details.tripType === 'round_trip' ? 'Aller-retour' : 'Aller simple'],
-    ['Nombre de voyageurs', `${details.adults + details.children + details.infants} (${details.adults} adultes, ${details.children} enfants, ${details.infants} bébés)`],
-    ['Prix unitaire', `${details.unitPrice} DA`]
+    ['Destination',         details.destination || 'N/A'],
+    ['Article / Service',   details.itemName    || details.transportName || 'N/A'],
+    ['Trajet / Lieu',       details.route       || details.location      || 'N/A'],
+    ['Date',                details.departureDate || details.travelDate || details.checkInDate || details.activityDate || 'N/A'],
+    ['Type de voyage',      details.tripType === 'round_trip' ? 'Aller-retour' : 'Aller simple'],
+    ['Nombre de voyageurs', `${(details.adults || 0) + (details.children || 0) + (details.infants || 0)} (${details.adults || 0} adultes, ${details.children || 0} enfants, ${details.infants || 0} bébés)`],
+    ['Prix unitaire',       `${details.unitPrice} DA`]
   ];
 
   autoTable(doc, {

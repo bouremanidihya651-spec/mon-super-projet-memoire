@@ -149,30 +149,30 @@ const ReservationsManagement = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
-        <div className="bg-[#ffffff] dark:bg-dark-surface border border-[#e0dcd4] dark:border-dark-border rounded-2xl p-5 shadow-sm">
-          <p className="text-xs text-[#6b8f7b] dark:text-dark-text-muted uppercase tracking-wide">Total</p>
-          <p className="text-3xl font-semibold mt-1 text-[#1a4a36] dark:text-dark-text">{stats.total}</p>
+      <div className="grid grid-cols-2 md:grid-cols-2 gap-3 sm:gap-4">
+        <div className="bg-[#ffffff] dark:bg-dark-surface border border-[#e0dcd4] dark:border-dark-border rounded-2xl p-4 sm:p-5 shadow-sm">
+          <p className="text-[10px] sm:text-xs text-[#6b8f7b] dark:text-dark-text-muted uppercase tracking-wide">Total</p>
+          <p className="text-2xl sm:text-3xl font-semibold mt-1 text-[#1a4a36] dark:text-dark-text">{stats.total}</p>
         </div>
-        <div className="bg-[#ffffff] dark:bg-dark-surface border border-[#e0dcd4] dark:border-dark-border rounded-2xl p-5 shadow-sm">
-          <p className="text-xs text-[#6b8f7b] dark:text-dark-text-muted uppercase tracking-wide">Revenus</p>
-          <p className="text-2xl font-semibold mt-1 text-[#2d7a5a] dark:text-dark-primary">{totalRevenue.toFixed(0)} DA</p>
+        <div className="bg-[#ffffff] dark:bg-dark-surface border border-[#e0dcd4] dark:border-dark-border rounded-2xl p-4 sm:p-5 shadow-sm">
+          <p className="text-[10px] sm:text-xs text-[#6b8f7b] dark:text-dark-text-muted uppercase tracking-wide">Revenus</p>
+          <p className="text-xl sm:text-2xl font-semibold mt-1 text-[#2d7a5a] dark:text-dark-primary">{totalRevenue.toFixed(0)} DA</p>
         </div>
       </div>
 
       {/* Filtres */}
-      <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-        <div className="flex flex-wrap gap-2">
-          <div className="relative">
+      <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center justify-between">
+        <div className="flex flex-col sm:flex-row gap-2">
+          <div className="relative flex-1 sm:min-w-[200px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6b8f7b] dark:text-dark-text-muted" />
             <input
               type="text"
               placeholder="Rechercher..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 pr-4 py-2 bg-[#ffffff] dark:bg-dark-surface border border-[#d0ccc4] dark:border-dark-border rounded-full text-sm text-[#1a4a36] dark:text-dark-text focus:border-[#2d7a5a] outline-none"
+              className="w-full pl-10 pr-4 py-2 bg-[#ffffff] dark:bg-dark-surface border border-[#d0ccc4] dark:border-dark-border rounded-full text-sm text-[#1a4a36] dark:text-dark-text focus:border-[#2d7a5a] outline-none"
             />
           </div>
 
@@ -190,24 +190,24 @@ const ReservationsManagement = () => {
           </select>
         </div>
 
-        <button className="flex items-center gap-2 px-4 py-2 bg-[#ffffff] dark:bg-dark-surface border border-[#d0ccc4] dark:border-dark-border text-[#1a4a36] dark:text-dark-text rounded-full text-sm hover:border-[#2d7a5a] transition">
+        <button className="flex items-center justify-center gap-2 px-4 py-2 bg-[#ffffff] dark:bg-dark-surface border border-[#d0ccc4] dark:border-dark-border text-[#1a4a36] dark:text-dark-text rounded-full text-sm hover:border-[#2d7a5a] transition">
           <Download size={16} />
           Exporter
         </button>
       </div>
 
       {/* Tableau */}
-      <div className="bg-[#ffffff] dark:bg-dark-surface border border-[#e0dcd4] dark:border-dark-border rounded-2xl overflow-hidden shadow-sm">
-        <table className="w-full text-left">
+      <div className="bg-[#ffffff] dark:bg-dark-surface border border-[#e0dcd4] dark:border-dark-border rounded-2xl overflow-hidden shadow-sm overflow-x-auto">
+        <table className="w-full text-left min-w-[800px]">
           <thead className="bg-[#f7f5f0] dark:bg-dark-surface-2 text-[#6b8f7b] dark:text-dark-text-muted text-xs uppercase border-b border-[#e0dcd4] dark:border-dark-border">
             <tr>
-              <th className="p-6">Réservation</th>
-              <th className="p-6">Client</th>
-              <th className="p-6">Type</th>
-              <th className="p-6">Date</th>
-              <th className="p-6">Prix</th>
-              <th className="p-6">Paiement</th>
-              <th className="p-6 text-right">Actions</th>
+              <th className="p-4 sm:p-6">Réservation</th>
+              <th className="p-4 sm:p-6">Client</th>
+              <th className="p-4 sm:p-6">Type</th>
+              <th className="p-4 sm:p-6">Date</th>
+              <th className="p-4 sm:p-6">Prix</th>
+              <th className="p-4 sm:p-6">Paiement</th>
+              <th className="p-4 sm:p-6 text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#e0dcd4] dark:divide-dark-border">
@@ -220,44 +220,44 @@ const ReservationsManagement = () => {
             ) : (
               filteredReservations.map((reservation) => (
                 <tr key={reservation.id} className="hover:bg-[#f7f5f0]/50 dark:hover:bg-dark-bg/50 transition">
-                  <td className="p-6">
+                  <td className="p-4 sm:p-6">
                     <div>
-                      <p className="font-medium truncate max-w-[200px] text-[#1a4a36] dark:text-dark-text">{getReservationName(reservation)}</p>
-                      <p className="text-xs text-[#6b8f7b] dark:text-dark-text-muted">{reservation.confirmation_number}</p>
+                      <p className="font-medium truncate max-w-[150px] sm:max-w-[200px] text-[#1a4a36] dark:text-dark-text text-sm">{getReservationName(reservation)}</p>
+                      <p className="text-[10px] sm:text-xs text-[#6b8f7b] dark:text-dark-text-muted">{reservation.confirmation_number}</p>
                     </div>
                   </td>
-                  <td className="p-6">
+                  <td className="p-4 sm:p-6">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-[#f7f5f0] dark:bg-dark-bg flex items-center justify-center border border-[#e0dcd4] dark:border-dark-border">
-                        <User size={16} className="text-[#6b8f7b] dark:text-dark-text-muted" />
+                      <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#f7f5f0] dark:bg-dark-bg flex items-center justify-center border border-[#e0dcd4] dark:border-dark-border">
+                        <User size={14} className="text-[#6b8f7b] dark:text-dark-text-muted" />
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-[#1a4a36] dark:text-dark-text">{reservation.user?.username || 'N/A'}</p>
-                        <p className="text-xs text-[#6b8f7b] dark:text-dark-text-muted">{reservation.user?.email || ''}</p>
+                        <p className="text-xs sm:text-sm font-medium text-[#1a4a36] dark:text-dark-text">{reservation.user?.username || 'N/A'}</p>
+                        <p className="text-[10px] sm:text-xs text-[#6b8f7b] dark:text-dark-text-muted">{reservation.user?.email || ''}</p>
                       </div>
                     </div>
                   </td>
-                  <td className="p-6">
+                  <td className="p-4 sm:p-6">
                     <div className="flex items-center gap-2">
                       <span className="text-[#6b8f7b] dark:text-dark-text-muted">{getTypeIcon(reservation.trip_type)}</span>
-                      <span className="text-sm text-[#1a4a36] dark:text-dark-text">{getTypeLabel(reservation.trip_type)}</span>
+                      <span className="text-xs sm:text-sm text-[#1a4a36] dark:text-dark-text">{getTypeLabel(reservation.trip_type)}</span>
                     </div>
                   </td>
-                  <td className="p-6">
-                    <div className="text-sm">
+                  <td className="p-4 sm:p-6">
+                    <div className="text-xs sm:text-sm">
                       <p className="text-[#1a4a36] dark:text-dark-text">{new Date(reservation.departure_date).toLocaleDateString('fr-FR')}</p>
                       {reservation.return_date && (
-                        <p className="text-xs text-[#6b8f7b] dark:text-dark-text-muted">
+                        <p className="text-[10px] sm:text-xs text-[#6b8f7b] dark:text-dark-text-muted">
                           au {new Date(reservation.return_date).toLocaleDateString('fr-FR')}
                         </p>
                       )}
                     </div>
                   </td>
-                  <td className="p-6">
-                    <p className="font-semibold text-[#2d7a5a] dark:text-dark-primary">{parseFloat(reservation.total_price || 0).toFixed(2)} DA</p>
+                  <td className="p-4 sm:p-6">
+                    <p className="text-xs sm:text-sm font-semibold text-[#2d7a5a] dark:text-dark-primary">{parseFloat(reservation.total_price || 0).toFixed(2)} DA</p>
                   </td>
-                  <td className="p-6">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  <td className="p-4 sm:p-6">
+                    <span className={`px-2 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium ${
                       reservation.payment_status === 'paid'
                         ? 'bg-[#dcfce7] dark:bg-green-900/30 text-[#15803d] dark:text-green-500'
                         : reservation.payment_status === 'pending'
@@ -269,11 +269,11 @@ const ReservationsManagement = () => {
                        reservation.payment_status}
                     </span>
                   </td>
-                  <td className="p-6 text-right">
+                  <td className="p-4 sm:p-6 text-right">
                     <div className="flex items-center justify-end gap-2">
                       <button
                         onClick={() => setSelectedReservation(reservation)}
-                        className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition"
+                        className="p-1.5 sm:p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition"
                         title="Voir détails"
                       >
                         <Eye size={16} />

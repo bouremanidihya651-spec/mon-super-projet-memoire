@@ -53,6 +53,8 @@ const generateInvoiceDetails = (type, data) => {
       return {
         ...baseDetails,
         typeLabel: 'Réservation de Vol',
+        destination: data.transport.arrival_city || 'N/A',
+        itemName: data.transport.company || 'Vol',
         flightNumber: data.transport.flight_number || 'N/A',
         airline: data.transport.company || 'N/A',
         route: `${data.transport.departure_city || 'Départ'} → ${data.transport.arrival_city || 'Arrivée'}`,
@@ -76,6 +78,8 @@ const generateInvoiceDetails = (type, data) => {
       return {
         ...baseDetails,
         typeLabel: 'Réservation de Transport Terrestre',
+        destination: data.transport.arrival_city || 'N/A',
+        itemName: data.transport.name,
         transportName: data.transport.name,
         transportType: data.transport.type || 'Transport terrestre',
         company: data.transport.company || 'N/A',
@@ -93,6 +97,8 @@ const generateInvoiceDetails = (type, data) => {
       return {
         ...baseDetails,
         typeLabel: 'Location de Voiture',
+        destination: data.transport.arrival_city || data.transport.pickup_location || 'N/A',
+        itemName: data.transport.car_model || 'Location de Voiture',
         carModel: data.transport.car_model || 'N/A',
         rentalAgency: data.transport.rental_agency || 'N/A',
         category: data.transport.category || 'N/A',
@@ -116,6 +122,8 @@ const generateInvoiceDetails = (type, data) => {
       return {
         ...baseDetails,
         typeLabel: 'Réservation d\'Hôtel',
+        destination: data.hotel.city || data.hotel.location || 'N/A',
+        itemName: data.hotel.name,
         hotelName: data.hotel.name,
         stars: data.hotel.stars ? '★'.repeat(data.hotel.stars) : 'N/A',
         starsNumber: data.hotel.stars || 0,
@@ -127,7 +135,7 @@ const generateInvoiceDetails = (type, data) => {
           adults: data.adults,
           children: data.children || 0
         },
-        amenities: data.hotel.amenities ? JSON.parse(data.hotel.amenities) : [],
+        amenities: data.hotel.amenities ? (typeof data.hotel.amenities === 'string' ? JSON.parse(data.hotel.amenities) : data.hotel.amenities) : [],
         unitPrice: data.unit_price
       };
 
@@ -135,6 +143,8 @@ const generateInvoiceDetails = (type, data) => {
       return {
         ...baseDetails,
         typeLabel: 'Réservation d\'Activité',
+        destination: data.activity.city || data.activity.location || 'N/A',
+        itemName: data.activity.name,
         activityName: data.activity.name,
         activityType: data.activity.category || 'Activité',
         location: data.activity.location || data.activity.city || 'N/A',
@@ -145,7 +155,7 @@ const generateInvoiceDetails = (type, data) => {
           adults: data.adults,
           children: data.children || 0
         },
-        highlights: data.activity.highlights ? JSON.parse(data.activity.highlights) : [],
+        highlights: data.activity.highlights ? (typeof data.activity.highlights === 'string' ? JSON.parse(data.activity.highlights) : data.activity.highlights) : [],
         unitPrice: data.unit_price
       };
 
@@ -153,6 +163,8 @@ const generateInvoiceDetails = (type, data) => {
       return {
         ...baseDetails,
         typeLabel: 'Réservation',
+        destination: 'N/A',
+        itemName: 'Détails de la réservation',
         description: 'Détails de la réservation',
         unitPrice: data.unit_price
       };
@@ -329,7 +341,11 @@ const getUserInvoices = async (req, res) => {
       where: { user_id: req.user.id },
       include: [{
         model: Reservation, as: 'reservation',
-        include: [{ model: Transport, as: 'transport', attributes: ['id', 'name', 'category', 'type', 'image_url'] }]
+        include: [
+          { model: Transport, as: 'transport', attributes: ['id', 'name', 'category', 'type', 'image_url'] },
+          { model: Hotel, as: 'hotel', attributes: ['id', 'name', 'location', 'city', 'image_url'] },
+          { model: Activity, as: 'activity', attributes: ['id', 'name', 'location', 'city', 'image_url'] }
+        ]
       }],
       order: [['created_at', 'DESC']]
     });

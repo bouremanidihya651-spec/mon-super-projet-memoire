@@ -246,7 +246,7 @@ const TransportManagement = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Toast */}
       {showSuccess && (
         <div className="fixed top-5 right-5 z-[9999] flex items-center gap-3 bg-[#2d7a5a] text-white px-6 py-4 rounded-full shadow-lg animate-in slide-in-from-right-full duration-300">
@@ -256,14 +256,14 @@ const TransportManagement = () => {
       )}
 
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-semibold text-[#1a4a36] dark:text-dark-text">Gestion des Transports</h2>
-          <p className="text-[#6b8f7b] dark:text-dark-text-muted text-sm mt-1">Gérez les options de transport pour chaque destination</p>
+          <h2 className="text-xl sm:text-2xl font-semibold text-[#1a4a36] dark:text-dark-text">Gestion des Transports</h2>
+          <p className="text-[#6b8f7b] dark:text-dark-text-muted text-xs sm:text-sm mt-1">Gérez les options de transport pour chaque destination</p>
         </div>
         <button
           onClick={openCreateModal}
-          className="bg-[#2d7a5a] text-white px-6 py-2.5 rounded-full font-medium hover:bg-[#1a4a36] flex items-center gap-2 transition-colors shadow-sm"
+          className="w-full sm:w-auto bg-[#2d7a5a] text-white px-6 py-2.5 rounded-full font-medium hover:bg-[#1a4a36] flex items-center justify-center gap-2 transition-colors shadow-sm text-sm"
         >
           <Plus className="w-5 h-5" />
           Créer un transport
@@ -271,101 +271,101 @@ const TransportManagement = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-[#ffffff] dark:bg-dark-surface border border-[#e0dcd4] dark:border-dark-border rounded-2xl p-5 shadow-sm">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+        <div className="bg-[#ffffff] dark:bg-dark-surface border border-[#e0dcd4] dark:border-dark-border rounded-2xl p-4 sm:p-5 shadow-sm">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl bg-[#f7f5f0] dark:bg-dark-surface-2 flex items-center justify-center">
-              <Plane className="w-5 h-5 text-[#2d7a5a] dark:text-dark-primary" />
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#f7f5f0] dark:bg-dark-surface-2 flex items-center justify-center">
+              <Plane className="w-4 h-4 sm:w-5 sm:h-5 text-[#2d7a5a] dark:text-dark-primary" />
             </div>
-            <span className="text-[#6b8f7b] dark:text-dark-text-muted text-sm">Vols</span>
+            <span className="text-[#6b8f7b] dark:text-dark-text-muted text-xs sm:text-sm">Vols</span>
           </div>
-          <p className="text-2xl font-semibold text-[#1a4a36] dark:text-dark-text">
+          <p className="text-xl sm:text-2xl font-semibold text-[#1a4a36] dark:text-dark-text">
             {transports.filter(t => t.category === 'flight').length}
           </p>
         </div>
-        <div className="bg-[#ffffff] dark:bg-dark-surface border border-[#e0dcd4] dark:border-dark-border rounded-2xl p-5 shadow-sm">
+        <div className="bg-[#ffffff] dark:bg-dark-surface border border-[#e0dcd4] dark:border-dark-border rounded-2xl p-4 sm:p-5 shadow-sm">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl bg-[#f7f5f0] dark:bg-dark-surface-2 flex items-center justify-center">
-              <Bus className="w-5 h-5 text-[#2d7a5a] dark:text-dark-primary" />
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#f7f5f0] dark:bg-dark-surface-2 flex items-center justify-center">
+              <Bus className="w-4 h-4 sm:w-5 sm:h-5 text-[#2d7a5a] dark:text-dark-primary" />
             </div>
-            <span className="text-[#6b8f7b] dark:text-dark-text-muted text-sm">Transports Terrestres</span>
+            <span className="text-[#6b8f7b] dark:text-dark-text-muted text-xs sm:text-sm">Terrestre</span>
           </div>
-          <p className="text-2xl font-semibold text-[#1a4a36] dark:text-dark-text">
+          <p className="text-xl sm:text-2xl font-semibold text-[#1a4a36] dark:text-dark-text">
             {transports.filter(t => t.category === 'ground').length}
           </p>
         </div>
-        <div className="bg-[#ffffff] dark:bg-dark-surface border border-[#e0dcd4] dark:border-dark-border rounded-2xl p-5 shadow-sm">
+        <div className="bg-[#ffffff] dark:bg-dark-surface border border-[#e0dcd4] dark:border-dark-border rounded-2xl p-4 sm:p-5 shadow-sm sm:col-span-2 lg:col-span-1">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl bg-[#f7f5f0] dark:bg-dark-surface-2 flex items-center justify-center">
-              <Car className="w-5 h-5 text-[#2d7a5a] dark:text-dark-primary" />
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#f7f5f0] dark:bg-dark-surface-2 flex items-center justify-center">
+              <Car className="w-4 h-4 sm:w-5 sm:h-5 text-[#2d7a5a] dark:text-dark-primary" />
             </div>
-            <span className="text-[#6b8f7b] dark:text-dark-text-muted text-sm">Locations Voiture</span>
+            <span className="text-[#6b8f7b] dark:text-dark-text-muted text-xs sm:text-sm">Locations</span>
           </div>
-          <p className="text-2xl font-semibold text-[#1a4a36] dark:text-dark-text">
+          <p className="text-xl sm:text-2xl font-semibold text-[#1a4a36] dark:text-dark-text">
             {transports.filter(t => t.category === 'car_rental').length}
           </p>
         </div>
       </div>
 
       {/* Transports Table */}
-      <div className="bg-[#ffffff] dark:bg-dark-surface border border-[#e0dcd4] dark:border-dark-border rounded-2xl overflow-hidden shadow-sm">
-        <table className="w-full text-left">
-          <thead className="bg-[#f7f5f0] dark:bg-dark-surface-2 text-[#6b8f7b] dark:text-dark-text-muted text-xs uppercase border-b border-[#e0dcd4] dark:border-dark-border">
+      <div className="bg-[#ffffff] dark:bg-dark-surface border border-[#e0dcd4] dark:border-dark-border rounded-2xl overflow-hidden shadow-sm overflow-x-auto">
+        <table className="w-full text-left min-w-[700px]">
+          <thead className="bg-[#f7f5f0] dark:bg-dark-surface-2 text-[#6b8f7b] dark:text-dark-text-muted text-[10px] sm:text-xs uppercase border-b border-[#e0dcd4] dark:border-dark-border">
             <tr>
-              <th className="p-6">Visuel</th>
-              <th className="p-6">Type</th>
-              <th className="p-6">Nom/Compagnie</th>
-              <th className="p-6">Destination</th>
-              <th className="p-6">Prix</th>
-              <th className="p-6 text-right">Actions</th>
+              <th className="p-4 sm:p-6">Visuel</th>
+              <th className="p-4 sm:p-6">Type</th>
+              <th className="p-4 sm:p-6">Nom/Compagnie</th>
+              <th className="p-4 sm:p-6">Destination</th>
+              <th className="p-4 sm:p-6">Prix</th>
+              <th className="p-4 sm:p-6 text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#e0dcd4] dark:divide-dark-border">
             {transports.map((t) => (
               <tr key={t.id} className="hover:bg-[#f7f5f0]/50 dark:hover:bg-dark-surface-2 transition">
-                <td className="p-6">
+                <td className="p-4 sm:p-6">
                   <img
                     src={t.image_url || 'https://via.placeholder.com/150?text=Transport'}
-                    className="w-16 h-12 object-cover rounded-lg border border-[#e0dcd4] dark:border-dark-border bg-[#f7f5f0] dark:bg-dark-surface-2"
+                    className="w-12 h-9 sm:w-16 sm:h-12 object-cover rounded-lg border border-[#e0dcd4] dark:border-dark-border bg-[#f7f5f0] dark:bg-dark-surface-2"
                     alt=""
                     onError={(e) => e.target.src = 'https://via.placeholder.com/150?text=No+Image'}
                   />
                 </td>
-                <td className="p-6">
+                <td className="p-4 sm:p-6">
                   <div className="flex items-center gap-2">
                     {getCategoryIcon(t.category)}
-                    <span className="text-[#2d7a5a] dark:text-dark-primary text-sm">{getCategoryLabel(t.category)}</span>
+                    <span className="text-[#2d7a5a] dark:text-dark-primary text-[10px] sm:text-sm">{getCategoryLabel(t.category)}</span>
                   </div>
                 </td>
-                <td className="p-6">
+                <td className="p-4 sm:p-6">
                   <div>
-                    <p className="font-medium text-[#1a4a36] dark:text-dark-text">{t.name}</p>
-                    {t.company && <p className="text-xs text-[#6b8f7b] dark:text-dark-text-muted">{t.company}</p>}
+                    <p className="font-medium text-[#1a4a36] dark:text-dark-text text-sm">{t.name}</p>
+                    {t.company && <p className="text-[10px] sm:text-xs text-[#6b8f7b] dark:text-dark-text-muted">{t.company}</p>}
                   </div>
                 </td>
-                <td className="p-6">
+                <td className="p-4 sm:p-6">
                   <div className="flex items-center gap-2 text-[#6b8f7b] dark:text-dark-text-muted">
-                    <MapPin className="w-4 h-4" />
-                    <span className="text-sm">{t.destination?.name || 'N/A'}</span>
+                    <MapPin className="w-3 h-3 sm:w-4 sm:h-4" />
+                    <span className="text-xs sm:text-sm">{t.destination?.name || 'N/A'}</span>
                   </div>
                 </td>
-                <td className="p-6">
+                <td className="p-4 sm:p-6">
                   <div>
-                    <p className="text-[#2d7a5a] dark:text-dark-primary font-semibold">{t.price} DA</p>
-                    <p className="text-xs text-[#6b8f7b] dark:text-dark-text-muted">{getPriceUnitLabel(t.price_unit)}</p>
+                    <p className="text-[#2d7a5a] dark:text-dark-primary font-semibold text-sm">{t.price} DA</p>
+                    <p className="text-[10px] sm:text-xs text-[#6b8f7b] dark:text-dark-text-muted">{getPriceUnitLabel(t.price_unit)}</p>
                   </div>
                 </td>
-                <td className="p-6 text-right">
-                  <div className="flex items-center justify-end gap-2">
+                <td className="p-4 sm:p-6 text-right">
+                  <div className="flex items-center justify-end gap-1 sm:gap-2">
                     <button
                       onClick={() => openEditModal(t)}
-                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-full transition"
+                      className="p-1.5 sm:p-2 text-blue-600 hover:bg-blue-50 rounded-full transition"
                     >
                       <Edit className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => handleDelete(t.id)}
-                      className="p-2 text-[#dc2626] hover:bg-[#fef2f2] rounded-full transition"
+                      className="p-1.5 sm:p-2 text-[#dc2626] hover:bg-[#fef2f2] rounded-full transition"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>

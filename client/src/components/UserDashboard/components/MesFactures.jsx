@@ -94,6 +94,13 @@ const FilterBtn = ({ label, active, count, onClick, colors }) => (
 /* ── invoice row card ── */
 const InvoiceCard = ({ invoice, onDownload, colors, isDark }) => {
   const [hov, setHov] = useState(false);
+  const [isSmall, setIsSmall] = useState(window.innerWidth <= 580);
+
+  useEffect(() => {
+    const handleResize = () => setIsSmall(window.innerWidth <= 580);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
   
   const statusConfig = {
     paid:    { icon: CheckCircle, label: 'Payé',       bg: isDark ? 'rgba(22,163,74,0.15)' : '#f0fdf4', color: '#16a34a', border: isDark ? 'rgba(22,163,74,0.3)' : '#bbf7d0' },
@@ -119,15 +126,15 @@ const InvoiceCard = ({ invoice, onDownload, colors, isDark }) => {
       onMouseLeave={() => setHov(false)}
       style={{
         background: colors.white, border: `1px solid ${hov ? colors.accent : colors.border}`,
-        borderRadius: 18, padding: '22px 24px',
+        borderRadius: 18, padding: isSmall ? '16px' : '22px 24px',
         boxShadow: hov ? '0 8px 28px rgba(0,0,0,0.1)' : '0 2px 8px rgba(0,0,0,0.03)',
         transform: hov ? 'translateY(-2px)' : 'none',
         transition: 'all 0.25s cubic-bezier(0.4,0,0.2,1)',
       }}
     >
       {/* Top row */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', marginBottom: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', flex: 1 }}>
           {/* Invoice number */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <div style={{
@@ -145,23 +152,25 @@ const InvoiceCard = ({ invoice, onDownload, colors, isDark }) => {
             </div>
           </div>
 
-          {/* Status badge */}
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: 5,
-            padding: '4px 12px', borderRadius: 999,
-            background: st.bg, border: `1px solid ${st.border}`,
-            fontSize: 12, fontWeight: 600, color: st.color, fontFamily: colors.sans,
-          }}>
-            <StatusIcon size={12} />
-            {st.label}
-          </div>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {/* Status badge */}
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: 5,
+              padding: '4px 10px', borderRadius: 999,
+              background: st.bg, border: `1px solid ${st.border}`,
+              fontSize: 11, fontWeight: 600, color: st.color, fontFamily: colors.sans,
+            }}>
+              <StatusIcon size={11} />
+              {st.label}
+            </div>
 
-          {/* Payment method */}
-          <Pill label={pay.label} bg={pay.bg} color={pay.color} colors={colors} />
+            {/* Payment method */}
+            <Pill label={pay.label} bg={pay.bg} color={pay.color} colors={colors} />
+          </div>
         </div>
 
         {/* Amount */}
-        <div style={{ textAlign: 'right' }}>
+        <div style={{ textAlign: isSmall ? 'left' : 'right', width: isSmall ? '100%' : 'auto', marginTop: isSmall ? 4 : 0 }}>
           <div style={{ fontFamily: colors.serif, fontSize: 22, fontWeight: 600, fontStyle: 'italic', color: colors.accent, lineHeight: 1 }}>
             {parseFloat(invoice.amount).toFixed(2)} DA
           </div>
@@ -173,7 +182,7 @@ const InvoiceCard = ({ invoice, onDownload, colors, isDark }) => {
 
       {/* Meta grid */}
       <div style={{
-        display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+        display: 'grid', gridTemplateColumns: isSmall ? '1fr' : 'repeat(auto-fit, minmax(130px, 1fr))',
         gap: 12, padding: '14px 0', borderTop: `1px solid ${colors.border}`, borderBottom: `1px solid ${colors.border}`,
         marginBottom: 16,
       }}>
@@ -204,11 +213,18 @@ const InvoiceCard = ({ invoice, onDownload, colors, isDark }) => {
         }}>
           <div style={{ width: 6, height: 6, borderRadius: '50%', background: colors.accent, flexShrink: 0 }} />
           <span style={{ fontFamily: colors.sans, fontSize: 13, color: colors.text2, fontWeight: 300 }}>
-            {invoice.reservation.transport?.name || 'Transport'}
+            {invoice.invoice_details?.itemName || 
+             invoice.reservation.hotel?.name || 
+             invoice.reservation.activity?.name || 
+             invoice.reservation.transport?.name || 
+             'Réservation'}
             {' '}
             <span style={{ color: colors.text3 }}>→</span>
             {' '}
-            {invoice.invoice_details?.destination || 'Destination'}
+            {invoice.invoice_details?.destination || 
+             invoice.reservation.hotel?.city || 
+             invoice.reservation.activity?.city || 
+             'Destination'}
           </span>
         </div>
       )}
@@ -225,6 +241,8 @@ const InvoiceCard = ({ invoice, onDownload, colors, isDark }) => {
             fontFamily: colors.sans, fontSize: 12, fontWeight: 600,
             letterSpacing: '0.08em', textTransform: 'uppercase',
             transition: 'background 0.2s, transform 0.15s',
+            width: isSmall ? '100%' : 'auto',
+            justifyContent: 'center',
           }}
           onMouseEnter={e => { e.currentTarget.style.background = colors.dark; e.currentTarget.style.transform = 'translateY(-1px)'; }}
           onMouseLeave={e => { e.currentTarget.style.background = colors.accent; e.currentTarget.style.transform = 'translateY(0)'; }}

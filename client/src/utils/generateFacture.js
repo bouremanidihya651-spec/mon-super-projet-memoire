@@ -148,9 +148,9 @@ export const generateInvoicePDF = (reservation, invoice) => {
 
   const rows = [
     ['Destination',         d.destination    || 'N/A'],
-    ['Vol / Transport',     d.transportName  || 'N/A'],
-    ['Trajet',              d.route          || 'N/A'],
-    ['Date de départ',      d.departureDate  || 'N/A'],
+    ['Article / Service',   d.itemName       || d.transportName || 'N/A'],
+    ['Trajet / Lieu',       d.route          || d.location      || 'N/A'],
+    ['Date',                d.departureDate  || d.travelDate    || d.checkInDate || d.activityDate || 'N/A'],
     ['Type de voyage',      tripLabel],
     ['Voyageurs',           paxDetail],
     ['Prix unitaire',       `${d.unitPrice} DA`],
