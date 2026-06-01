@@ -1,15 +1,19 @@
 const express = require('express');
-const { authenticateToken } = require('../middleware/auth');
+const { authenticateToken, authorizeAdmin } = require('../middleware/auth');
 const {
   validateReview,
   getReviewsForTarget,
   createReview,
   updateReview,
   deleteReview,
-  getUserReviews
+  getUserReviews,
+  getAllReviews
 } = require('../controllers/reviewController');
 
 const router = express.Router();
+
+// Get all reviews (admin only)
+router.get('/all', authorizeAdmin, getAllReviews);
 
 // Get all reviews for a specific target (destination, hotel, or activity)
 // GET /api/reviews/:targetType/:targetId

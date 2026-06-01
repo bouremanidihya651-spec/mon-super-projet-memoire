@@ -122,7 +122,7 @@ router.post('/', authenticateToken, authorizeAdmin, handleImageUpload, validateD
 });
 
 // Update a destination (admin only)
-router.put('/:id', authenticateToken, authorizeAdmin, validateDestination, convertTagsToString, async (req, res) => {
+router.put('/:id', authenticateToken, authorizeAdmin, handleImageUpload, validateDestination, convertTagsToString, async (req, res) => {
   try {
     const { id } = req.params;
     

@@ -1,4 +1,4 @@
-const { Review, User } = require('../models');
+const { Review, User, sequelize } = require('../models');
 const { body, param } = require('express-validator');
 const { authenticateToken } = require('../middleware/auth');
 const { Op } = require('sequelize');
@@ -183,11 +183,76 @@ const getUserReviews = async (req, res) => {
   }
 };
 
+// Get all reviews (admin only)
+const getAllReviews = async (req, res) => {
+  try {
+    console.log("Admin Dashboard: Request to fetch all reviews received.");
+    const reviews = await Review.findAll({
+      order: [['createdAt', 'DESC']]
+    });
+
+    console.log(`Review.findAll() returned ${reviews.length} rows.`);
+    if (reviews.length > 0) {
+      console.log("Sample review from DB:", JSON.stringify(reviews[0], null, 2));
+    }
+    
+    // Manually fetch target names and user info to be ultra-safe
+    const enrichedReviews = await Promise.all(reviews.map(async (review) => {
+      let targetName = "Inconnu";
+      let username = "Anonyme";
+      
+      try {
+        // Fetch User
+        if (review.userId) {
+          const user = await sequelize.models.User.findByPk(review.userId, {
+            attributes: ['username']
+          });
+          if (user) {
+            username = user.username;
+          } else {
+            console.log(`User with ID ${review.userId} not found for review ${review.id}`);
+          }
+        } else {
+          console.log(`Review ${review.id} has no userId`);
+        }
+
+        // Fetch Target
+        if (review.targetType === 'destination') {
+          const dest = await sequelize.models.Destination.findByPk(review.targetId);
+          if (dest) targetName = dest.name;
+        } else if (review.targetType === 'hotel') {
+          const hotel = await sequelize.models.Hotel.findByPk(review.targetId);
+          if (hotel) targetName = hotel.name;
+        } else if (review.targetType === 'activity') {
+          const activity = await sequelize.models.Activity.findByPk(review.targetId);
+          if (activity) targetName = activity.name;
+        }
+      } catch (e) {
+        console.error(`Error enriching review ${review.id}:`, e.message);
+      }
+      
+      const r = review.toJSON();
+      return { 
+        ...r, 
+        targetName,
+        user: { username } // Format expected by frontend
+      };
+    }));
+
+    console.log(`Returning ${enrichedReviews.length} enriched reviews to frontend.`);
+    res.status(200).json({ reviews: enrichedReviews });
+  } catch (error) {
+    console.error('CRITICAL: Get all reviews error:', error);
+    res.status(500).json({ message: 'Internal server error', error: error.message });
+  }
+};
+
 module.exports = {
   validateReview,
   getReviewsForTarget,
   createReview,
   updateReview,
   deleteReview,
-  getUserReviews
+  getUserReviews,
+  getAllReviews
 };

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
-  BarChart3, Users, MapPin, Star, Package, Trash2,
+  BarChart3, Users, MapPin, Star, Package, Trash2, Pencil, MessageSquare,
   Calendar, LogOut, X, Loader2, Upload, CheckCircle2, Eye,
   Crown, Mountain, Tent, Landmark, Waves, Utensils, Plane, FileText, Shield,
   Moon, Sun, Search, Sparkles, MapPinned, Brain, Menu
@@ -84,6 +84,7 @@ const AdminDashboard = () => {
   const [hotels, setHotels] = useState([]);
   const [activities, setActivities] = useState([]);
   const [users, setUsers] = useState([]);
+  const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
@@ -92,6 +93,7 @@ const AdminDashboard = () => {
   const [searchHotels, setSearchHotels] = useState("");
   const [searchActivities, setSearchActivities] = useState("");
   const [searchUsers, setSearchUsers] = useState("");
+  const [searchReviews, setSearchReviews] = useState("");
 
   const visitChartRef = useRef(null);
   const popChartRef = useRef(null);
@@ -121,7 +123,7 @@ const AdminDashboard = () => {
   const [recentActivity, setRecentActivity] = useState([]);
 
   useEffect(() => {
-    fetchDestinations(); fetchHotels(); fetchActivities(); fetchUsers(); fetchAdminStats();
+    fetchDestinations(); fetchHotels(); fetchActivities(); fetchUsers(); fetchReviews(); fetchAdminStats();
     const handleResize = () => setWindowWidth(window.innerWidth);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
@@ -152,6 +154,15 @@ const AdminDashboard = () => {
     u.firstName?.toLowerCase().includes(searchUsers.toLowerCase()) ||
     u.lastName?.toLowerCase().includes(searchUsers.toLowerCase())
   );
+  const filteredReviews = reviews.filter(r => {
+    const search = searchReviews.toLowerCase();
+    return (
+      (r.comment || "").toLowerCase().includes(search) ||
+      (r.user?.username || "anonyme").toLowerCase().includes(search) ||
+      (r.targetType || "").toLowerCase().includes(search) ||
+      (r.targetName || "").toLowerCase().includes(search)
+    );
+  });
 
   const fetchAdminStats = async () => {
     try {
@@ -169,6 +180,7 @@ const AdminDashboard = () => {
   };
 
   useEffect(() => {
+    if (activeTab === "reviews") fetchReviews();
     if (activeTab !== "overview") return;
     const initCharts = () => {
       if (typeof window.Chart === "undefined") return;
@@ -229,22 +241,84 @@ const AdminDashboard = () => {
   const fetchHotels = async () => { try { setLoading(true); const r = await fetch(`${API_BASE}/api/hotels`); const d = await r.json(); setHotels(Array.isArray(d.hotels) ? d.hotels : (Array.isArray(d) ? d : [])); } catch (e) { console.error(e); } finally { setLoading(false); } };
   const fetchActivities = async () => { try { setLoading(true); const r = await fetch(`${API_BASE}/api/activities`); const d = await r.json(); setActivities(Array.isArray(d.activities) ? d.activities : (Array.isArray(d) ? d : [])); } catch (e) { console.error(e); } finally { setLoading(false); } };
   const fetchUsers = async () => { try { setLoading(true); const token = localStorage.getItem("token"); const r = await fetch(`${API_BASE}/api/users`, { headers: { "Authorization": `Bearer ${token}` } }); const d = await r.json(); setUsers(Array.isArray(d) ? d : (Array.isArray(d.users) ? d.users : [])); } catch (e) { console.error(e); } finally { setLoading(false); } };
+  const fetchReviews = async () => { 
+    try { 
+      setLoading(true); 
+      const token = localStorage.getItem("token"); 
+      const r = await fetch(`${API_BASE}/api/reviews/all`, { headers: { "Authorization": `Bearer ${token}` } }); 
+      const d = await r.json(); 
+      console.log("Fetch reviews response:", d);
+      if (r.ok) {
+        setReviews(Array.isArray(d.reviews) ? d.reviews : []); 
+      } else {
+        console.error("Failed to fetch reviews:", d.message);
+        setReviews([]);
+      }
+    } catch (e) { 
+      console.error("Fetch reviews error:", e); 
+      setReviews([]);
+    } finally { 
+      setLoading(false); 
+    } 
+  };
 
   const handleDelete = async (id) => { if (window.confirm("Supprimer cette destination ?")) { try { const t = localStorage.getItem("token"); await fetch(`${API_BASE}/api/destinations/${id}`, { method: "DELETE", headers: { "Authorization": `Bearer ${t}` } }); fetchDestinations(); } catch { alert("Erreur suppression"); } } };
   const handleDeleteHotel = async (id) => { if (window.confirm("Supprimer cet hôtel ?")) { try { const t = localStorage.getItem("token"); await fetch(`${API_BASE}/api/hotels/${id}`, { method: "DELETE", headers: { "Authorization": `Bearer ${t}` } }); fetchHotels(); } catch { alert("Erreur suppression"); } } };
   const handleDeleteActivity = async (id) => { if (window.confirm("Supprimer cette activité ?")) { try { const t = localStorage.getItem("token"); await fetch(`${API_BASE}/api/activities/${id}`, { method: "DELETE", headers: { "Authorization": `Bearer ${t}` } }); fetchActivities(); } catch { alert("Erreur suppression"); } } };
   const handleDeleteUser = async (id) => { if (window.confirm("Supprimer cet utilisateur ?")) { try { const t = localStorage.getItem("token"); await fetch(`${API_BASE}/api/users/${id}`, { method: "DELETE", headers: { "Authorization": `Bearer ${t}` } }); fetchUsers(); } catch { alert("Erreur suppression"); } } };
+  const handleDeleteReview = async (id) => { if (window.confirm("Supprimer ce commentaire définitivement ?")) { try { const t = localStorage.getItem("token"); const r = await fetch(`${API_BASE}/api/reviews/${id}`, { method: "DELETE", headers: { "Authorization": `Bearer ${t}` } }); if (r.ok) { fetchReviews(); setSuccessMessage("Commentaire supprimé !"); setShowSuccess(true); setTimeout(() => setShowSuccess(false), 3000); } else { alert("Erreur lors de la suppression"); } } catch { alert("Erreur réseau"); } } };
   const handleBlockUser = async (id) => { try { const t = localStorage.getItem("token"); await fetch(`${API_BASE}/api/users/${id}/block`, { method: "PUT", headers: { "Authorization": `Bearer ${t}` } }); fetchUsers(); } catch { alert("Erreur blocage"); } };
   const handleUnblockUser = async (id) => { try { const t = localStorage.getItem("token"); await fetch(`${API_BASE}/api/users/${id}/unblock`, { method: "PUT", headers: { "Authorization": `Bearer ${t}` } }); fetchUsers(); } catch { alert("Erreur déblocage"); } };
 
+  const handleOpenCreate = () => {
+    setEditingId(null);
+    setSelectedFile(null);
+    setSearchQuery("");
+    setAiError("");
+    setAiSuccess(false);
+    setFormData({
+      name: "", description: "", location: "", country: "Algérie",
+      city: "", price: "", rating: "5", stars: "5", destination_id: "",
+      luxury_score: "5", nature_score: "5", adventure_score: "5",
+      culture_score: "5", beach_score: "5", food_score: "5"
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleEdit = (item, type) => {
+    setEditingId(item.id);
+    setActiveTab(type);
+    setFormData({
+      name: item.name || "",
+      description: item.description || "",
+      location: item.location || "",
+      country: item.country || "Algérie",
+      city: item.city || "",
+      price: item.price || "",
+      rating: item.rating || "5",
+      stars: item.stars || "5",
+      destination_id: item.destination_id || "",
+      luxury_score: item.luxury_score ? String(parseFloat(item.luxury_score) * 10) : "5",
+      nature_score: item.nature_score ? String(parseFloat(item.nature_score) * 10) : "5",
+      adventure_score: item.adventure_score ? String(parseFloat(item.adventure_score) * 10) : "5",
+      culture_score: item.culture_score ? String(parseFloat(item.culture_score) * 10) : "5",
+      beach_score: item.beach_score ? String(parseFloat(item.beach_score) * 10) : "5",
+      food_score: item.food_score ? String(parseFloat(item.food_score) * 10) : "5"
+    });
+    if (type === 'destinations') {
+      setSearchQuery(item.name);
+    }
+    setIsModalOpen(true);
+  };
+
   const resetModal = () => {
-    setIsModalOpen(false); setSelectedFile(null); setSearchQuery(""); setAiError(""); setAiSuccess(false);
+    setIsModalOpen(false); setSelectedFile(null); setSearchQuery(""); setAiError(""); setAiSuccess(false); setEditingId(null);
     setFormData({ name: "", description: "", location: "", country: "Algérie", city: "", price: "", rating: "5", stars: "5", destination_id: "", luxury_score: "5", nature_score: "5", adventure_score: "5", culture_score: "5", beach_score: "5", food_score: "5" });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (activeTab === "destinations" && destinations.length >= 15) { alert("Limite atteinte : vous ne pouvez pas créer plus de 15 destinations."); return; }
+    if (!editingId && activeTab === "destinations" && destinations.length >= 15) { alert("Limite atteinte : vous ne pouvez pas créer plus de 15 destinations."); return; }
     const token = localStorage.getItem("token");
     const data = new FormData();
     data.append("name", formData.name); data.append("description", formData.description); data.append("location", formData.location); data.append("country", formData.country); data.append("city", formData.city);
@@ -259,11 +333,30 @@ const AdminDashboard = () => {
       data.append("food_score",      (parseFloat(formData.food_score)      / 10).toString());
     }
     if (selectedFile) data.append("image", selectedFile);
-    let endpoint = `${API_BASE}/api/destinations`; let fetchFunction = fetchDestinations; let successMsg = "Destination publiée avec succès !";
-    if (activeTab === "hotels") { endpoint = `${API_BASE}/api/hotels`; fetchFunction = fetchHotels; data.append("stars", formData.stars); successMsg = "Hôtel publié avec succès !"; }
-    else if (activeTab === "activities") { endpoint = `${API_BASE}/api/activities`; fetchFunction = fetchActivities; successMsg = "Activité publiée avec succès !"; }
+    
+    let endpoint = `${API_BASE}/api/destinations`; 
+    let method = editingId ? "PUT" : "POST";
+    if (editingId) endpoint += `/${editingId}`;
+    
+    let fetchFunction = fetchDestinations; 
+    let successMsg = editingId ? "Destination modifiée avec succès !" : "Destination publiée avec succès !";
+    
+    if (activeTab === "hotels") { 
+      endpoint = `${API_BASE}/api/hotels`; 
+      if (editingId) endpoint += `/${editingId}`;
+      fetchFunction = fetchHotels; 
+      data.append("stars", formData.stars); 
+      successMsg = editingId ? "Hôtel modifié avec succès !" : "Hôtel publié avec succès !"; 
+    }
+    else if (activeTab === "activities") { 
+      endpoint = `${API_BASE}/api/activities`; 
+      if (editingId) endpoint += `/${editingId}`;
+      fetchFunction = fetchActivities; 
+      successMsg = editingId ? "Activité modifiée avec succès !" : "Activité publiée avec succès !"; 
+    }
+    
     try {
-      const response = await fetch(endpoint, { method: "POST", headers: { "Authorization": `Bearer ${token}` }, body: data });
+      const response = await fetch(endpoint, { method: method, headers: { "Authorization": `Bearer ${token}` }, body: data });
       const result = await response.json();
       if (response.status === 201 || response.status === 200) { resetModal(); fetchFunction(); setSuccessMessage(successMsg); setShowSuccess(true); setTimeout(() => setShowSuccess(false), 3000); }
       else { alert("Erreur lors de l'enregistrement: " + (result.message || "Erreur inconnue")); }
@@ -278,6 +371,7 @@ const AdminDashboard = () => {
     { tab: "transports",   icon: <Plane className="w-5 h-5" />,     label: "Transports" },
     { tab: "reservations", icon: <FileText className="w-5 h-5" />,  label: "Réservations" },
     { tab: "users",        icon: <Users className="w-5 h-5" />,     label: "Utilisateurs" },
+    { tab: "reviews",      icon: <MessageSquare className="w-5 h-5" />, label: "Commentaires" },
   ];
 
   return (
@@ -327,7 +421,7 @@ const AdminDashboard = () => {
         <div className="lg:hidden sticky top-0 z-30 bg-white dark:bg-dark-surface border-b border-[#e0dcd4] dark:border-dark-border px-4 py-3 flex items-center justify-between">
           <button onClick={() => setSidebarOpen(true)} className="text-[#6b8f7b] hover:text-[#1a4a36] dark:hover:text-dark-text"><Menu className="w-6 h-6" /></button>
           <span className="font-bold text-sm text-[#1a4a36] dark:text-dark-text">AFALOU Tours Admin</span>
-          <button onClick={() => { setEditingId(null); setIsModalOpen(true); }} className="bg-[#c9a844] text-white px-4 py-1.5 rounded-full text-sm font-bold hover:bg-[#b08a30] transition">+ Créer</button>
+          <button onClick={handleOpenCreate} className="bg-[#c9a844] text-white px-4 py-1.5 rounded-full text-sm font-bold hover:bg-[#b08a30] transition">+ Créer</button>
         </div>
 
         <div className="p-4 sm:p-6 lg:p-10">
@@ -336,7 +430,7 @@ const AdminDashboard = () => {
               <h2 className="text-3xl font-bold text-[#1a4a36] dark:text-dark-text">Tableau de Bord</h2>
               <p className="text-[#6b8f7b] dark:text-dark-text-muted">Bienvenue dans votre espace d'administration TravelLux.</p>
             </div>
-            <button onClick={() => { setEditingId(null); setIsModalOpen(true); }} className="bg-[#c9a844] text-white px-6 py-2.5 rounded-full font-bold hover:bg-[#b08a30] transition">+ Créer</button>
+            <button onClick={handleOpenCreate} className="bg-[#c9a844] text-white px-6 py-2.5 rounded-full font-bold hover:bg-[#b08a30] transition">+ Créer</button>
           </header>
           <div className="lg:hidden mb-6">
             <h2 className="text-2xl font-bold text-[#1a4a36] dark:text-dark-text">Tableau de Bord</h2>
@@ -412,7 +506,10 @@ const AdminDashboard = () => {
                         <td className="p-4 sm:p-6"><img src={d.image_url} className="w-14 h-10 object-cover rounded-lg border border-[#e0dcd4] dark:border-dark-border" alt="" onError={(e) => e.target.src = "https://via.placeholder.com/150?text=No+Image"} /></td>
                         <td className="p-4 sm:p-6 font-bold text-[#1a4a36] dark:text-dark-text text-sm">{d.name}</td>
                         <td className="p-4 sm:p-6 text-[#2d7a5a] text-sm">{d.location}</td>
-                        <td className="p-4 sm:p-6 text-right"><button onClick={() => handleDelete(d.id)} className="p-2 text-[#b08a30] hover:bg-[#b08a30]/10 rounded-lg transition"><Trash2 className="w-4 h-4" /></button></td>
+                        <td className="p-4 sm:p-6 text-right space-x-2">
+                          <button onClick={() => handleEdit(d, "destinations")} className="p-2 text-[#2d7a5a] hover:bg-[#2d7a5a]/10 rounded-lg transition"><Pencil className="w-4 h-4" /></button>
+                          <button onClick={() => handleDelete(d.id)} className="p-2 text-[#b08a30] hover:bg-[#b08a30]/10 rounded-lg transition"><Trash2 className="w-4 h-4" /></button>
+                        </td>
                       </tr>
                     )) : <tr><td colSpan={4} className="p-12 text-center text-[#6b8f7b] dark:text-dark-text-muted text-sm">{searchDestinations ? `Aucune destination trouvée pour "${searchDestinations}"` : "Aucune destination disponible"}</td></tr>}
                   </tbody>
@@ -437,7 +534,10 @@ const AdminDashboard = () => {
                         <td className="p-4 sm:p-6 font-bold text-[#1a4a36] dark:text-dark-text text-sm">{h.name}</td>
                         <td className="p-4 sm:p-6 text-[#2d7a5a] text-sm">{h.location}</td>
                         <td className="p-4 sm:p-6 text-[#c9a844] font-bold text-sm">{h.price} DA</td>
-                        <td className="p-4 sm:p-6 text-right"><button onClick={() => handleDeleteHotel(h.id)} className="p-2 text-[#b08a30] hover:bg-[#b08a30]/10 rounded-lg transition"><Trash2 className="w-4 h-4" /></button></td>
+                        <td className="p-4 sm:p-6 text-right space-x-2">
+                          <button onClick={() => handleEdit(h, "hotels")} className="p-2 text-[#2d7a5a] hover:bg-[#2d7a5a]/10 rounded-lg transition"><Pencil className="w-4 h-4" /></button>
+                          <button onClick={() => handleDeleteHotel(h.id)} className="p-2 text-[#b08a30] hover:bg-[#b08a30]/10 rounded-lg transition"><Trash2 className="w-4 h-4" /></button>
+                        </td>
                       </tr>
                     )) : <tr><td colSpan={5} className="p-12 text-center text-[#6b8f7b] dark:text-dark-text-muted text-sm">{searchHotels ? `Aucun hôtel trouvé pour "${searchHotels}"` : "Aucun hôtel disponible"}</td></tr>}
                   </tbody>
@@ -462,7 +562,10 @@ const AdminDashboard = () => {
                         <td className="p-4 sm:p-6 font-bold text-[#1a4a36] dark:text-dark-text text-sm">{a.name}</td>
                         <td className="p-4 sm:p-6 text-[#2d7a5a] text-sm">{a.location}</td>
                         <td className="p-4 sm:p-6 text-[#c9a844] font-bold text-sm">{a.price} DA</td>
-                        <td className="p-4 sm:p-6 text-right"><button onClick={() => handleDeleteActivity(a.id)} className="p-2 text-[#b08a30] hover:bg-[#b08a30]/10 rounded-lg transition"><Trash2 className="w-4 h-4" /></button></td>
+                        <td className="p-4 sm:p-6 text-right space-x-2">
+                          <button onClick={() => handleEdit(a, "activities")} className="p-2 text-[#2d7a5a] hover:bg-[#2d7a5a]/10 rounded-lg transition"><Pencil className="w-4 h-4" /></button>
+                          <button onClick={() => handleDeleteActivity(a.id)} className="p-2 text-[#b08a30] hover:bg-[#b08a30]/10 rounded-lg transition"><Trash2 className="w-4 h-4" /></button>
+                        </td>
                       </tr>
                     )) : <tr><td colSpan={5} className="p-12 text-center text-[#6b8f7b] dark:text-dark-text-muted text-sm">{searchActivities ? `Aucune activité trouvée pour "${searchActivities}"` : "Aucune activité disponible"}</td></tr>}
                   </tbody>
@@ -508,6 +611,63 @@ const AdminDashboard = () => {
             </div>
           )}
 
+          {activeTab === "reviews" && (
+            <div>
+              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center mb-6">
+                <div className="flex-1 w-full sm:w-auto mb-0">
+                  <SearchBar value={searchReviews} onChange={setSearchReviews} placeholder="Rechercher un commentaire, auteur, cible…" />
+                </div>
+                <button 
+                  onClick={fetchReviews} 
+                  disabled={loading}
+                  className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-dark-surface border border-[#e0dcd4] dark:border-dark-border rounded-xl text-sm text-[#2d7a5a] hover:bg-[#f7f5f0] transition shadow-sm disabled:opacity-50"
+                >
+                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />}
+                  Rafraîchir
+                </button>
+              </div>
+              
+              <ResultsBadge filtered={filteredReviews} total={reviews.length} label="commentaire(s)" />
+              <div className="bg-white dark:bg-dark-surface border border-[#e0dcd4] dark:border-dark-border rounded-2xl overflow-hidden shadow-sm overflow-x-auto">
+                <table className="w-full text-left min-w-[600px]">
+                  <thead className="bg-[#f7f5f0] dark:bg-dark-surface-2 text-[#6b8f7b] dark:text-dark-text-muted text-xs uppercase border-b border-[#e0dcd4] dark:border-dark-border">
+                    <tr><th className="p-4 sm:p-6">Auteur</th><th className="p-4 sm:p-6">Commentaire</th><th className="p-4 sm:p-6">Cible</th><th className="p-4 sm:p-6">Note</th><th className="p-4 sm:p-6">Date</th><th className="p-4 sm:p-6 text-right">Actions</th></tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#e0dcd4] dark:divide-dark-border">
+                    {loading && reviews.length === 0 ? (
+                      <tr><td colSpan={6} className="p-12 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto text-[#c9a844]" /><p className="mt-2 text-sm text-[#6b8f7b]">Chargement des commentaires...</p></td></tr>
+                    ) : filteredReviews.length > 0 ? filteredReviews.map((r) => (
+                      <tr key={r.id} className="hover:bg-[#f7f5f0] dark:hover:bg-dark-surface-2 transition">
+                        <td className="p-4 sm:p-6">
+                          <p className="font-bold text-[#1a4a36] dark:text-dark-text text-sm">{r.user?.username || "Anonyme"}</p>
+                          <p className="text-[10px] text-[#6b8f7b]">ID: {r.userId}</p>
+                        </td>
+                        <td className="p-4 sm:p-6 text-[#2d7a5a] text-sm max-w-xs break-words">{r.comment || "(Sans commentaire)"}</td>
+                        <td className="p-4 sm:p-6">
+                          <div className="flex flex-col">
+                            <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-[#f7f5f0] dark:bg-dark-surface-2 text-[#2d7a5a] uppercase w-fit mb-1">{r.targetType}</span>
+                            <span className="text-xs font-medium text-[#1a4a36] dark:text-dark-text truncate max-w-[150px]" title={r.targetName}>{r.targetName || `ID: ${r.targetId}`}</span>
+                          </div>
+                        </td>
+                        <td className="p-4 sm:p-6 text-[#c9a844] font-bold text-sm">{r.rating}/5</td>
+                        <td className="p-4 sm:p-6 text-[#6b8f7b] dark:text-dark-text-muted text-xs">{new Date(r.createdAt).toLocaleDateString()}</td>
+                        <td className="p-4 sm:p-6 text-right">
+                          <button onClick={() => handleDeleteReview(r.id)} className="p-2 text-[#b08a30] hover:bg-[#b08a30]/10 rounded-lg transition"><Trash2 className="w-4 h-4" /></button>
+                        </td>
+                      </tr>
+                    )) : (
+                      <tr>
+                        <td colSpan={6} className="p-12 text-center text-[#6b8f7b] dark:text-dark-text-muted text-sm">
+                          {searchReviews ? `Aucun commentaire trouvé pour "${searchReviews}"` : "Aucun commentaire disponible dans la base de données."}
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
           {activeTab === "transports"   && <TransportManagement />}
           {activeTab === "reservations" && <ReservationsManagement />}
         </div>
@@ -519,7 +679,7 @@ const AdminDashboard = () => {
             <div className="flex justify-between items-center mb-6">
               <div>
                 <h3 className="text-xl font-bold text-[#1a4a36] dark:text-dark-text">
-                  {activeTab === "hotels" ? "Nouvel Hôtel" : activeTab === "activities" ? "Nouvelle Activité" : "Nouvelle Destination"}
+                  {editingId ? (activeTab === "hotels" ? "Modifier l'Hôtel" : activeTab === "activities" ? "Modifier l'Activité" : "Modifier la Destination") : (activeTab === "hotels" ? "Nouvel Hôtel" : activeTab === "activities" ? "Nouvelle Activité" : "Nouvelle Destination")}
                 </h3>
                 {activeTab === "destinations" && (
                   <p className="text-xs text-[#6b8f7b] dark:text-dark-text-muted mt-0.5 flex items-center gap-1">
@@ -533,7 +693,7 @@ const AdminDashboard = () => {
             <form onSubmit={handleSubmit} className="space-y-4">
               <label className="flex flex-col items-center justify-center w-full h-28 sm:h-32 border-2 border-dashed border-[#e0dcd4] dark:border-dark-border rounded-xl cursor-pointer hover:border-[#c9a844] dark:hover:border-[#c9a844] bg-[#f7f5f0] dark:bg-dark-surface-2 transition">
                 <Upload className="w-7 h-7 text-[#6b8f7b] dark:text-dark-text-muted mb-1" />
-                <p className="text-xs text-[#6b8f7b] dark:text-dark-text-muted px-4 text-center truncate w-full">{selectedFile ? selectedFile.name : "Uploader une photo"}</p>
+                <p className="text-xs text-[#6b8f7b] dark:text-dark-text-muted px-4 text-center truncate w-full">{selectedFile ? selectedFile.name : (editingId ? "Changer la photo (optionnel)" : "Uploader une photo")}</p>
                 <input type="file" className="hidden" accept="image/*" onChange={(e) => setSelectedFile(e.target.files[0])} />
               </label>
 
@@ -636,7 +796,7 @@ const AdminDashboard = () => {
               </div>
 
               <button type="submit" disabled={aiLoading} className="w-full bg-[#c9a844] text-white font-bold py-3 rounded-full hover:bg-[#b08a30] transition shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
-                {aiLoading ? "Gemini génère les scores…" : "Publier"}
+                {aiLoading ? "Gemini génère les scores…" : (editingId ? "Enregistrer les modifications" : "Publier")}
               </button>
             </form>
           </div>
