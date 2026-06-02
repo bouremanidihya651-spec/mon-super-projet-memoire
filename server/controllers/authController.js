@@ -1,8 +1,61 @@
-const { User, UserPreference } = require('../models');
+const { User, UserPreference, sequelize } = require('../models');
 const { hashPassword, comparePassword } = require('../utils/passwordUtils');
 const { generateToken } = require('../utils/jwtUtils');
 const { Op } = require('sequelize');
 require('dotenv').config();
+
+/**
+ * Ensure the isBlocked column exists on the Users table.
+ * This is a safety net for databases that were created before this column
+ * was added to the model (Sequelize.sync() does not alter existing tables).
+ */
+const ensureIsBlockedColumn = async () => {
+  try {
+    const dialect = sequelize.getDialect();
+    if (dialect === 'postgres') {
+      await sequelize.query(
+        `ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "isBlocked" BOOLEAN DEFAULT FALSE`
+      );
+    } else if (dialect === 'sqlite') {
+      const [cols] = await sequelize.query(`PRAGMA table_info(Users)`, { type: sequelize.QueryTypes.SELECT });
+      const has = (Array.isArray(cols) ? cols : []).some(c => c.name === 'isBlocked');
+      if (!has) {
+        await sequelize.query(`ALTER TABLE Users ADD COLUMN isBlocked INTEGER DEFAULT 0`);
+      }
+    }
+  } catch (err) {
+    console.warn('[ensureIsBlockedColumn] Failed (non-fatal):', err.message);
+  }
+};
+ensureIsBlockedColumn();
+
+/**
+ * Read isBlocked status using raw SQL — works regardless of model/DB sync state.
+ */
+const getIsBlocked = async (userId) => {
+  try {
+    const dialect = sequelize.getDialect();
+    if (dialect === 'postgres') {
+      const [rows] = await sequelize.query(
+        `SELECT "isBlocked" FROM "Users" WHERE id = $1`,
+        { bind: [userId], type: sequelize.QueryTypes.SELECT }
+      );
+      const row = Array.isArray(rows) ? rows[0] : rows;
+      return row ? Boolean(row.isBlocked) : false;
+    } else {
+      const [rows] = await sequelize.query(
+        `SELECT isBlocked FROM Users WHERE id = ?`,
+        { bind: [userId], type: sequelize.QueryTypes.SELECT }
+      );
+      const row = Array.isArray(rows) ? rows[0] : rows;
+      return row ? Boolean(row.isBlocked) : false;
+    }
+  } catch (err) {
+    console.warn('[getIsBlocked] raw query failed, falling back to model:', err.message);
+    const u = await User.findByPk(userId, { attributes: ['isBlocked'] });
+    return Boolean(u?.isBlocked);
+  }
+};
 
 /**
  * GOOGLE AUTH - Login or Register with Google
@@ -42,8 +95,9 @@ const googleAuth = async (req, res) => {
       // Utilisateur existe - connexion
       console.log('✅ Utilisateur trouvé - connexion');
 
-      // Vérifier si le compte est bloqué
-      if (user.isBlocked) {
+      // Vérifier si le compte est bloqué (raw SQL, model-independent)
+      const isBlocked = await getIsBlocked(user.id);
+      if (isBlocked) {
         console.log('🚫 Compte bloqué - connexion refusée pour:', email);
         return res.status(403).json({
           message: 'Votre compte a été bloqué. Veuillez contacter l\'administrateur.',
@@ -364,8 +418,9 @@ const login = async (req, res) => {
       });
     }
 
-    // Vérifier si le compte est bloqué
-    if (user.isBlocked) {
+    // Vérifier si le compte est bloqué (raw SQL, model-independent)
+    const isBlocked = await getIsBlocked(user.id);
+    if (isBlocked) {
       console.log('🚫 Compte bloqué - connexion refusée pour:', email);
       return res.status(403).json({
         message: 'Votre compte a été bloqué. Veuillez contacter l\'administrateur.',

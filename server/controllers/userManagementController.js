@@ -1,4 +1,4 @@
-const { User } = require('../models');
+const { User, sequelize } = require('../models');
 
 // Get all users
 const getAllUsers = async (req, res) => {
@@ -94,17 +94,54 @@ const deleteUser = async (req, res) => {
   }
 };
 
-// Block a user (admin only)
+// Block a user (admin only) — uses raw SQL to bypass Sequelize model sync issues
 const blockUser = async (req, res) => {
   try {
     const { id } = req.params;
+    console.log('[BLOCK USER] Request to block user id:', id);
 
-    const [updatedRowsCount] = await User.update(
-      { isBlocked: true },
-      { where: { id } }
-    );
+    // Try a model update first (works if column exists with correct type)
+    let result;
+    try {
+      result = await User.update(
+        { isBlocked: true },
+        { where: { id } }
+      );
+      console.log('[BLOCK USER] Sequelize update result:', result);
+    } catch (modelErr) {
+      console.warn('[BLOCK USER] Sequelize update failed, trying raw SQL:', modelErr.message);
+      // Fallback: raw SQL that handles both BOOLEAN and INTEGER columns
+      const dialect = sequelize.getDialect();
+      if (dialect === 'postgres') {
+        result = await sequelize.query(
+          `UPDATE "Users" SET "isBlocked" = TRUE WHERE "id" = $1`,
+          { bind: [id], type: sequelize.QueryTypes.UPDATE }
+        );
+      } else {
+        result = await sequelize.query(
+          `UPDATE Users SET isBlocked = 1 WHERE id = ?`,
+          { bind: [id], type: sequelize.QueryTypes.UPDATE }
+        );
+      }
+      console.log('[BLOCK USER] Raw SQL update result:', result);
+    }
 
-    if (updatedRowsCount === 0) {
+    // Verify the change was actually persisted
+    const [verifyRows] = await sequelize.query(
+      `SELECT id, "isBlocked" FROM "Users" WHERE id = $1`,
+      { bind: [id], type: sequelize.QueryTypes.SELECT }
+    ).catch(async () => {
+      // SQLite fallback (no $-style params, different table quoting)
+      return await sequelize.query(
+        `SELECT id, isBlocked FROM Users WHERE id = ?`,
+        { bind: [id], type: sequelize.QueryTypes.SELECT }
+      );
+    });
+
+    const verify = Array.isArray(verifyRows) ? verifyRows[0] : verifyRows;
+    console.log('[BLOCK USER] Verify after update:', verify);
+
+    if (!verify) {
       return res.status(404).json({ message: 'User not found' });
     }
 
@@ -114,25 +151,57 @@ const blockUser = async (req, res) => {
 
     res.status(200).json({
       message: 'User blocked successfully',
-      user: updatedUser
+      user: updatedUser,
+      verified: verify
     });
   } catch (error) {
-    console.error('Block user error:', error);
+    console.error('[BLOCK USER] Error:', error);
     res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 };
 
-// Unblock a user (admin only)
+// Unblock a user (admin only) — uses raw SQL to bypass Sequelize model sync issues
 const unblockUser = async (req, res) => {
   try {
     const { id } = req.params;
+    console.log('[UNBLOCK USER] Request to unblock user id:', id);
 
-    const [updatedRowsCount] = await User.update(
-      { isBlocked: false },
-      { where: { id } }
-    );
+    let result;
+    try {
+      result = await User.update(
+        { isBlocked: false },
+        { where: { id } }
+      );
+    } catch (modelErr) {
+      console.warn('[UNBLOCK USER] Sequelize update failed, trying raw SQL:', modelErr.message);
+      const dialect = sequelize.getDialect();
+      if (dialect === 'postgres') {
+        result = await sequelize.query(
+          `UPDATE "Users" SET "isBlocked" = FALSE WHERE "id" = $1`,
+          { bind: [id], type: sequelize.QueryTypes.UPDATE }
+        );
+      } else {
+        result = await sequelize.query(
+          `UPDATE Users SET isBlocked = 0 WHERE id = ?`,
+          { bind: [id], type: sequelize.QueryTypes.UPDATE }
+        );
+      }
+    }
 
-    if (updatedRowsCount === 0) {
+    const [verifyRows] = await sequelize.query(
+      `SELECT id, "isBlocked" FROM "Users" WHERE id = $1`,
+      { bind: [id], type: sequelize.QueryTypes.SELECT }
+    ).catch(async () => {
+      return await sequelize.query(
+        `SELECT id, isBlocked FROM Users WHERE id = ?`,
+        { bind: [id], type: sequelize.QueryTypes.SELECT }
+      );
+    });
+
+    const verify = Array.isArray(verifyRows) ? verifyRows[0] : verifyRows;
+    console.log('[UNBLOCK USER] Verify after update:', verify);
+
+    if (!verify) {
       return res.status(404).json({ message: 'User not found' });
     }
 
@@ -142,10 +211,11 @@ const unblockUser = async (req, res) => {
 
     res.status(200).json({
       message: 'User unblocked successfully',
-      user: updatedUser
+      user: updatedUser,
+      verified: verify
     });
   } catch (error) {
-    console.error('Unblock user error:', error);
+    console.error('[UNBLOCK USER] Error:', error);
     res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 };

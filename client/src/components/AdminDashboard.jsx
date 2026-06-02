@@ -267,8 +267,38 @@ const AdminDashboard = () => {
   const handleDeleteActivity = async (id) => { if (window.confirm("Supprimer cette activité ?")) { try { const t = localStorage.getItem("token"); await fetch(`${API_BASE}/api/activities/${id}`, { method: "DELETE", headers: { "Authorization": `Bearer ${t}` } }); fetchActivities(); } catch { alert("Erreur suppression"); } } };
   const handleDeleteUser = async (id) => { if (window.confirm("Supprimer cet utilisateur ?")) { try { const t = localStorage.getItem("token"); await fetch(`${API_BASE}/api/users/${id}`, { method: "DELETE", headers: { "Authorization": `Bearer ${t}` } }); fetchUsers(); } catch { alert("Erreur suppression"); } } };
   const handleDeleteReview = async (id) => { if (window.confirm("Supprimer ce commentaire définitivement ?")) { try { const t = localStorage.getItem("token"); const r = await fetch(`${API_BASE}/api/reviews/${id}`, { method: "DELETE", headers: { "Authorization": `Bearer ${t}` } }); if (r.ok) { fetchReviews(); setSuccessMessage("Commentaire supprimé !"); setShowSuccess(true); setTimeout(() => setShowSuccess(false), 3000); } else { alert("Erreur lors de la suppression"); } } catch { alert("Erreur réseau"); } } };
-  const handleBlockUser = async (id) => { try { const t = localStorage.getItem("token"); await fetch(`${API_BASE}/api/users/${id}/block`, { method: "PUT", headers: { "Authorization": `Bearer ${t}` } }); fetchUsers(); } catch { alert("Erreur blocage"); } };
-  const handleUnblockUser = async (id) => { try { const t = localStorage.getItem("token"); await fetch(`${API_BASE}/api/users/${id}/unblock`, { method: "PUT", headers: { "Authorization": `Bearer ${t}` } }); fetchUsers(); } catch { alert("Erreur déblocage"); } };
+  const handleBlockUser = async (id) => {
+    try {
+      const t = localStorage.getItem("token");
+      const r = await fetch(`${API_BASE}/api/users/${id}/block`, { method: "PUT", headers: { "Authorization": `Bearer ${t}` } });
+      const data = await r.json().catch(() => ({}));
+      if (r.ok) {
+        console.log('Block OK, verified:', data.verified);
+        setSuccessMessage('Utilisateur bloqué avec succès');
+        setShowSuccess(true);
+        setTimeout(() => setShowSuccess(false), 3000);
+      } else {
+        alert(`Erreur blocage: ${data.error || r.statusText}`);
+      }
+      fetchUsers();
+    } catch (e) { alert("Erreur blocage: " + e.message); }
+  };
+  const handleUnblockUser = async (id) => {
+    try {
+      const t = localStorage.getItem("token");
+      const r = await fetch(`${API_BASE}/api/users/${id}/unblock`, { method: "PUT", headers: { "Authorization": `Bearer ${t}` } });
+      const data = await r.json().catch(() => ({}));
+      if (r.ok) {
+        console.log('Unblock OK, verified:', data.verified);
+        setSuccessMessage('Utilisateur débloqué avec succès');
+        setShowSuccess(true);
+        setTimeout(() => setShowSuccess(false), 3000);
+      } else {
+        alert(`Erreur déblocage: ${data.error || r.statusText}`);
+      }
+      fetchUsers();
+    } catch (e) { alert("Erreur déblocage: " + e.message); }
+  };
 
   const handleOpenCreate = () => {
     setEditingId(null);

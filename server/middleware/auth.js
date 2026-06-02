@@ -1,6 +1,32 @@
 const { verifyToken } = require('../utils/jwtUtils');
-const { User } = require('../models');
+const { sequelize } = require('../models');
 require('dotenv').config();
+
+/**
+ * Read isBlocked status using raw SQL — works regardless of model/DB sync state.
+ */
+const getIsBlocked = async (userId) => {
+  try {
+    const dialect = sequelize.getDialect();
+    if (dialect === 'postgres') {
+      const [rows] = await sequelize.query(
+        `SELECT "isBlocked" FROM "Users" WHERE id = $1`,
+        { bind: [userId], type: sequelize.QueryTypes.SELECT }
+      );
+      const row = Array.isArray(rows) ? rows[0] : rows;
+      return row ? Boolean(row.isBlocked) : false;
+    } else {
+      const [rows] = await sequelize.query(
+        `SELECT isBlocked FROM Users WHERE id = ?`,
+        { bind: [userId], type: sequelize.QueryTypes.SELECT }
+      );
+      const row = Array.isArray(rows) ? rows[0] : rows;
+      return row ? Boolean(row.isBlocked) : false;
+    }
+  } catch {
+    return false;
+  }
+};
 
 /**
  * Middleware to authenticate user using JWT token
@@ -24,10 +50,8 @@ const authenticateToken = async (req, res, next) => {
   // Re-check blocking status on every authenticated request
   // (handles the case where an admin blocks a user mid-session)
   try {
-    const user = await User.findByPk(decoded.id, {
-      attributes: ['id', 'role', 'isBlocked']
-    });
-    if (user && user.isBlocked) {
+    const isBlocked = await getIsBlocked(decoded.id);
+    if (isBlocked) {
       return res.status(403).json({
         message: 'Votre compte a été bloqué. Veuillez contacter l\'administrateur.',
         code: 'ACCOUNT_BLOCKED'
