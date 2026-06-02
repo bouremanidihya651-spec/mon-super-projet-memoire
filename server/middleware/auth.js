@@ -53,7 +53,7 @@ const authenticateToken = async (req, res, next) => {
     const isBlocked = await getIsBlocked(decoded.id);
     if (isBlocked) {
       return res.status(403).json({
-        message: 'Votre compte a été bloqué. Veuillez contacter l\'administrateur.',
+        message: 'Votre compte a été bloqué.',
         code: 'ACCOUNT_BLOCKED'
       });
     }

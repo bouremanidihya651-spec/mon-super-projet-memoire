@@ -266,7 +266,7 @@ const AuthModal = ({ isOpen, onClose, initialView = 'login' }) => {
                     <div>
                       <p className="text-red-300 font-semibold text-sm mb-1">Compte bloqué</p>
                       <p className="text-red-200/90 text-xs leading-relaxed">
-                        {blockedMessage || 'Votre compte a été bloqué. Veuillez contacter l\'administrateur.'}
+                        {blockedMessage || 'Votre compte a été bloqué.'}
                       </p>
                     </div>
                   </div>

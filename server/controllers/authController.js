@@ -100,7 +100,7 @@ const googleAuth = async (req, res) => {
       if (isBlocked) {
         console.log('🚫 Compte bloqué - connexion refusée pour:', email);
         return res.status(403).json({
-          message: 'Votre compte a été bloqué. Veuillez contacter l\'administrateur.',
+          message: 'Votre compte a été bloqué.',
           code: 'ACCOUNT_BLOCKED'
         });
       }
@@ -423,7 +423,7 @@ const login = async (req, res) => {
     if (isBlocked) {
       console.log('🚫 Compte bloqué - connexion refusée pour:', email);
       return res.status(403).json({
-        message: 'Votre compte a été bloqué. Veuillez contacter l\'administrateur.',
+        message: 'Votre compte a été bloqué.',
         code: 'ACCOUNT_BLOCKED'
       });
     }

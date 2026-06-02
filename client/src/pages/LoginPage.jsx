@@ -206,7 +206,7 @@ const LoginPage = () => {
                   background: isDark ? 'rgba(220,38,38,0.12)' : '#fef2f2',
                   border: '2px solid #dc2626',
                   borderRadius: 12, padding: '14px 16px', marginBottom: 18,
-                  display: 'flex', alignItems: 'flex-start', gap: 10,
+                  display: 'flex', alignItems: 'center', gap: 10,
                 }}>
                   <div style={{
                     width: 32, height: 32, borderRadius: '50%',
@@ -214,14 +214,9 @@ const LoginPage = () => {
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     flexShrink: 0, fontSize: 18, fontWeight: 700,
                   }}>⛔</div>
-                  <div>
-                    <p style={{ fontSize: 14, fontWeight: 700, color: '#dc2626', margin: '0 0 4px 0' }}>
-                      Votre compte a été bloqué
-                    </p>
-                    <p style={{ fontSize: 12, color: isDark ? '#fca5a5' : '#7f1d1d', margin: 0, lineHeight: 1.5 }}>
-                      {blockedMessage || 'Veuillez contacter l\'administrateur pour plus d\'informations.'}
-                    </p>
-                  </div>
+                  <p style={{ fontSize: 14, fontWeight: 600, color: '#dc2626', margin: 0 }}>
+                    {blockedMessage || 'Votre compte a été bloqué.'}
+                  </p>
                 </div>
               )}
               {submitError && (
