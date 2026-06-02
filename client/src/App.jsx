@@ -20,6 +20,7 @@ import RegisterPage from './pages/RegisterPage';
 import PaymentSuccess from './pages/PaymentSuccess';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
+import ErrorBoundary from './components/ErrorBoundary';
 
 import UserDashboard from './components/UserDashboard/index';
 import Settings from './components/Settings';
@@ -193,8 +194,20 @@ const AppContent = () => {
           </ConditionalLayout>
         } />
 
-        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-        <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+        <Route path="/forgot-password" element={
+          <ErrorBoundary>
+            <ConditionalLayout isChatbotOpen={isChatbotOpen} toggleChatbot={toggleChatbot} openAuthModal={openAuthModal}>
+              <ForgotPasswordPage />
+            </ConditionalLayout>
+          </ErrorBoundary>
+        } />
+        <Route path="/reset-password/:token" element={
+          <ErrorBoundary>
+            <ConditionalLayout isChatbotOpen={isChatbotOpen} toggleChatbot={toggleChatbot} openAuthModal={openAuthModal}>
+              <ResetPasswordPage />
+            </ConditionalLayout>
+          </ErrorBoundary>
+        } />
       </Routes>
 
       {/* AuthModal rendered outside Routes to maintain state */}
