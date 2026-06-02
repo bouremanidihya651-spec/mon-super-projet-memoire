@@ -312,6 +312,7 @@ const createReservation = async (req, res) => {
     res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 };
+
 // Create invoice for a reservation
 const createInvoice = async (req, res) => {
   try {
@@ -341,160 +342,161 @@ const getUserInvoices = async (req, res) => {
       where: { user_id: req.user.id },
       include: [{
         model: Reservation, as: 'reservation',
+        required: false,
         include: [
-          { model: Transport, as: 'transport', attributes: ['id', 'name', 'category', 'type', 'image_url'] },
-          { model: Hotel, as: 'hotel', attributes: ['id', 'name', 'location', 'city', 'image_url'] },
-          { model: Activity, as: 'activity', attributes: ['id', 'name', 'location', 'city', 'image_url'] }
+          { model: Transport, as: 'transport', required: false, attributes: ['id', 'name', 'category', 'type', 'image_url'] },
+          { model: Hotel, as: 'hotel', required: false, attributes: ['id', 'name', 'location', 'city', 'image_url'] },
+          { model: Activity, as: 'activity', required: false, attributes: ['id', 'name', 'location', 'city', 'image_url'] }
         ]
       }],
-      order: [['created_at', 'DESC']]
+      order: [['created_at', 'DESC']],
+      subQuery: false
     });
     res.status(200).json({ success: true, count: invoices.length, invoices });
   } catch (error) {
-    console.error('Get user invoices error:', error);
-    res.status(500).json({ message: 'Internal server error', error: error.message });
+    console.error('[GET USER INVOICES] Error name:', error.name);
+    console.error('[GET USER INVOICES] Error message:', error.message);
+    console.error('[GET USER INVOICES] Error parent:', error.parent?.message);
+    console.error('[GET USER INVOICES] SQL:', error.sql);
+    console.error('[GET USER INVOICES] User ID:', req.user.id);
+    console.error('[GET USER INVOICES] Stack:', error.stack);
+    res.status(500).json({
+      message: 'Internal server error',
+      error: error.message,
+      detail: error.parent?.message || null
+    });
   }
 };
 
-// Get invoice for a reservation
+// Get invoice for a reservation — VERSION CORRIGÉE
 const getReservationInvoice = async (req, res) => {
   try {
     const { id } = req.params;
-    const reservation = await Reservation.findByPk(id, {
-      include: [
-        { model: Transport, as: 'transport', attributes: ['id', 'name', 'category', 'type', 'image_url', 'company', 'departure_airport', 'arrival_airport', 'departure_city', 'arrival_city', 'flight_number', 'departure_time', 'arrival_time', 'duration', 'car_model', 'rental_agency', 'pickup_location', 'deposit'] },
-        { model: Hotel, as: 'hotel', attributes: ['id', 'name', 'stars', 'location', 'city', 'price', 'image_url', 'tags'] },
-        { model: Activity, as: 'activity', attributes: ['id', 'name', 'category', 'location', 'city', 'price', 'image_url', 'duration', 'tags'] }
-      ]
-    });
-    if (!reservation) return res.status(404).json({ message: 'Reservation not found' });
+    
+    // 1. Vérifier la réservation (sans include pour éviter les erreurs d'association)
+    const reservation = await Reservation.findByPk(id);
+    if (!reservation) {
+      return res.status(404).json({ message: 'Reservation not found' });
+    }
+    
+    // 2. Vérifier les permissions
     if (req.user.role !== 'admin' && reservation.user_id !== req.user.id) {
       return res.status(403).json({ message: 'Unauthorized' });
     }
+
+    // 3. Récupérer la facture
     const invoice = await Invoice.findOne({
       where: { reservation_id: id }
     });
-    if (!invoice) return res.status(404).json({ message: 'Invoice not found' });
-
-    // Generate proper invoice details based on reservation type
-    let invoiceDetails = invoice.invoice_details;
-    const reservationType = reservation.trip_type;
-
-    try {
     
-    // Re-generate invoice details with full data if needed
-    if (reservationType === 'hotel' && reservation.hotel) {
-      const checkIn = new Date(reservation.departure_date);
-      const checkOut = new Date(reservation.return_date);
-      const numberOfNights = Math.max(1, Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24)));
-      invoiceDetails = generateInvoiceDetails('hotel', {
-        hotel: {
-          name: reservation.hotel.name,
-          stars: reservation.hotel.stars,
-          location: reservation.hotel.location,
-          city: reservation.hotel.city,
-          amenities: reservation.hotel.tags
-        },
-        departure_date: reservation.departure_date,
-        return_date: reservation.return_date,
-        number_of_nights: numberOfNights,
-        adults: reservation.adults,
-        children: reservation.children || 0,
-        unit_price: reservation.unit_price
-      });
-    } else if (reservationType === 'activity' && reservation.activity) {
-      invoiceDetails = generateInvoiceDetails('activity', {
-        activity: {
-          name: reservation.activity.name,
-          category: reservation.activity.category,
-          location: reservation.activity.location,
-          city: reservation.activity.city,
-          duration: reservation.activity.duration,
-          highlights: reservation.activity.tags
-        },
-        departure_date: reservation.departure_date,
-        pickup_time: reservation.pickup_time,
-        adults: reservation.adults,
-        children: reservation.children || 0,
-        unit_price: reservation.unit_price
-      });
-    } else if (reservationType === 'car_rental' && reservation.transport) {
-      const pickup = new Date(reservation.departure_date);
-      const returnD = new Date(reservation.return_date);
-      const rentalDays = Math.max(1, Math.ceil((returnD - pickup) / (1000 * 60 * 60 * 24))) + 1;
-      invoiceDetails = generateInvoiceDetails('car_rental', {
-        transport: {
-          car_model: reservation.transport.car_model,
-          rental_agency: reservation.transport.rental_agency,
-          category: reservation.transport.category,
-          pickup_location: reservation.transport.pickup_location,
-          deposit: reservation.transport.deposit
-        },
-        departure_date: reservation.departure_date,
-        return_date: reservation.return_date,
-        pickup_time: reservation.pickup_time,
-        return_time: reservation.return_time,
-        rental_days: rentalDays,
-        driver_details: reservation.travelers_details ? reservation.travelers_details[0] : {},
-        unit_price: reservation.unit_price
-      });
-    } else if (reservationType === 'ground_transport' && reservation.transport) {
-      invoiceDetails = generateInvoiceDetails('ground_transport', {
-        transport: {
-          name: reservation.transport.name,
-          type: reservation.transport.type,
-          company: reservation.transport.company,
-          departure_city: reservation.transport.departure_city,
-          arrival_city: reservation.transport.arrival_city
-        },
-        departure_date: reservation.departure_date,
-        pickup_time: reservation.pickup_time,
-        adults: reservation.adults,
-        children: reservation.children || 0,
-        unit_price: reservation.unit_price
-      });
-    } else if (reservation.transport) {
-      invoiceDetails = generateInvoiceDetails('flight', {
-        transport: {
-          flight_number: reservation.transport.flight_number,
-          company: reservation.transport.company,
-          departure_city: reservation.transport.departure_city,
-          arrival_city: reservation.transport.arrival_city,
-          departure_airport: reservation.transport.departure_airport,
-          arrival_airport: reservation.transport.arrival_airport,
-          departure_time: reservation.transport.departure_time,
-          arrival_time: reservation.transport.arrival_time,
-          duration: reservation.transport.duration
-        },
-        trip_type: reservation.trip_type,
-        departure_date: reservation.departure_date,
-        return_date: reservation.return_date,
-        adults: reservation.adults,
-        children: reservation.children || 0,
-        infants: reservation.infants || 0,
-        unit_price: reservation.unit_price
-      });
+    if (!invoice) {
+      return res.status(404).json({ message: 'Invoice not found' });
     }
 
-    } catch (detailsError) {
-      console.error('Invoice details regeneration failed, falling back to stored details:', detailsError);
-      invoiceDetails = invoice.invoice_details;
+    // 4. Parser invoice_details en toute sécurité
+    let details = {};
+    try {
+      if (typeof invoice.invoice_details === 'string') {
+        details = JSON.parse(invoice.invoice_details);
+      } else if (invoice.invoice_details && typeof invoice.invoice_details === 'object') {
+        details = invoice.invoice_details;
+      }
+    } catch (e) {
+      console.warn('Could not parse invoice_details:', e.message);
+      details = {};
     }
 
-    res.status(200).json({
+    // 5. Récupérer le transport séparément si besoin
+    let transportData = null;
+    if (reservation.transport_id) {
+      try {
+        transportData = await Transport.findByPk(reservation.transport_id, {
+          attributes: ['id', 'name', 'category', 'type', 'price', 'image_url', 'company', 
+                       'departure_airport', 'arrival_airport', 'departure_city', 'arrival_city',
+                       'flight_number', 'departure_time', 'arrival_time', 'duration',
+                       'car_model', 'rental_agency', 'pickup_location', 'deposit']
+        });
+      } catch (e) {
+        console.warn('Could not fetch transport:', e.message);
+      }
+    }
+
+    // 6. Récupérer l'hôtel séparément si besoin
+    let hotelData = null;
+    if (reservation.hotel_id) {
+      try {
+        hotelData = await Hotel.findByPk(reservation.hotel_id, {
+          attributes: ['id', 'name', 'stars', 'location', 'city', 'price', 'image_url', 'tags']
+        });
+      } catch (e) {
+        console.warn('Could not fetch hotel:', e.message);
+      }
+    }
+
+    // 7. Récupérer l'activité séparément si besoin
+    let activityData = null;
+    if (reservation.activity_id) {
+      try {
+        activityData = await Activity.findByPk(reservation.activity_id, {
+          attributes: ['id', 'name', 'category', 'location', 'city', 'price', 'image_url', 'duration', 'tags']
+        });
+      } catch (e) {
+        console.warn('Could not fetch activity:', e.message);
+      }
+    }
+
+    const payload = {
       success: true,
       invoice: {
-        ...invoice.toJSON(),
-        invoice_details: invoiceDetails,
+        id: invoice.id,
+        invoice_number: invoice.invoice_number,
+        user_id: invoice.user_id,
+        reservation_id: invoice.reservation_id,
+        invoice_date: invoice.invoice_date,
+        amount: invoice.amount,
+        currency: invoice.currency,
+        payment_method: invoice.payment_method,
+        payment_status: invoice.payment_status,
+        customer_name: invoice.customer_name,
+        customer_email: invoice.customer_email,
+        customer_phone: invoice.customer_phone,
+        notes: invoice.notes,
+        invoice_details: details,
         reservation: {
-          ...reservation.toJSON(),
-          trip_type: reservationType
+          id: reservation.id,
+          trip_type: reservation.trip_type,
+          departure_date: reservation.departure_date,
+          return_date: reservation.return_date,
+          adults: reservation.adults,
+          children: reservation.children,
+          infants: reservation.infants,
+          unit_price: reservation.unit_price,
+          total_price: reservation.total_price,
+          status: reservation.status,
+          payment_status: reservation.payment_status,
+          confirmation_number: reservation.confirmation_number,
+          transport: transportData,
+          hotel: hotelData,
+          activity: activityData
         }
       }
-    });
+    };
+
+    return res.status(200).json(payload);
   } catch (error) {
-    console.error('Get reservation invoice error:', error);
-    res.status(500).json({ message: 'Internal server error', error: error.message });
+    console.error('=== getReservationInvoice ERROR ===');
+    console.error('Error name:', error.name);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+    if (error.parent) {
+      console.error('SQL error:', error.parent.message);
+      console.error('SQL:', error.sql);
+    }
+    return res.status(500).json({ 
+      message: 'Internal server error', 
+      error: error.message,
+      detail: error.parent?.message || null
+    });
   }
 };
 
@@ -558,7 +560,7 @@ const cancelReservation = async (req, res) => {
   }
 };
 
-// Create Car Rental Reservation
+// Create Car Rental Reservation — VERSION CORRIGÉE (retourne aussi l'invoice)
 const createCarRentalReservation = async (req, res) => {
   try {
     const { transport_id, pickup_date, return_date, pickup_time, return_time, driver_details, payment_method, notes } = req.body;
@@ -605,7 +607,7 @@ const createCarRentalReservation = async (req, res) => {
     };
 
     const invoiceNumber = await generateInvoiceNumber();
-    await Invoice.create({
+    const invoice = await Invoice.create({
       invoice_number: invoiceNumber,
       user_id: req.user.id,
       reservation_id: reservation.id,
@@ -626,7 +628,22 @@ const createCarRentalReservation = async (req, res) => {
         attributes: ['id', 'name', 'category', 'type', 'price', 'image_url', 'company', 'car_model', 'rental_agency']
       }]
     });
-    res.status(201).json({ success: true, message: 'Car rental reservation created successfully', reservation: populatedReservation });
+    
+    // Retourner aussi l'invoice pour éviter un appel séparé
+    res.status(201).json({ 
+      success: true, 
+      message: 'Car rental reservation created successfully', 
+      reservation: populatedReservation,
+      invoice: {
+        id: invoice.id,
+        invoice_number: invoice.invoice_number,
+        amount: invoice.amount,
+        currency: invoice.currency,
+        payment_method: invoice.payment_method,
+        payment_status: invoice.payment_status,
+        invoice_details: invoiceDetails
+      }
+    });
   } catch (error) {
     console.error('Create car rental reservation error:', error);
     res.status(500).json({ message: 'Internal server error', error: error.message });

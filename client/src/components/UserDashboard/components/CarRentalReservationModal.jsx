@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { loadStripe } from '@stripe/stripe-js';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { generateAndDownloadInvoice } from '../../../utils/generateFacture';
 import { generateAndDownloadBonReservation } from '../../../utils/generateBonReservation';
 import { useTheme } from '../../../contexts/ThemeContext';
 
@@ -19,7 +18,7 @@ const CarRentalReservationModal = ({ isOpen, onClose, transport, user }) => {
   const [returnDate, setReturnDate] = useState('');
   const [pickupTime, setPickupTime] = useState('10:00');
   const [returnTime, setReturnTime] = useState('10:00');
-  const [paymentMethod, setPaymentMethod] = useState('chargily'); // chargily, stripe, on_arrival
+  const [paymentMethod, setPaymentMethod] = useState('chargily');
   const [driverDetails, setDriverDetails] = useState({
     firstName: '',
     lastName: '',
@@ -33,6 +32,8 @@ const CarRentalReservationModal = ({ isOpen, onClose, transport, user }) => {
   const [confirmationNumber, setConfirmationNumber] = useState('');
   const [invoiceData, setInvoiceData] = useState(null);
   const [error, setError] = useState('');
+
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
   // Initialize default dates
   React.useEffect(() => {
@@ -50,6 +51,7 @@ const CarRentalReservationModal = ({ isOpen, onClose, transport, user }) => {
       setStep(1);
       setReservationComplete(false);
       setError('');
+      setInvoiceData(null);
     }
   }, [isOpen]);
 
@@ -78,60 +80,11 @@ const CarRentalReservationModal = ({ isOpen, onClose, transport, user }) => {
     setDriverDetails(prev => ({ ...prev, [field]: value }));
   };
 
-  const createInvoice = async (reservation, paymentStatus) => {
-    try {
-      const token = localStorage.getItem('token');
-
-      // Generate invoice number
-      const invoiceNumber = `INV-${Date.now().toString().slice(-6)}`;
-
-      const invoiceData = {
-        invoice_number: invoiceNumber,
-        reservation_id: reservation.id,
-        amount: totalPrice,
-        currency: 'DZD',
-        payment_method: paymentMethod,
-        payment_status: paymentStatus,
-        customer_name: `${driverDetails.firstName || ''} ${driverDetails.lastName || ''}`.trim(),
-        customer_email: driverDetails.email || '',
-        customer_phone: driverDetails.phone || '',
-        invoice_details: {
-          destination: transport?.destination?.name || '',
-          transportName: transport?.name || '',
-          carModel: transport?.car_model || '',
-          rentalAgency: transport?.rental_agency || '',
-          pickupLocation: transport?.pickup_location || '',
-          pickupDate: pickupDate,
-          returnDate: returnDate,
-          rentalDays: rentalDays,
-          unitPrice: transport?.price || 0
-        }
-      };
-
-      // Save invoice to database
-      const response = await axios.post((import.meta.env.VITE_API_URL || 'http://localhost:3000') + '/api/reservations/create-invoice', invoiceData, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      return response.data.invoice;
-    } catch (error) {
-      console.error('Error creating invoice:', error);
-      return null;
-    }
-  };
-
   const handleChargilyPayment = async (reservation) => {
     try {
       const token = localStorage.getItem('token');
 
-      console.log('=== Creating Chargily Checkout ===');
-      console.log('Amount:', totalPrice);
-      console.log('Reservation ID:', reservation.id);
-
-      const response = await axios.post((import.meta.env.VITE_API_URL || 'http://localhost:3000') + '/api/payment/create-chargily-checkout', {
+      const response = await axios.post(`${API_URL}/api/payment/create-chargily-checkout`, {
         amount: totalPrice,
         currency: 'dzd',
         reservationId: reservation.id,
@@ -141,12 +94,8 @@ const CarRentalReservationModal = ({ isOpen, onClose, transport, user }) => {
           phone: driverDetails.phone || ''
         }
       }, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        headers: { 'Authorization': `Bearer ${token}` }
       });
-
-      console.log('Chargily checkout created:', response.data);
 
       if (response.data.checkoutUrl) {
         window.location.href = response.data.checkoutUrl;
@@ -154,9 +103,6 @@ const CarRentalReservationModal = ({ isOpen, onClose, transport, user }) => {
         throw new Error('URL de paiement non reçue du serveur');
       }
     } catch (error) {
-      console.error('Chargily payment error:', error);
-      console.error('Error response:', error.response?.data);
-
       let errorMsg = 'Erreur lors de la création du paiement Chargily';
 
       if (error.response?.data?.details) {
@@ -167,7 +113,6 @@ const CarRentalReservationModal = ({ isOpen, onClose, transport, user }) => {
         errorMsg = error.message;
       }
 
-      // Add server availability check
       if (error.code === 'ERR_NETWORK') {
         errorMsg = "Le serveur backend n'est pas accessible. Veuillez vérifier que le serveur est démarré (port 3000).";
       }
@@ -180,22 +125,18 @@ const CarRentalReservationModal = ({ isOpen, onClose, transport, user }) => {
     try {
       const token = localStorage.getItem('token');
 
-      const response = await axios.post((import.meta.env.VITE_API_URL || 'http://localhost:3000') + '/api/payment/create-stripe-checkout', {
+      const response = await axios.post(`${API_URL}/api/payment/create-stripe-checkout`, {
         amount: totalPrice,
         currency: 'dzd',
         reservationId: reservation.id
       }, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        headers: { 'Authorization': `Bearer ${token}` }
       });
 
-      // Redirect to Stripe Checkout page
       if (response.data.checkoutUrl) {
         window.location.href = response.data.checkoutUrl;
       }
     } catch (error) {
-      console.error('Stripe payment error:', error);
       const errorMessage = error.response?.data?.details || error.response?.data?.error || error.message || 'Erreur lors de la création du paiement Stripe';
       throw new Error(errorMessage);
     }
@@ -208,8 +149,8 @@ const CarRentalReservationModal = ({ isOpen, onClose, transport, user }) => {
     try {
       const token = localStorage.getItem('token');
 
-      // Create reservation
-      const reservationResponse = await axios.post((import.meta.env.VITE_API_URL || 'http://localhost:3000') + '/api/reservations/car-rental', {
+      // 1. Créer la réservation
+      const reservationResponse = await axios.post(`${API_URL}/api/reservations/car-rental`, {
         transport_id: transport.id,
         pickup_date: pickupDate,
         return_date: returnDate,
@@ -228,7 +169,7 @@ const CarRentalReservationModal = ({ isOpen, onClose, transport, user }) => {
       const reservation = reservationResponse.data.reservation;
       setConfirmationNumber(reservation.confirmation_number);
 
-      // Handle payment based on method
+      // 2. Paiement Chargily ou Stripe → redirection
       if (paymentMethod === 'chargily') {
         await handleChargilyPayment(reservation);
         return;
@@ -237,19 +178,36 @@ const CarRentalReservationModal = ({ isOpen, onClose, transport, user }) => {
         return;
       }
 
-      // For on_arrival (no redirect needed)
-      const paymentStatus = 'pending';
+      // 3. Paiement "on_arrival" : on ne récupère PAS la facture du backend
+      // Le backend l'a déjà créée en base. On génère le bon localement.
+      const invoiceData = {
+        invoice_number: `INV-${Date.now().toString().slice(-6)}`,
+        amount: totalPrice,
+        currency: 'DZD',
+        payment_method: paymentMethod,
+        payment_status: 'pending',
+        customer_name: `${driverDetails.firstName || ''} ${driverDetails.lastName || ''}`.trim(),
+        customer_email: driverDetails.email || '',
+        customer_phone: driverDetails.phone || '',
+        invoice_details: {
+          destination: transport?.destination?.name || '',
+          transportName: transport?.name || '',
+          carModel: transport?.car_model || '',
+          rentalAgency: transport?.rental_agency || '',
+          pickupLocation: transport?.pickup_location || '',
+          pickupDate: pickupDate,
+          returnDate: returnDate,
+          rentalDays: rentalDays,
+          unitPrice: transport?.price || 0
+        }
+      };
 
-      // Create invoice
-      const invoice = await createInvoice(reservation, paymentStatus);
-
-      if (invoice) {
-        setInvoiceData(invoice);
-        generateAndDownloadBonReservation(reservation, invoice);
-      }
+      setInvoiceData(invoiceData);
+      generateAndDownloadBonReservation(reservation, invoiceData);
 
       setReservationComplete(true);
       setStep(4);
+
     } catch (error) {
       console.error('Reservation error:', error);
       setError(error.response?.data?.message || error.message || 'Erreur lors de la réservation');
@@ -305,7 +263,7 @@ const CarRentalReservationModal = ({ isOpen, onClose, transport, user }) => {
               <div style={{ backgroundColor: isDark ? '#2d7a5a1a' : '#f7f5f0' }} className="rounded-full p-4 mb-6">
                 <p style={{ color: t.textMuted }} className="text-sm mb-2">Numéro de facture</p>
                 <p style={{ color: t.text }} className="text-lg font-bold">{invoiceData.invoice_number}</p>
-                <p style={{ color: t.textMuted }} className="text-xs mt-2">La facture a été téléchargée automatiquement</p>
+                <p style={{ color: t.textMuted }} className="text-xs mt-2">Le bon de réservation a été téléchargé automatiquement</p>
               </div>
             )}
 

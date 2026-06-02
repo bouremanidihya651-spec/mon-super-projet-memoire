@@ -38,11 +38,16 @@ const InvoiceModal = ({ isOpen, reservationId, onClose }) => {
         setError(`Impossible de charger la facture.${response.data.message ? ' (' + response.data.message + ')' : ''}`);
       }
     } catch (err) {
-      console.error('Error fetching invoice:', err);
+      console.error('=== INVOICE FETCH ERROR ===');
+      console.error('URL:', `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/reservations/${reservationId}/invoice`);
+      console.error('Status:', err.response?.status);
+      console.error('Response data:', err.response?.data);
+      console.error('Error message:', err.message);
       const status = err.response?.status;
-      const serverMsg = err.response?.data?.message || err.response?.data?.error;
+      const data = err.response?.data;
+      const serverMsg = data?.message || data?.error || err.message;
       setError(
-        `Une erreur est survenue lors de la récupération de votre facture.${status ? ' [' + status + ']' : ''}${serverMsg ? ' ' + serverMsg : ''}`
+        `Une erreur est survenue lors de la récupération de votre facture.${status ? ' [' + status + ']' : ''}${serverMsg ? ' ' + serverMsg : ''}${data?.stack ? '\n\nDétails serveur : ' + data.stack.split('\n')[0] : ''}`
       );
     } finally {
       setLoading(false);
