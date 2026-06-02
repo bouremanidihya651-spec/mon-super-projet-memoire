@@ -18,6 +18,8 @@ import Contact from './pages/Contact';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import PaymentSuccess from './pages/PaymentSuccess';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 
 import UserDashboard from './components/UserDashboard/index';
 import Settings from './components/Settings';
@@ -190,6 +192,9 @@ const AppContent = () => {
             <PaymentSuccess />
           </ConditionalLayout>
         } />
+
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
       </Routes>
 
       {/* AuthModal rendered outside Routes to maintain state */}

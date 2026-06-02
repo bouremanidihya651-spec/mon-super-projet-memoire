@@ -1,7 +1,9 @@
 const { User, UserPreference, sequelize } = require('../models');
 const { hashPassword, comparePassword } = require('../utils/passwordUtils');
 const { generateToken } = require('../utils/jwtUtils');
+const { sendPasswordResetEmail } = require('../utils/emailService');
 const { Op } = require('sequelize');
+const crypto = require('crypto');
 require('dotenv').config();
 
 /**
@@ -28,6 +30,35 @@ const ensureIsBlockedColumn = async () => {
   }
 };
 ensureIsBlockedColumn();
+
+/**
+ * Ensure the password-reset columns exist on the Users table.
+ */
+const ensurePasswordResetColumns = async () => {
+  try {
+    const dialect = sequelize.getDialect();
+    if (dialect === 'postgres') {
+      await sequelize.query(
+        `ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "resetPasswordToken" VARCHAR(255)`
+      );
+      await sequelize.query(
+        `ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "resetPasswordExpires" TIMESTAMP WITH TIME ZONE`
+      );
+    } else if (dialect === 'sqlite') {
+      const [cols] = await sequelize.query(`PRAGMA table_info(Users)`, { type: sequelize.QueryTypes.SELECT });
+      const names = (Array.isArray(cols) ? cols : []).map(c => c.name);
+      if (!names.includes('resetPasswordToken')) {
+        await sequelize.query(`ALTER TABLE Users ADD COLUMN resetPasswordToken TEXT`);
+      }
+      if (!names.includes('resetPasswordExpires')) {
+        await sequelize.query(`ALTER TABLE Users ADD COLUMN resetPasswordExpires DATETIME`);
+      }
+    }
+  } catch (err) {
+    console.warn('[ensurePasswordResetColumns] Failed (non-fatal):', err.message);
+  }
+};
+ensurePasswordResetColumns();
 
 /**
  * Read isBlocked status using raw SQL — works regardless of model/DB sync state.
@@ -485,9 +516,122 @@ const logout = (req, res) => {
   });
 };
 
+/**
+ * FORGOT PASSWORD — Step 1
+ * Body: { email }
+ * - Always returns 200 (no email enumeration)
+ * - Generates a random token, stores its hash + expiry in DB
+ * - Sends the plain token by email (or logs to console in dev)
+ */
+const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ message: 'Email requis' });
+    }
+
+    const user = await User.findOne({ where: { email } });
+    const genericMsg = 'Si cette adresse existe dans notre base, un e-mail de réinitialisation vient d\'être envoyé.';
+
+    // Always respond 200 with the same message to avoid email enumeration
+    if (!user) {
+      console.log('[FORGOT] No user for email:', email);
+      return res.status(200).json({ message: genericMsg });
+    }
+
+    // Blocked users should not receive a reset email (security)
+    const isBlocked = await getIsBlocked(user.id);
+    if (isBlocked) {
+      console.log('[FORGOT] Blocked user attempted reset:', email);
+      return res.status(200).json({ message: genericMsg });
+    }
+
+    // Generate a 32-byte random token (URL-safe base64)
+    const rawToken = crypto.randomBytes(32).toString('base64url');
+    const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+    // Persist the HASH (never the raw token) + expiry
+    user.resetPasswordToken = tokenHash;
+    user.resetPasswordExpires = expiresAt;
+    await user.save();
+
+    const frontendBase = (process.env.CLIENT_URL || process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
+    const resetUrl = `${frontendBase}/reset-password/${rawToken}`;
+
+    console.log('[FORGOT] Sending reset email to:', email);
+    await sendPasswordResetEmail({
+      to: user.email,
+      resetUrl,
+      userName: [user.firstName, user.lastName].filter(Boolean).join(' ') || user.username
+    });
+
+    return res.status(200).json({ message: genericMsg });
+  } catch (error) {
+    console.error('[FORGOT] Error:', error);
+    // Still return generic 200 to the client — the issue is server-side
+    return res.status(200).json({
+      message: 'Si cette adresse existe dans notre base, un e-mail de réinitialisation vient d\'être envoyé.'
+    });
+  }
+};
+
+/**
+ * RESET PASSWORD — Step 2
+ * Body: { token, newPassword }
+ * - Hashes the incoming token, looks it up in DB
+ * - Verifies it hasn't expired
+ * - Updates the password and clears the reset fields
+ */
+const resetPassword = async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+    if (!token || !newPassword) {
+      return res.status(400).json({ message: 'Token et nouveau mot de passe requis' });
+    }
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: 'Le mot de passe doit contenir au moins 6 caractères' });
+    }
+
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+    const user = await User.findOne({
+      where: {
+        resetPasswordToken: tokenHash
+      }
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: 'Lien invalide ou expiré.' });
+    }
+
+    if (!user.resetPasswordExpires || new Date(user.resetPasswordExpires).getTime() < Date.now()) {
+      // Clean up expired token
+      user.resetPasswordToken = null;
+      user.resetPasswordExpires = null;
+      await user.save();
+      return res.status(400).json({ message: 'Lien invalide ou expiré.' });
+    }
+
+    // All good — update password
+    user.password = await hashPassword(newPassword);
+    user.resetPasswordToken = null;
+    user.resetPasswordExpires = null;
+    await user.save();
+
+    console.log('[RESET] Password updated for user id:', user.id);
+    return res.status(200).json({ message: 'Mot de passe réinitialisé avec succès.' });
+  } catch (error) {
+    console.error('[RESET] Error:', error);
+    return res.status(500).json({ message: 'Erreur lors de la réinitialisation du mot de passe.' });
+  }
+};
+
 module.exports = {
   googleAuth,
   register,
   login,
-  logout
+  logout,
+  forgotPassword,
+  resetPassword
 };

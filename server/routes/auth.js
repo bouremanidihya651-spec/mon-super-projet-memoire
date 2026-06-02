@@ -1,6 +1,9 @@
 const express = require('express');
 const { body } = require('express-validator');
-const { googleAuth, register, login, logout } = require('../controllers/authController');
+const {
+  googleAuth, register, login, logout,
+  forgotPassword, resetPassword
+} = require('../controllers/authController');
 const router = express.Router();
 
 // Validation rules for registration
@@ -77,5 +80,16 @@ router.post('/login', validateLogin, login);
 
 // Logout route
 router.post('/logout', logout);
+
+// Forgot password — request a reset email
+router.post('/forgot-password', [
+  body('email').isEmail().withMessage('Please provide a valid email').normalizeEmail()
+], forgotPassword);
+
+// Reset password — submit new password with token
+router.post('/reset-password', [
+  body('token').isString().notEmpty().withMessage('Token is required'),
+  body('newPassword').isLength({ min: 6 }).withMessage('Password must be at least 6 characters long')
+], resetPassword);
 
 module.exports = router;
