@@ -6,15 +6,21 @@ require('dotenv').config();
  */
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
+  console.log('Auth Header received:', authHeader);
   const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
   if (!token) {
+    console.log('Auth Failure: No token provided');
     return res.status(401).json({ message: 'Access token required' });
   }
 
-  const decoded = verifyToken(token, process.env.JWT_SECRET || 'fallback_secret_key');
+  const secret = process.env.JWT_SECRET;
+  console.log('Using JWT_SECRET for verification:', secret ? 'EXISTS' : 'MISSING');
+
+  const decoded = verifyToken(token, secret);
 
   if (!decoded) {
+    console.log('Auth Failure: Invalid or expired token. Token starts with:', token.substring(0, 10) + '...');
     return res.status(403).json({ message: 'Invalid or expired token' });
   }
 

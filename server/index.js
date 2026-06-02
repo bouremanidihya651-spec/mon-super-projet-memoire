@@ -134,6 +134,11 @@ const startServer = async () => {
 
     app.listen(PORT, () => {
       console.log(`Serveur en ligne sur le port ${PORT}`);
+      if (!process.env.JWT_SECRET) {
+        console.error('⚠️ ATTENTION: JWT_SECRET n\'est pas défini ! Les jetons ne seront pas sécurisés.');
+      } else {
+        console.log('✅ JWT_SECRET chargé.');
+      }
     });
   } catch (error) {
     console.error('Erreur critique:', error);

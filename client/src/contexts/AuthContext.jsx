@@ -139,6 +139,17 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
+  const updateAuth = (userData, newToken) => {
+    if (newToken) {
+      localStorage.setItem('token', newToken);
+      setToken(newToken);
+    }
+    if (userData) {
+      localStorage.setItem('userData', JSON.stringify(userData));
+      setUser(userData);
+    }
+  };
+
   const isAdmin = () => {
     return user && (user.role === 'admin' || user.role === 'administrator');
   };
@@ -150,6 +161,7 @@ export const AuthProvider = ({ children }) => {
     signup,
     googleAuth,
     logout,
+    updateAuth,
     isAuthenticated: !!user,
     isAdmin,
     loading

@@ -1,7 +1,9 @@
 const { User, UserPreference } = require('../models');
 const { hashPassword } = require('../utils/passwordUtils');
+const { generateToken } = require('../utils/jwtUtils');
 const path = require('path');
 const fs = require('fs');
+require('dotenv').config();
 
 /**
  * Get current user profile
@@ -145,12 +147,38 @@ const updateProfile = async (req, res) => {
     }
 
     const updatedUser = await User.findByPk(req.user.id, {
-      attributes: { exclude: ['password'] }
+      attributes: { exclude: ['password'] },
+      include: [{
+        model: UserPreference,
+        as: 'preference'
+      }]
     });
+
+    const userData = updatedUser.toJSON();
+    if (userData.preference) {
+      userData.luxury_score = userData.preference.luxury_score;
+      userData.nature_score = userData.preference.nature_score;
+      userData.adventure_score = userData.preference.adventure_score;
+      userData.culture_score = userData.preference.culture_score;
+      userData.beach_score = userData.preference.beach_score;
+      userData.food_score = userData.preference.food_score;
+      userData.travelerType = userData.preference.travelerType;
+      userData.minBudget = userData.preference.minBudget;
+      userData.maxBudget = userData.preference.maxBudget;
+      userData.preferredTags = userData.preference.preferredTags;
+    }
+
+    // Generate new token
+    const token = generateToken(
+      { id: updatedUser.id, role: updatedUser.role },
+      process.env.JWT_SECRET,
+      '7d'
+    );
 
     res.status(200).json({
       message: 'Profile updated successfully',
-      user: updatedUser
+      user: userData,
+      token: token
     });
   } catch (error) {
     console.error('Update profile error:', error);
@@ -269,9 +297,40 @@ const updatePreferences = async (req, res) => {
       console.log('Preferences created');
     }
 
+    // Get updated user with preferences
+    const updatedUser = await User.findByPk(req.user.id, {
+      attributes: { exclude: ['password'] },
+      include: [{
+        model: UserPreference,
+        as: 'preference'
+      }]
+    });
+
+    const userData = updatedUser.toJSON();
+    if (userData.preference) {
+      userData.luxury_score = userData.preference.luxury_score;
+      userData.nature_score = userData.preference.nature_score;
+      userData.adventure_score = userData.preference.adventure_score;
+      userData.culture_score = userData.preference.culture_score;
+      userData.beach_score = userData.preference.beach_score;
+      userData.food_score = userData.preference.food_score;
+      userData.travelerType = userData.preference.travelerType;
+      userData.minBudget = userData.preference.minBudget;
+      userData.maxBudget = userData.preference.maxBudget;
+      userData.preferredTags = userData.preference.preferredTags;
+    }
+
+    // Generate new token with current role
+    const token = generateToken(
+      { id: updatedUser.id, role: updatedUser.role },
+      process.env.JWT_SECRET,
+      '7d'
+    );
+
     res.status(200).json({
       message: 'Préférences mises à jour avec succès',
-      preference
+      user: userData,
+      token: token
     });
   } catch (error) {
     console.error('Update preferences error:', error);

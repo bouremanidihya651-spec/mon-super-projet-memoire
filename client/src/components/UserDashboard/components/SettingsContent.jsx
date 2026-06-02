@@ -1,11 +1,98 @@
 import React, { useState } from 'react';
 import {
-  User, Shield, Globe, ChevronDown, Camera,
+  User, Star, Shield, Globe, ChevronDown, Settings, Camera,
+  Crown, Mountain, Plane, Landmark, Waves, Utensils,
   Check, AlertCircle, Loader2, Lock, Mail, Save,
+  Backpack, Heart, Users, Briefcase, ChevronLeft,
 } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../../contexts/ThemeContext';
+
+const LEVELS = [
+  { label: 'Peu',      value: 0,   color: '#9db8aa' },
+  { label: 'Moyen',    value: 0.5, color: '#c9a844' },
+  { label: 'Beaucoup', value: 1,   color: '#2d7a5a' },
+];
+
+const PREFERENCES = [
+  { key: 'luxury_score',    label: 'Luxe',        Icon: Crown    },
+  { key: 'nature_score',    label: 'Nature',       Icon: Mountain },
+  { key: 'adventure_score', label: 'Aventure',     Icon: Plane    },
+  { key: 'culture_score',   label: 'Culture',      Icon: Landmark },
+  { key: 'beach_score',     label: 'Plage',        Icon: Waves    },
+  { key: 'food_score',      label: 'Gastronomie',  Icon: Utensils },
+];
+
+// Carte cliquable — clic sur la carte entiere cycle Peu > Moyen > Beaucoup > Peu
+const PrefCard = ({ pref, value, onChange, isDark }) => {
+  const { key, label, Icon } = pref;
+  const activeIndex = LEVELS.findIndex(l => l.value === value);
+  const safeIndex = activeIndex === -1 ? 1 : activeIndex;
+  const activeColor = LEVELS[safeIndex].color;
+
+  const handleClick = () => {
+    const next = (safeIndex + 1) % LEVELS.length;
+    onChange(key, LEVELS[next].value);
+  };
+
+  return (
+    <div
+      onClick={handleClick}
+      style={{
+        background: isDark ? '#1a2320' : '#fff',
+        border: '1.5px solid ' + activeColor,
+        borderRadius: 14,
+        padding: '14px 10px 10px',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 8,
+        transition: 'all 0.2s',
+        cursor: 'pointer',
+        userSelect: 'none',
+      }}
+    >
+      <div style={{
+        width: 40, height: 40, borderRadius: 10,
+        background: isDark ? 'rgba(255,255,255,0.06)' : '#f7f5f0',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        transition: 'all 0.2s',
+      }}>
+        <Icon size={18} style={{ color: activeColor, transition: 'color 0.2s' }} />
+      </div>
+
+      <span style={{
+        fontSize: 11, fontWeight: 500,
+        color: isDark ? '#e8ece9' : '#1a4a36',
+        fontFamily: "'DM Sans', sans-serif",
+        letterSpacing: '0.02em',
+      }}>
+        {label}
+      </span>
+
+      <div style={{ display: 'flex', gap: 4, width: '100%' }}>
+        {LEVELS.map((_, idx) => (
+          <div key={idx} style={{
+            flex: 1, height: 5, borderRadius: 3,
+            background: idx <= safeIndex ? activeColor : (isDark ? '#2d3a36' : '#e0dcd4'),
+            transition: 'background 0.2s',
+          }} />
+        ))}
+      </div>
+
+      <span style={{
+        fontSize: 10, fontWeight: 600,
+        color: activeColor,
+        fontFamily: "'DM Sans', sans-serif",
+        letterSpacing: '0.06em',
+        minHeight: 14,
+      }}>
+        {LEVELS[safeIndex].label.toUpperCase()} — {Math.round(value * 100)}
+      </span>
+    </div>
+  );
+};
 
 /* ── Palette cohérente ── */
 const getColors = (isDark) => ({
@@ -143,13 +230,15 @@ const SettingsContent = () => {
   const { isDark } = useTheme();
   const colors = getColors(isDark);
   const { t, i18n } = useTranslation();
-  const { user } = useAuth();
+  const { user, updateAuth } = useAuth();
 
   const [isLangOpen, setIsLangOpen]       = useState(false);
   const [isSaving, setIsSaving]           = useState(false);
   const [isPwSaving, setIsPwSaving]       = useState(false);
+  const [isPrefSaving, setIsPrefSaving]   = useState(false);
   const [message, setMessage]             = useState({ type: '', text: '' });
   const [pwMessage, setPwMessage]         = useState({ type: '', text: '' });
+  const [prefMessage, setPrefMessage]     = useState({ type: '', text: '' });
   const [photoPreview, setPhotoPreview]   = useState(null);
   const [photoLoading, setPhotoLoading]   = useState(false);
 
@@ -163,15 +252,37 @@ const SettingsContent = () => {
     currentPassword: '', newPassword: '', confirmPassword: '',
   });
 
+  const [scores, setScores] = useState({
+    luxury_score:    user?.luxury_score    ?? 0.5,
+    nature_score:    user?.nature_score    ?? 0.5,
+    adventure_score: user?.adventure_score ?? 0.5,
+    culture_score:   user?.culture_score   ?? 0.5,
+    beach_score:     user?.beach_score     ?? 0.5,
+    food_score:      user?.food_score      ?? 0.5,
+    travelerType:    user?.travelerType    || 'solo',
+  });
+
   const languages = [
     { code: 'fr', name: 'Français', flag: '🇫🇷' },
     { code: 'en', name: 'English',  flag: '🇬🇧' },
     { code: 'ar', name: 'العربية',  flag: '🇩🇿' },
   ];
 
+  const travelerTypes = [
+    { value: 'solo',     label: 'Voyageur Solo',    icon: <Backpack  size={18} /> },
+    { value: 'couple',   label: 'En Couple',         icon: <Heart     size={18} /> },
+    { value: 'family',   label: 'En Famille',        icon: <Users     size={18} /> },
+    { value: 'group',    label: 'Entre Amis',        icon: <Users     size={18} /> },
+    { value: 'business', label: "Voyage d'Affaires", icon: <Briefcase size={18} /> },
+  ];
+
   /* handlers */
   const handleFormChange  = e => setFormData(p => ({ ...p, [e.target.name]: e.target.value }));
   const handlePwChange    = e => setPwData(p => ({ ...p, [e.target.name]: e.target.value }));
+
+  const handlePrefChange = (key, value) => {
+    setScores(prev => ({ ...prev, [key]: value }));
+  };
 
   const handlePhotoChange = async (e) => {
     const file = e.target.files[0];
@@ -186,20 +297,11 @@ const SettingsContent = () => {
     fd.append('avatar', file);
     setPhotoLoading(true);
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/users/upload-avatar`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          body: fd,
-        }
-      );      const data = await res.json();
+      const res  = await fetch('http://localhost:3000/api/users/upload-avatar', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd });
+      const data = await res.json();
       if (res.ok) {
         setMessage({ type: 'success', text: 'Photo mise à jour' });
-        localStorage.setItem('userData', JSON.stringify({ ...user, profilePhoto: data.user?.profilePhoto || data.profilePhoto }));
-        window.dispatchEvent(new Event('storage'));
+        updateAuth({ ...user, profilePhoto: data.user?.profilePhoto || data.profilePhoto });
       } else {
         setMessage({ type: 'error', text: data.message || 'Erreur upload' });
         setPhotoPreview(null);
@@ -214,25 +316,30 @@ const SettingsContent = () => {
     const token = localStorage.getItem('token');
     if (!token) { setMessage({ type: 'error', text: 'Non connecté' }); setIsSaving(false); return; }
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/users/profile`,
-        {
-          method: 'PUT',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            firstName: formData.firstName.trim(),
-            lastName: formData.lastName.trim(),
-            email: formData.email.trim(),
-          }),
-        }
-      );      const data = await res.json();
-      if (res.ok) { setMessage({ type: 'success', text: 'Profil enregistré' }); localStorage.setItem('userData', JSON.stringify(data.user)); window.dispatchEvent(new Event('storage')); }
+      const res  = await fetch('http://localhost:3000/api/users/profile', { method: 'PUT', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ firstName: formData.firstName.trim(), lastName: formData.lastName.trim(), email: formData.email.trim() }) });
+      const data = await res.json();
+      if (res.ok) { 
+        setMessage({ type: 'success', text: 'Profil enregistré' }); 
+        updateAuth(data.user, data.token); 
+      }
       else setMessage({ type: 'error', text: data.message || 'Erreur' });
     } catch { setMessage({ type: 'error', text: 'Erreur serveur' }); }
     finally { setIsSaving(false); }
+  };
+
+  const handlePrefSave = async () => {
+    setIsPrefSaving(true); setPrefMessage({ type: '', text: '' });
+    const token = localStorage.getItem('token');
+    try {
+      const res  = await fetch('http://localhost:3000/api/users/preferences', { method: 'PUT', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(scores) });
+      const data = await res.json();
+      if (res.ok) { 
+        setPrefMessage({ type: 'success', text: 'Préférences enregistrées' }); 
+        updateAuth(data.user, data.token); 
+      }
+      else setPrefMessage({ type: 'error', text: data.message || 'Erreur' });
+    } catch { setPrefMessage({ type: 'error', text: 'Erreur serveur' }); }
+    finally { setIsPrefSaving(false); }
   };
 
   const handlePwSave = async () => {
@@ -242,20 +349,8 @@ const SettingsContent = () => {
     if (pwData.newPassword !== pwData.confirmPassword) { setPwMessage({ type: 'error', text: 'Mots de passe différents' }); setIsPwSaving(false); return; }
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/users/change-password`,
-        {
-          method: 'PUT',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            currentPassword: pwData.currentPassword,
-            newPassword: pwData.newPassword,
-          }),
-        }
-      );      const data = await res.json();
+      const res  = await fetch('http://localhost:3000/api/users/change-password', { method: 'PUT', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ currentPassword: pwData.currentPassword, newPassword: pwData.newPassword }) });
+      const data = await res.json();
       if (res.ok) { setPwMessage({ type: 'success', text: 'Mot de passe modifié' }); setPwData({ currentPassword: '', newPassword: '', confirmPassword: '' }); }
       else setPwMessage({ type: 'error', text: data.message || 'Mot de passe actuel incorrect' });
     } catch { setPwMessage({ type: 'error', text: 'Erreur serveur' }); }
@@ -293,7 +388,7 @@ const SettingsContent = () => {
                 }}>
                   {photoPreview || user?.profilePhoto ? (
                     <img
-                      src={photoPreview || (user.profilePhoto.startsWith('http') ? user.profilePhoto : `http://localhost:3000${user.profilePhoto}`)}
+                      src={photoPreview || `http://localhost:3000${user.profilePhoto}`}
                       alt="Profile"
                       style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     />
@@ -403,6 +498,62 @@ const SettingsContent = () => {
           </form>
         </Card>
 
+        {/* ══ PRÉFÉRENCES ══ */}
+        <Card icon={Star} title="Préférences de voyage" colors={colors} isDark={isDark}>
+
+          {/* Type voyageur */}
+          <div style={{ marginBottom: 24 }}>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: colors.text3, marginBottom: 12 }}>
+              Type de voyageur
+            </label>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+              {travelerTypes.map(type => {
+                const active = scores.travelerType === type.value;
+                return (
+                  <button key={type.value} type="button" onClick={() => setScores(p => ({ ...p, travelerType: type.value }))} style={{ padding: '10px 8px', borderRadius: 12, border: `1.5px solid ${active ? '#c9a844' : (isDark ? '#2d3a36' : '#e0dcd4')}`, background: active ? (isDark ? 'rgba(201,168,68,0.15)' : 'rgba(201,168,68,0.08)') : (isDark ? '#1a2320' : '#fff'), display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, cursor: 'pointer', transition: 'all 0.2s', color: active ? (isDark ? '#e8ece9' : '#1a4a36') : (isDark ? '#9db8aa' : '#6b8f7b') }}>
+                    <span style={{ color: active ? '#c9a844' : '#9db8aa' }}>{type.icon}</span>
+                    <span style={{ fontSize: 10, fontWeight: 500, textAlign: 'center', letterSpacing: '0.03em' }}>{type.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Préférences — Cartes */}
+          <div style={{ marginBottom: 22 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <label style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: colors.text3 }}>
+                Préférences de voyage
+              </label>
+              <div style={{ display: 'flex', gap: 10, fontSize: 10, color: isDark ? '#6b8f7b' : '#9db8aa' }}>
+                {LEVELS.map((l, i) => (
+                  <span key={i} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <span style={{ width: 8, height: 8, borderRadius: 2, background: l.color, display: 'inline-block' }} />
+                    {l.label}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+              {PREFERENCES.map(pref => (
+                <PrefCard
+                  key={pref.key}
+                  pref={pref}
+                  value={scores[pref.key]}
+                  onChange={handlePrefChange}
+                  isDark={isDark}
+                />
+              ))}
+            </div>
+          </div>
+
+          <Alert type={prefMessage.type} text={prefMessage.text} colors={colors} />
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20 }}>
+            <SaveBtn loading={isPrefSaving} label="Enregistrer les préférences" onClick={handlePrefSave} colors={colors} />
+          </div>
+        </Card>
+
         {/* ══ SÉCURITÉ ══ */}
         <Card icon={Shield} title="Sécurité & mot de passe" colors={colors} isDark={isDark}>
           <div style={{ marginBottom: 16 }}>
@@ -444,5 +595,3 @@ const SettingsContent = () => {
 };
 
 export default SettingsContent;
-
-
