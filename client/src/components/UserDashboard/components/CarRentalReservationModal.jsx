@@ -178,9 +178,10 @@ const CarRentalReservationModal = ({ isOpen, onClose, transport, user }) => {
         return;
       }
 
-      // 3. Paiement "on_arrival" : on ne récupère PAS la facture du backend
-      // Le backend l'a déjà créée en base. On génère le bon localement.
-      const invoiceData = {
+      // 3. Paiement "on_arrival" : on ne fait AUCUN appel au backend pour récupérer la facture
+      // Le backend a déjà créé la facture en base. On génère le bon localement avec les données qu'on a.
+      
+      const localInvoiceData = {
         invoice_number: `INV-${Date.now().toString().slice(-6)}`,
         amount: totalPrice,
         currency: 'DZD',
@@ -202,8 +203,8 @@ const CarRentalReservationModal = ({ isOpen, onClose, transport, user }) => {
         }
       };
 
-      setInvoiceData(invoiceData);
-      generateAndDownloadBonReservation(reservation, invoiceData);
+      setInvoiceData(localInvoiceData);
+      generateAndDownloadBonReservation(reservation, localInvoiceData);
 
       setReservationComplete(true);
       setStep(4);
