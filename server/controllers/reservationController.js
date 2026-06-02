@@ -375,10 +375,12 @@ const getReservationInvoice = async (req, res) => {
       where: { reservation_id: id }
     });
     if (!invoice) return res.status(404).json({ message: 'Invoice not found' });
-    
+
     // Generate proper invoice details based on reservation type
     let invoiceDetails = invoice.invoice_details;
     const reservationType = reservation.trip_type;
+
+    try {
     
     // Re-generate invoice details with full data if needed
     if (reservationType === 'hotel' && reservation.hotel) {
@@ -473,9 +475,14 @@ const getReservationInvoice = async (req, res) => {
         unit_price: reservation.unit_price
       });
     }
-    
-    res.status(200).json({ 
-      success: true, 
+
+    } catch (detailsError) {
+      console.error('Invoice details regeneration failed, falling back to stored details:', detailsError);
+      invoiceDetails = invoice.invoice_details;
+    }
+
+    res.status(200).json({
+      success: true,
       invoice: {
         ...invoice.toJSON(),
         invoice_details: invoiceDetails,

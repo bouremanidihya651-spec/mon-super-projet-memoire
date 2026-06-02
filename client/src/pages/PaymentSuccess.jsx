@@ -95,11 +95,19 @@ const PaymentSuccess = () => {
         }
 
         // Redirect to dashboard with reservation param
-        navigate(`/dashboard?reservation=${reservationId}`);
+        if (reservationId) {
+          navigate(`/dashboard?reservation=${reservationId}`);
+        } else {
+          navigate('/dashboard');
+        }
       } catch (error) {
         console.error('Error in payment success:', error);
         // Still redirect even if verification fails
-        navigate(`/dashboard?reservation=${reservationId}`);
+        if (reservationId) {
+          navigate(`/dashboard?reservation=${reservationId}`);
+        } else {
+          navigate('/dashboard');
+        }
       }
     };
 

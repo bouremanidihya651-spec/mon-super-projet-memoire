@@ -60,7 +60,7 @@ const UserDashboard = ({ isChatbotOpen, toggleChatbot }) => {
   // Check for reservation query param on mount (after payment redirect)
   useEffect(() => {
     const reservationParam = searchParams.get('reservation');
-    if (reservationParam) {
+    if (reservationParam && reservationParam !== 'null' && reservationParam !== 'undefined' && /^\d+$/.test(reservationParam)) {
       setReservationId(reservationParam);
       setShowInvoiceModal(true);
       navigate('/dashboard', { replace: true });

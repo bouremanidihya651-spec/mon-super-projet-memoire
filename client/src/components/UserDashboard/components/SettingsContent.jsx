@@ -9,6 +9,8 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../../contexts/ThemeContext';
 
+const API_BASE = import.meta.env.VITE_API_URL;
+
 const LEVELS = [
   { label: 'Peu',      value: 0,   color: '#9db8aa' },
   { label: 'Moyen',    value: 0.5, color: '#c9a844' },
@@ -297,7 +299,7 @@ const SettingsContent = () => {
     fd.append('avatar', file);
     setPhotoLoading(true);
     try {
-      const res  = await fetch('http://localhost:3000/api/users/upload-avatar', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd });
+      const res  = await fetch(`${API_BASE}/api/users/upload-avatar`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd });
       const data = await res.json();
       if (res.ok) {
         setMessage({ type: 'success', text: 'Photo mise à jour' });
@@ -316,7 +318,7 @@ const SettingsContent = () => {
     const token = localStorage.getItem('token');
     if (!token) { setMessage({ type: 'error', text: 'Non connecté' }); setIsSaving(false); return; }
     try {
-      const res  = await fetch('http://localhost:3000/api/users/profile', { method: 'PUT', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ firstName: formData.firstName.trim(), lastName: formData.lastName.trim(), email: formData.email.trim() }) });
+      const res  = await fetch(`${API_BASE}/api/users/profile`, { method: 'PUT', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ firstName: formData.firstName.trim(), lastName: formData.lastName.trim(), email: formData.email.trim() }) });
       const data = await res.json();
       if (res.ok) { 
         setMessage({ type: 'success', text: 'Profil enregistré' }); 
@@ -331,7 +333,7 @@ const SettingsContent = () => {
     setIsPrefSaving(true); setPrefMessage({ type: '', text: '' });
     const token = localStorage.getItem('token');
     try {
-      const res  = await fetch('http://localhost:3000/api/users/preferences', { method: 'PUT', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(scores) });
+      const res  = await fetch(`${API_BASE}/api/users/preferences`, { method: 'PUT', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(scores) });
       const data = await res.json();
       if (res.ok) { 
         setPrefMessage({ type: 'success', text: 'Préférences enregistrées' }); 
@@ -349,7 +351,7 @@ const SettingsContent = () => {
     if (pwData.newPassword !== pwData.confirmPassword) { setPwMessage({ type: 'error', text: 'Mots de passe différents' }); setIsPwSaving(false); return; }
     const token = localStorage.getItem('token');
     try {
-      const res  = await fetch('http://localhost:3000/api/users/change-password', { method: 'PUT', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ currentPassword: pwData.currentPassword, newPassword: pwData.newPassword }) });
+      const res  = await fetch(`${API_BASE}/api/users/change-password`, { method: 'PUT', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ currentPassword: pwData.currentPassword, newPassword: pwData.newPassword }) });
       const data = await res.json();
       if (res.ok) { setPwMessage({ type: 'success', text: 'Mot de passe modifié' }); setPwData({ currentPassword: '', newPassword: '', confirmPassword: '' }); }
       else setPwMessage({ type: 'error', text: data.message || 'Mot de passe actuel incorrect' });
@@ -388,7 +390,7 @@ const SettingsContent = () => {
                 }}>
                   {photoPreview || user?.profilePhoto ? (
                     <img
-                      src={photoPreview || `http://localhost:3000${user.profilePhoto}`}
+                      src={photoPreview || `${API_BASE}${user.profilePhoto}`}
                       alt="Profile"
                       style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     />

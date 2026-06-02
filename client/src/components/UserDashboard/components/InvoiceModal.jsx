@@ -31,15 +31,19 @@ const InvoiceModal = ({ isOpen, reservationId, onClose }) => {
         `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/reservations/${reservationId}/invoice`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      
+
       if (response.data.success) {
         setInvoice(response.data.invoice);
       } else {
-        setError("Impossible de charger la facture.");
+        setError(`Impossible de charger la facture.${response.data.message ? ' (' + response.data.message + ')' : ''}`);
       }
     } catch (err) {
       console.error('Error fetching invoice:', err);
-      setError("Une erreur est survenue lors de la récupération de votre facture.");
+      const status = err.response?.status;
+      const serverMsg = err.response?.data?.message || err.response?.data?.error;
+      setError(
+        `Une erreur est survenue lors de la récupération de votre facture.${status ? ' [' + status + ']' : ''}${serverMsg ? ' ' + serverMsg : ''}`
+      );
     } finally {
       setLoading(false);
     }
