@@ -17,6 +17,8 @@ const LoginPage = () => {
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [blockedMessage, setBlockedMessage] = useState('');
 
   const handleGoogleSuccess = async (tokenResponse) => {
     setIsLoading(true);
@@ -69,11 +71,15 @@ const LoginPage = () => {
     if (Object.keys(loginErrors).length > 0) { setErrors(loginErrors); return; }
     setIsLoading(true);
     setSubmitError('');
+    setIsBlocked(false);
     try {
       const result = await login(formData.email, formData.password);
       if (result?.success) {
         const userData = JSON.parse(localStorage.getItem('userData'));
         navigate(userData?.role === 'admin' ? '/admin' : '/dashboard');
+      } else if (result?.code === 'ACCOUNT_BLOCKED') {
+        setIsBlocked(true);
+        setBlockedMessage(result.message);
       } else {
         setSubmitError(result?.message || 'Échec de la connexion');
       }
@@ -195,6 +201,29 @@ const LoginPage = () => {
               </div>
 
               {/* Erreur globale */}
+              {isBlocked && (
+                <div style={{
+                  background: isDark ? 'rgba(220,38,38,0.12)' : '#fef2f2',
+                  border: '2px solid #dc2626',
+                  borderRadius: 12, padding: '14px 16px', marginBottom: 18,
+                  display: 'flex', alignItems: 'flex-start', gap: 10,
+                }}>
+                  <div style={{
+                    width: 32, height: 32, borderRadius: '50%',
+                    background: '#dc2626', color: '#fff',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    flexShrink: 0, fontSize: 18, fontWeight: 700,
+                  }}>⛔</div>
+                  <div>
+                    <p style={{ fontSize: 14, fontWeight: 700, color: '#dc2626', margin: '0 0 4px 0' }}>
+                      Votre compte a été bloqué
+                    </p>
+                    <p style={{ fontSize: 12, color: isDark ? '#fca5a5' : '#7f1d1d', margin: 0, lineHeight: 1.5 }}>
+                      {blockedMessage || 'Veuillez contacter l\'administrateur pour plus d\'informations.'}
+                    </p>
+                  </div>
+                </div>
+              )}
               {submitError && (
                 <div style={{
                   background: isDark ? 'rgba(232,135,74,0.1)' : '#fff8f5', border: '1px solid #e8874a',

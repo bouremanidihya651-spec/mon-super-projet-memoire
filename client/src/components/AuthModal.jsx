@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useGoogleLogin } from '@react-oauth/google';
-import { Plane, Mountain, Waves, Utensils, Crown, Landmark, X, Mail, Lock, User, ArrowRight, Loader2, Backpack, Heart, Users, Briefcase } from 'lucide-react';
+import { Plane, Mountain, Waves, Utensils, Crown, Landmark, X, Mail, Lock, User, ArrowRight, Loader2, Backpack, Heart, Users, Briefcase, ShieldOff } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 const AuthModal = ({ isOpen, onClose, initialView = 'login' }) => {
   const { t } = useTranslation();
   const [currentView, setCurrentView] = useState(initialView);
   const [step, setStep] = useState(1);
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [blockedMessage, setBlockedMessage] = useState('');
 
   const [formData, setFormData] = useState({
     email: '',
@@ -137,7 +139,15 @@ const AuthModal = ({ isOpen, onClose, initialView = 'login' }) => {
     try {
       const result = await login(formData.email, formData.password);
       if (result && result.success) { onClose(); }
-      else { setErrors({ submit: result?.message || 'Échec de la connexion' }); }
+      else {
+        if (result?.code === 'ACCOUNT_BLOCKED') {
+          setIsBlocked(true);
+          setBlockedMessage(result.message);
+          setErrors({});
+        } else {
+          setErrors({ submit: result?.message || 'Échec de la connexion' });
+        }
+      }
     } catch (error) {
       setErrors({ submit: error.message || "Une erreur est survenue" });
     } finally { setIsLoading(false); }
@@ -250,6 +260,17 @@ const AuthModal = ({ isOpen, onClose, initialView = 'login' }) => {
               </div>
 
               <form onSubmit={handleLogin} className="space-y-4">
+                {isBlocked && (
+                  <div className="p-4 bg-red-950/40 border-2 border-red-600/60 rounded-lg flex items-start gap-3">
+                    <ShieldOff className="w-6 h-6 text-red-400 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-red-300 font-semibold text-sm mb-1">Compte bloqué</p>
+                      <p className="text-red-200/90 text-xs leading-relaxed">
+                        {blockedMessage || 'Votre compte a été bloqué. Veuillez contacter l\'administrateur.'}
+                      </p>
+                    </div>
+                  </div>
+                )}
                 {errors.submit && (
                   <div className="p-3 bg-red-900/30 border border-red-700 rounded-md">
                     <p className="text-red-400 text-sm">{errors.submit}</p>

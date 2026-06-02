@@ -1,8 +1,29 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import axios from 'axios';
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 const AuthContext = createContext();
+
+// Global axios interceptor: if the backend reports the account is blocked
+// (e.g. the admin just blocked the user mid-session), log them out and
+// redirect to the home page so they can't keep using the dashboard.
+axios.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 403 && error.response?.data?.code === 'ACCOUNT_BLOCKED') {
+      const alreadyOnHome = window.location.pathname === '/' || window.location.pathname === '/login';
+      localStorage.removeItem('token');
+      localStorage.removeItem('userData');
+      if (!alreadyOnHome) {
+        window.location.href = '/?blocked=1';
+      } else {
+        window.location.reload();
+      }
+    }
+    return Promise.reject(error);
+  }
+);
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -67,7 +88,10 @@ export const AuthProvider = ({ children }) => {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Échec de la connexion');
+        const err = new Error(data.message || 'Échec de la connexion');
+        err.code = data.code || null;
+        err.status = response.status;
+        throw err;
       }
 
       localStorage.setItem('token', data.token);
@@ -78,7 +102,7 @@ export const AuthProvider = ({ children }) => {
       return { success: true };
     } catch (error) {
       console.error('Login error:', error);
-      return { success: false, message: error.message };
+      return { success: false, message: error.message, code: error.code || null };
     }
   };
 

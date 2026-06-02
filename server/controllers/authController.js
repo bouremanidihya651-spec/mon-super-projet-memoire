@@ -41,7 +41,16 @@ const googleAuth = async (req, res) => {
     if (user) {
       // Utilisateur existe - connexion
       console.log('✅ Utilisateur trouvé - connexion');
-      
+
+      // Vérifier si le compte est bloqué
+      if (user.isBlocked) {
+        console.log('🚫 Compte bloqué - connexion refusée pour:', email);
+        return res.status(403).json({
+          message: 'Votre compte a été bloqué. Veuillez contacter l\'administrateur.',
+          code: 'ACCOUNT_BLOCKED'
+        });
+      }
+
       // Générer token (ROLE INCLUS)
       const token = generateToken(
         { id: user.id, role: user.role },
@@ -352,6 +361,15 @@ const login = async (req, res) => {
     if (!user) {
       return res.status(401).json({
         message: 'Invalid email or password'
+      });
+    }
+
+    // Vérifier si le compte est bloqué
+    if (user.isBlocked) {
+      console.log('🚫 Compte bloqué - connexion refusée pour:', email);
+      return res.status(403).json({
+        message: 'Votre compte a été bloqué. Veuillez contacter l\'administrateur.',
+        code: 'ACCOUNT_BLOCKED'
       });
     }
 
